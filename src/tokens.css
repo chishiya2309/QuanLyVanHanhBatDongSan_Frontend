@@ -1,0 +1,26 @@
+:root {
+  color-scheme: light;
+  --space-3xs: 2px; --space-2xs: 4px; --space-xs: 8px; --space-sm: 12px; --space-md: 16px; --space-lg: 24px; --space-xl: 40px; --space-2xl: 64px; --space-3xl: 96px; --space-4xl: 144px;
+  --text-xs: 0.8125rem; --text-sm: 0.875rem; --text-md: 1rem; --text-lg: 1.25rem; --text-xl: 1.5625rem; --text-2xl: 1.953rem; --text-3xl: 2.441rem;
+  --text-display-s: clamp(2.25rem, 4vw + 0.5rem, 3.75rem); --text-display: clamp(2.75rem, 5vw + 1rem, 5.25rem);
+  --text-section: clamp(2rem, 2.5vw + 1rem, 3.5rem); --text-title: clamp(1.25rem, 0.75vw + 0.875rem, 1.625rem); --text-lead: clamp(1.125rem, 0.35vw + 1rem, 1.375rem);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1); --ease-in: cubic-bezier(0.7, 0, 0.84, 0); --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --dur-micro: 120ms; --dur-short: 220ms; --dur-long: 420ms;
+  --color-error: oklch(52% 0.19 27); --color-success: oklch(50% 0.12 150);
+  --container: 1440px; --gutter: 64px; --gap-columns: 32px; --section-gap-s: 120px; --section-gap: 144px; --section-gap-l: 176px;
+  --z-base: 1; --z-raised: 10; --z-dropdown: 100; --z-sticky: 200; --z-sticky-nav: 300; --z-modal: 400; --z-toast: 500; --z-tooltip: 600;
+  --color-paper: oklch(97% 0.006 55); --color-paper-2: oklch(94.5% 0.007 55); --color-paper-3: oklch(91.5% 0.009 55);
+  --color-ink: oklch(21% 0.012 38); --color-ink-2: oklch(29% 0.013 40); --color-muted: oklch(47% 0.013 45);
+  --color-rule: oklch(87% 0.009 55); --color-rule-2: oklch(81% 0.011 55);
+  --color-accent: oklch(74% 0.125 30); --color-accent-ink: oklch(21% 0.012 38); --color-accent-2: oklch(43% 0.16 35); --color-focus: oklch(46% 0.16 35);
+  --color-accent-primary: oklch(43% 0.16 35); --color-accent-hover: oklch(37% 0.16 35); --color-accent-wash: oklch(95.5% 0.035 45);
+  --color-cotton: oklch(99.4% 0.003 60); --color-desk: oklch(94.3% 0.008 64); --color-print: oklch(23% 0.012 38);
+  --color-board: oklch(22% 0.011 40); --color-board-type: oklch(96.5% 0.006 70); --color-paid: oklch(55.5% 0.15 33);
+  --color-white: oklch(99.6% 0.002 60);
+  --font-display: "Plus Jakarta Sans", system-ui, sans-serif; --font-body: "Inter", system-ui, sans-serif;
+  --font-outlier: "JetBrains Mono", ui-monospace, monospace;
+  --radius-card: 12px; --radius-subcard: 8px; --radius-input: 8px; --radius-pill: 999px; --radius-stock: 8px; --rule-hair: 1px;
+  --shadow-card: 0 4px 20px -2px oklch(21% 0.012 38 / 0.06), 0 1px 3px 0 oklch(21% 0.012 38 / 0.04);
+  --shadow-input-focus: 0 0 0 3px oklch(46% 0.16 32 / 0.18);
+  --tracking-display: -0.025em; --display-weight: 600;
+}
