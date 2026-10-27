@@ -1,3 +1,4 @@
+/* Hallmark · theme: coral · axes: light/grotesk-sans/warm · mode: redesign · depth: full · scope: component · target: RegisterHostForm */
 @import url('./tokens.css');
 @import url('./base.css');
 
@@ -6,21 +7,6 @@
   width: 100%;
   margin: 0;
   padding: 0;
-}
-
-.material-symbols-outlined {
-  font-family: 'Material Symbols Outlined' !important;
-  font-weight: normal;
-  font-style: normal;
-  line-height: 1;
-  letter-spacing: normal;
-  text-transform: none;
-  display: inline-block;
-  white-space: nowrap;
-  word-wrap: normal;
-  direction: ltr;
-  -webkit-font-feature-settings: 'liga';
-  -webkit-font-smoothing: antialiased;
 }
 
 /* Page Container Frame */
@@ -335,6 +321,14 @@
   margin-inline: auto;
 }
 
+.form-inner-wide {
+  max-width: 480px;
+}
+
+.form-panel-register {
+  justify-content: center;
+}
+
 .form-heading-group {
   margin-bottom: var(--space-lg);
 }
@@ -359,6 +353,19 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-md);
+}
+
+.form-grid-2 {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-md);
+  align-items: start;
+}
+
+@media (min-width: 640px) {
+  .form-grid-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 .form-field {
@@ -652,6 +659,68 @@
   color: var(--color-accent-primary);
 }
 
+/* Form Validation & Alert Enhancements */
+.form-field.has-error .text-input {
+  border-color: var(--color-error);
+  box-shadow: 0 0 0 3px var(--color-error-ring);
+}
+
+.field-error-message {
+  font-size: var(--text-xs);
+  color: var(--color-error);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2xs);
+  margin-top: var(--space-2xs);
+  font-weight: 500;
+  animation: fadeIn 0.2s var(--ease-out);
+}
+
+.field-helper-text {
+  font-size: 0.75rem;
+  color: var(--color-muted);
+  margin-top: var(--space-3xs);
+}
+
+.alert-banner {
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-subcard);
+  font-size: var(--text-sm);
+  margin-bottom: var(--space-md);
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-sm);
+  animation: fadeIn 0.25s var(--ease-out);
+}
+
+.alert-banner.alert-error {
+  background-color: var(--color-error-wash);
+  border: 1px solid var(--color-error);
+  color: var(--color-error);
+}
+
+.alert-banner.alert-success {
+  background-color: var(--color-status-success-wash);
+  border: 1px solid var(--color-status-success);
+  color: var(--color-status-success);
+}
+
+.alert-icon {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 /* Motion Fallbacks */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
@@ -661,3 +730,4 @@
     scroll-behavior: auto !important;
   }
 }
+
