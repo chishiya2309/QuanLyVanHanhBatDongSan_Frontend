@@ -36,4 +36,7 @@
   --shadow-card: 0 4px 20px -2px oklch(21% 0.012 38 / 0.06), 0 1px 3px 0 oklch(21% 0.012 38 / 0.04);
   --shadow-input-focus: 0 0 0 3px oklch(46% 0.16 32 / 0.18);
   --tracking-display: -0.025em; --display-weight: 600;
+  --profile-dialog-width: 720px;
+  --color-profile-backdrop: oklch(21% 0.012 38 / 0.48);
+  --color-surface-subtle: var(--color-paper-2);
 }

@@ -9,12 +9,16 @@ interface LoginPageProps {
   onNavigateToRegister: () => void;
   onLoginSuccess: (user: AuthenticatedUserResponse) => void;
   initialLoginName?: string;
+  sessionError?: string | null;
+  onDismissSessionError?: () => void;
 }
 
 export const LoginPage: FC<LoginPageProps> = ({
   onNavigateToRegister,
   onLoginSuccess,
   initialLoginName = '',
+  sessionError,
+  onDismissSessionError,
 }) => {
   const {
     isLinkModalOpen,
@@ -43,6 +47,8 @@ export const LoginPage: FC<LoginPageProps> = ({
             onSuccess={onLoginSuccess}
             initialLoginName={initialLoginName}
             googleError={googleError}
+            sessionError={sessionError}
+            onDismissSessionError={onDismissSessionError}
           />
         </section>
       </div>

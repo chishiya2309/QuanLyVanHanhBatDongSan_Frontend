@@ -1,4 +1,6 @@
-export type UserRole = 'LANDLORD' | 'MANAGER';
+import type { AccountRole } from './auth';
+
+export type UserRole = AccountRole;
 
 export interface PropertyOption {
   id: string;

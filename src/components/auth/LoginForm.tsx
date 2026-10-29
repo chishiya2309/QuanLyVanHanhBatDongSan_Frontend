@@ -1,4 +1,4 @@
-import type { FC } from 'react';
+import type { ChangeEvent, FC } from 'react';
 import { useLogin } from '../../hooks/useLogin';
 import { initiateGoogleLogin } from '../../services/authApi';
 import type { AuthenticatedUserResponse } from '../../types/auth';
@@ -8,6 +8,8 @@ interface LoginFormProps {
   onSuccess?: (user: AuthenticatedUserResponse) => void;
   initialLoginName?: string;
   googleError?: string | null;
+  sessionError?: string | null;
+  onDismissSessionError?: () => void;
 }
 
 export const LoginForm: FC<LoginFormProps> = ({
@@ -15,6 +17,8 @@ export const LoginForm: FC<LoginFormProps> = ({
   onSuccess,
   initialLoginName = '',
   googleError,
+  sessionError,
+  onDismissSessionError,
 }) => {
   const {
     formData,
@@ -28,7 +32,11 @@ export const LoginForm: FC<LoginFormProps> = ({
     handleSubmit,
   } = useLogin(initialLoginName, onSuccess);
 
-  const displayError = generalError || googleError;
+  const displayError = generalError || sessionError || googleError;
+  const handleFormChange = (event: ChangeEvent<HTMLInputElement>) => {
+    onDismissSessionError?.();
+    handleChange(event);
+  };
 
   return (
     <div className="form-inner">
@@ -83,7 +91,7 @@ export const LoginForm: FC<LoginFormProps> = ({
         </div>
       )}
 
-      <form className="auth-form" onSubmit={handleSubmit} noValidate>
+      <form className="auth-form" onSubmit={(event) => { onDismissSessionError?.(); void handleSubmit(event); }} noValidate>
         {/* Tên đăng nhập */}
         <div className={`form-field ${fieldErrors.loginName ? 'has-error' : ''}`}>
           <label className="field-label" htmlFor="loginName">
@@ -113,7 +121,7 @@ export const LoginForm: FC<LoginFormProps> = ({
               autoComplete="username"
               placeholder="Nhập tên đăng nhập của bạn"
               value={formData.loginName}
-              onChange={handleChange}
+              onChange={handleFormChange}
               disabled={status === 'loading'}
               aria-invalid={!!fieldErrors.loginName}
               aria-describedby={fieldErrors.loginName ? 'loginName-error' : undefined}
@@ -160,7 +168,7 @@ export const LoginForm: FC<LoginFormProps> = ({
               autoComplete="current-password"
               placeholder="Nhập mật khẩu của bạn"
               value={formData.password}
-              onChange={handleChange}
+              onChange={handleFormChange}
               disabled={status === 'loading'}
               aria-invalid={!!fieldErrors.password}
               aria-describedby={fieldErrors.password ? 'password-error' : undefined}
@@ -226,7 +234,7 @@ export const LoginForm: FC<LoginFormProps> = ({
               name="rememberMe"
               className="checkbox-input"
               checked={formData.rememberMe}
-              onChange={handleChange}
+              onChange={handleFormChange}
               disabled={status === 'loading'}
             />
             <span>Ghi nhớ đăng nhập</span>

@@ -1,5 +1,7 @@
 # React + TypeScript + Vite
 
+RentOps UC04: xem [hướng dẫn hồ sơ cá nhân](docs/uc04-profile.md) để biết cách chạy và kiểm tra chức năng.
+
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
 Currently, two official plugins are available:

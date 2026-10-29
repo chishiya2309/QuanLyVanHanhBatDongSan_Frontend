@@ -12,7 +12,7 @@ export const mockCurrentUser: UserProfile = {
   email: 'nguyen.an@rentops.vn',
   phoneNumber: '0908 123 456',
   avatarUrl: '',
-  role: 'LANDLORD',
+  role: 'HOST',
   managedProperties: [
     {
       id: 'prop_all',

@@ -871,3 +871,18 @@
     justify-content: center;
   }
 }
+
+/* UC04 account entry, preserving the existing dashboard system. */
+.user-profile-badge { min-height: 44px; min-width: 0; max-width: 280px; font: inherit; text-align: left; cursor: pointer; }
+.user-profile-badge .user-info { min-width: 0; }
+.user-profile-badge .user-name { overflow: clip; text-overflow: ellipsis; white-space: nowrap; }
+.user-profile-badge:focus-visible { outline: 2px solid var(--color-focus); outline-offset: 2px; }
+.user-profile-badge:active { background: var(--color-paper-3); }
+@media (hover: hover) { .user-profile-badge:hover { background: var(--color-paper-3); } }
+@media (max-width: 40rem) {
+  .dash-topbar { height: auto; min-height: 64px; flex-wrap: wrap; gap: var(--space-xs); padding-block: var(--space-xs); }
+  .dash-topbar-left, .dash-topbar-right { min-width: 0; }
+  .dash-topbar-right { justify-content: flex-end; flex: 1; }
+  .user-profile-badge { max-width: 180px; }
+  .notification-btn { display: none; }
+}

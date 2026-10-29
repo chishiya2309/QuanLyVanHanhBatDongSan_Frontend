@@ -18,9 +18,10 @@ import './dashboard.css';
 interface DashboardShellProps {
   user: UserProfile;
   onLogout: () => void;
+  onOpenProfile: () => void;
 }
 
-export const DashboardShell: React.FC<DashboardShellProps> = ({ user, onLogout }) => {
+export const DashboardShell: React.FC<DashboardShellProps> = ({ user, onLogout, onOpenProfile }) => {
   const [selectedPropertyId, setSelectedPropertyId] = useState<string>('prop_all');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
@@ -134,6 +135,7 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({ user, onLogout }
         selectedPropertyId={selectedPropertyId}
         onSelectProperty={setSelectedPropertyId}
         onLogout={onLogout}
+        onOpenProfile={onOpenProfile}
       />
 
       {/* Main Layout: Sidebar + Canvas */}

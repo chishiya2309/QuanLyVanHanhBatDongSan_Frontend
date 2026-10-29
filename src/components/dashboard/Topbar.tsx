@@ -1,11 +1,14 @@
 import React from 'react';
 import type { UserProfile } from '../../types/dashboard';
+import { ProfileAvatar } from '../profile/ProfileAvatar';
+import { profileRoleLabels } from '../../utils/profilePresentation';
 
 interface TopbarProps {
   user: UserProfile;
   selectedPropertyId: string;
   onSelectProperty: (propertyId: string) => void;
   onLogout: () => void;
+  onOpenProfile: () => void;
 }
 
 export const Topbar: React.FC<TopbarProps> = ({
@@ -13,13 +16,8 @@ export const Topbar: React.FC<TopbarProps> = ({
   selectedPropertyId,
   onSelectProperty,
   onLogout,
+  onOpenProfile,
 }) => {
-  const userInitials = user.fullName
-    .split(' ')
-    .slice(-2)
-    .map((n) => n[0])
-    .join('')
-    .toUpperCase();
 
   return (
     <header className="dash-topbar" role="banner">
@@ -77,17 +75,16 @@ export const Topbar: React.FC<TopbarProps> = ({
         </button>
 
         {/* User Identity */}
-        <div className="user-profile-badge">
-          <div className="user-avatar" aria-hidden="true">
-            {userInitials}
-          </div>
-          <div className="user-info">
+        <button type="button" className="user-profile-badge" onClick={onOpenProfile}
+          title="Xem hồ sơ cá nhân" aria-label={`Xem hồ sơ cá nhân của ${user.fullName}`} aria-haspopup="dialog">
+          {user.role !== 'CUSTOMER' && <ProfileAvatar name={user.fullName} src={user.avatarUrl} small />}
+          <span className="user-info">
             <span className="user-name">{user.fullName}</span>
             <span className="user-role-tag">
-              {user.role === 'LANDLORD' ? 'Chủ cơ sở' : 'Ban quản lý'}
+              {profileRoleLabels[user.role]}
             </span>
-          </div>
-        </div>
+          </span>
+        </button>
 
         {/* Quick Logout Action */}
         <button
