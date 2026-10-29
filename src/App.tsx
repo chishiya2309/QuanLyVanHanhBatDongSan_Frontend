@@ -1,9 +1,11 @@
 import { useState, type FormEvent } from 'react';
 import { NarrativePanel } from './components/auth/NarrativePanel';
 import { RegisterHostPage } from './components/auth/RegisterHostPage';
+import { DashboardShell } from './components/dashboard/DashboardShell';
+import { mockCurrentUser } from './mocks/dashboardMockData';
 
 export default function App() {
-  const [view, setView] = useState<'login' | 'register'>('login');
+  const [view, setView] = useState<'login' | 'register' | 'dashboard'>('login');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
   const [identifier, setIdentifier] = useState('');
@@ -19,9 +21,22 @@ export default function App() {
       setSubmitState('success');
       setTimeout(() => {
         setSubmitState('idle');
-      }, 1500);
-    }, 1000);
+        setView('dashboard');
+      }, 700);
+    }, 800);
   };
+
+  if (view === 'dashboard') {
+    return (
+      <DashboardShell
+        user={mockCurrentUser}
+        onLogout={() => {
+          setView('login');
+          setSubmitState('idle');
+        }}
+      />
+    );
+  }
 
   if (view === 'register') {
     return (
@@ -41,7 +56,6 @@ export default function App() {
         
         {/* LEFT PANEL: Reusable Brand Narrative */}
         <NarrativePanel />
-
 
         {/* RIGHT PANEL: Authentication Form */}
         <section className="form-panel" aria-label="Khu vực đăng nhập">
@@ -159,7 +173,7 @@ export default function App() {
                         <line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line>
                         <line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line>
                       </svg>
-                      <span>Đang xác thực...</span>
+                      <span>Đang xác thực…</span>
                     </>
                   )}
                   {submitState === 'success' && (
@@ -168,7 +182,7 @@ export default function App() {
                         <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
                         <polyline points="22 4 12 14.01 9 11.01"></polyline>
                       </svg>
-                      <span>Đăng nhập thành công!</span>
+                      <span>Đăng nhập thành công! Đang chuyển hướng…</span>
                     </>
                   )}
                   {submitState === 'idle' && (
@@ -190,7 +204,20 @@ export default function App() {
             </div>
 
             {/* Google SSO Button */}
-            <button type="button" className="sso-google-btn">
+            <button
+              type="button"
+              className="sso-google-btn"
+              onClick={() => {
+                setSubmitState('loading');
+                setTimeout(() => {
+                  setSubmitState('success');
+                  setTimeout(() => {
+                    setSubmitState('idle');
+                    setView('dashboard');
+                  }, 600);
+                }, 600);
+              }}
+            >
               <svg className="google-icon" viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M12 5c1.6 0 3 .6 4.1 1.6l3.1-3.1C17.3 1.7 14.8 1 12 1 7.5 1 3.7 3.6 1.9 7.4l3.7 2.9C6.5 7.4 9 5 12 5z" fill="#EA4335"></path>
                 <path d="M23.5 12.3c0-.8-.1-1.7-.2-2.3H12v4.6h6.5c-.3 1.5-1.1 2.8-2.4 3.7l3.7 2.9c2.2-2 3.7-5 3.7-8.9z" fill="#4285F4"></path>

@@ -20,6 +20,16 @@
   --color-cotton: oklch(99.4% 0.003 60); --color-desk: oklch(94.3% 0.008 64); --color-print: oklch(23% 0.012 38);
   --color-board: oklch(22% 0.011 40); --color-board-type: oklch(96.5% 0.006 70); --color-paid: oklch(55.5% 0.15 33);
   --color-white: oklch(99.6% 0.002 60);
+  --color-surface: var(--color-cotton);
+  --color-surface-hover: var(--color-paper-2);
+  --color-status-vacant-bg: oklch(95% 0.005 55);
+  --color-status-vacant-ink: oklch(35% 0.01 55);
+  --color-status-overdue-bg: oklch(95% 0.035 27);
+  --color-status-overdue-ink: oklch(52% 0.19 27);
+  --color-status-maint-bg: oklch(96% 0.04 85);
+  --color-status-maint-ink: oklch(48% 0.14 75);
+  --color-status-expiring-bg: oklch(95% 0.03 230);
+  --color-status-expiring-ink: oklch(45% 0.12 230);
   --font-display: "Plus Jakarta Sans", system-ui, sans-serif; --font-body: "Inter", system-ui, sans-serif;
   --font-outlier: "JetBrains Mono", ui-monospace, monospace;
   --radius-card: 12px; --radius-subcard: 8px; --radius-input: 8px; --radius-pill: 999px; --radius-stock: 8px; --rule-hair: 1px;

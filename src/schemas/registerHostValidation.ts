@@ -1,7 +1,7 @@
 import type { FormFieldErrors, RegisterHostFormData } from '../types/auth';
 
 const EMAIL_REGEX = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)+$/;
-const E164_PHONE_REGEX = /^\+[1-9]\d{1,14}$/;
+const PHONE_REGEX = /^(?:\+[1-9]\d{1,14}|0[35789]\d{8})$/;
 
 export function validateRegisterHost(data: RegisterHostFormData): {
   isValid: boolean;
@@ -23,7 +23,7 @@ export function validateRegisterHost(data: RegisterHostFormData): {
 
   if (!data.phoneNumber || data.phoneNumber.trim() === '') {
     errors.phoneNumber = 'Vui lòng nhập số điện thoại';
-  } else if (!E164_PHONE_REGEX.test(data.phoneNumber.trim())) {
+  } else if (!PHONE_REGEX.test(data.phoneNumber.trim())) {
     // 3. Kiểm tra định dạng số điện thoại E.164 (Luồng 3c-5c)
     errors.phoneNumber = 'Số điện thoại không hợp lệ';
   }

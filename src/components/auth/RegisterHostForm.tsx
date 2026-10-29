@@ -30,6 +30,13 @@ export const RegisterHostForm: FC<RegisterHostFormProps> = ({
     }
   });
 
+  const submitLabel =
+    status === 'loading'
+      ? 'Đang xử lý…'
+      : status === 'success'
+      ? 'Đăng ký thành công!'
+      : 'Đăng ký tài khoản Host';
+
   return (
     <div className="form-inner form-inner-wide">
       <div className="form-heading-group">
@@ -154,7 +161,7 @@ export const RegisterHostForm: FC<RegisterHostFormProps> = ({
                 name="phoneNumber"
                 type="tel"
                 autoComplete="tel"
-                placeholder="+84901234567"
+                placeholder="0901234567 hoặc +84..."
                 className="text-input"
                 value={formData.phoneNumber}
                 onChange={handleChange}
@@ -164,7 +171,7 @@ export const RegisterHostForm: FC<RegisterHostFormProps> = ({
               />
             </div>
             <span className="field-helper-text" id="phoneNumber-helper">
-              Định dạng quốc tế E.164 (+84...)
+              Hỗ trợ 09… hoặc quốc tế (+84…)
             </span>
             {fieldErrors.phoneNumber && (
               <p className="field-error-message" id="phoneNumber-error" role="alert">
@@ -296,6 +303,7 @@ export const RegisterHostForm: FC<RegisterHostFormProps> = ({
           <button
             type="submit"
             className={`submit-btn ${status === 'success' ? 'is-success' : ''}`}
+
             disabled={status === 'loading'}
             id="registerSubmitBtn"
           >
@@ -311,7 +319,7 @@ export const RegisterHostForm: FC<RegisterHostFormProps> = ({
                   <line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line>
                   <line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line>
                 </svg>
-                <span>Đang xử lý đăng ký…</span>
+
               </>
             )}
             {status === 'success' && (
@@ -320,12 +328,13 @@ export const RegisterHostForm: FC<RegisterHostFormProps> = ({
                   <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
                   <polyline points="22 4 12 14.01 9 11.01"></polyline>
                 </svg>
-                <span>Đăng ký thành công!</span>
+
               </>
             )}
+            <span>{submitLabel}</span>
             {status !== 'loading' && status !== 'success' && (
               <>
-                <span>Đăng ký tài khoản Host</span>
+
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                   <line x1="5" y1="12" x2="19" y2="12"></line>
                   <polyline points="12 5 19 12 12 19"></polyline>
