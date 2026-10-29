@@ -1,3 +1,47 @@
+export type AccountRole = 'ADMIN' | 'HOST' | 'CUSTOMER';
+
+export interface AuthenticatedUserResponse {
+  accountId: string;
+  loginName: string;
+  role: AccountRole;
+  hostId: string | null;
+  customerId: string | null;
+}
+
+export interface LoginRequest {
+  loginName: string;
+  password: string;
+}
+
+export interface CsrfResponse {
+  status: number;
+  message: string;
+  data: {
+    token: string;
+    headerName: string;
+  };
+}
+
+export interface LoginFormData {
+  loginName: string;
+  password: string;
+  rememberMe: boolean;
+}
+
+export interface GoogleLinkFormData {
+  loginName: string;
+  password: string;
+}
+
+export type LoginFieldErrors = Partial<Record<'loginName' | 'password', string>>;
+
+export type GoogleOAuthStatus =
+  | 'success'
+  | 'link_required'
+  | 'cancelled'
+  | 'account_locked'
+  | 'error';
+
 export interface RegisterHostRequest {
   fullName: string;
   email: string;
