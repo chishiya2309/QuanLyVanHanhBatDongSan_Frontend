@@ -2,6 +2,8 @@ import type { ChangeEvent, FC } from 'react';
 import { useLogin } from '../../hooks/useLogin';
 import { initiateGoogleLogin } from '../../services/authApi';
 import type { AuthenticatedUserResponse } from '../../types/auth';
+import type { AuthNotice } from '../../types/changePassword';
+import './changePassword.css';
 
 interface LoginFormProps {
   onNavigateToRegister: () => void;
@@ -10,6 +12,8 @@ interface LoginFormProps {
   googleError?: string | null;
   sessionError?: string | null;
   onDismissSessionError?: () => void;
+  authNotice?: AuthNotice | null;
+  onDismissAuthNotice?: () => void;
 }
 
 export const LoginForm: FC<LoginFormProps> = ({
@@ -19,6 +23,8 @@ export const LoginForm: FC<LoginFormProps> = ({
   googleError,
   sessionError,
   onDismissSessionError,
+  authNotice,
+  onDismissAuthNotice,
 }) => {
   const {
     formData,
@@ -35,6 +41,7 @@ export const LoginForm: FC<LoginFormProps> = ({
   const displayError = generalError || sessionError || googleError;
   const handleFormChange = (event: ChangeEvent<HTMLInputElement>) => {
     onDismissSessionError?.();
+    onDismissAuthNotice?.();
     handleChange(event);
   };
 
@@ -46,6 +53,14 @@ export const LoginForm: FC<LoginFormProps> = ({
           Chào mừng bạn quay trở lại! Vui lòng nhập thông tin để truy cập.
         </p>
       </div>
+
+      {authNotice && <div className={`alert-banner auth-notice ${authNotice.kind === 'success' ? 'alert-success' : 'alert-error'}`}
+        role={authNotice.kind === 'success' ? 'status' : 'alert'}>
+        <span>{authNotice.message}</span>
+        <button type="button" className="auth-notice-close" aria-label="Đóng thông báo" onClick={onDismissAuthNotice}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true"><path d="m6 6 12 12M6 18 18 6" /></svg>
+        </button>
+      </div>}
 
       {/* Alert Banner: Lỗi hệ thống hoặc lỗi Google */}
       {displayError && (
@@ -91,7 +106,7 @@ export const LoginForm: FC<LoginFormProps> = ({
         </div>
       )}
 
-      <form className="auth-form" onSubmit={(event) => { onDismissSessionError?.(); void handleSubmit(event); }} noValidate>
+      <form className="auth-form" onSubmit={(event) => { onDismissSessionError?.(); onDismissAuthNotice?.(); void handleSubmit(event); }} noValidate>
         {/* Tên đăng nhập */}
         <div className={`form-field ${fieldErrors.loginName ? 'has-error' : ''}`}>
           <label className="field-label" htmlFor="loginName">
@@ -329,7 +344,7 @@ export const LoginForm: FC<LoginFormProps> = ({
       <button
         type="button"
         className="sso-google-btn"
-        onClick={initiateGoogleLogin}
+        onClick={() => { onDismissAuthNotice?.(); initiateGoogleLogin(); }}
         disabled={status === 'loading'}
       >
         <svg className="google-icon" viewBox="0 0 24 24" aria-hidden="true">

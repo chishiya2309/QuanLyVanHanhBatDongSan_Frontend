@@ -5,6 +5,7 @@ import type {
   RegisterHostRequest,
   RegisterHostResponse,
 } from '../types/auth';
+import { changePasswordFields, changePasswordMessages as m, type ChangePasswordRequest, type ChangePasswordResponse } from '../types/changePassword';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || '/api/v1';
 
@@ -53,6 +54,56 @@ export async function getCsrfToken(): Promise<{ token: string; headerName: strin
  */
 export function clearCsrfCache(): void {
   cachedCsrf = null;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+export async function changePassword(request: ChangePasswordRequest): Promise<ChangePasswordResponse> {
+  try {
+    const csrf = await getCsrfToken();
+    if (!csrf || typeof csrf.token !== 'string' || !csrf.token || typeof csrf.headerName !== 'string' || !csrf.headerName) {
+      throw new AuthApiError(0, m.failure);
+    }
+    const response = await fetch(`${API_BASE_URL}/auth/change-password`, {
+      method: 'POST', credentials: 'include', cache: 'no-store',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json', [csrf.headerName]: csrf.token },
+      body: JSON.stringify({
+        currentPassword: request.currentPassword,
+        newPassword: request.newPassword,
+        confirmPassword: request.confirmPassword,
+      }),
+    });
+    const body: unknown = await response.json().catch(() => null);
+    if (!response.ok) {
+      const fields: Record<string, string> = {};
+      if (response.status === 400 && isRecord(body) && isRecord(body.fieldErrors)) {
+        for (const field of changePasswordFields) {
+          const message = body.fieldErrors[field];
+          if (typeof message === 'string' && message.trim()) fields[field] = message;
+        }
+      }
+      const serverMessage = isRecord(body) && typeof body.message === 'string' && body.message.trim() ? body.message : null;
+      const message = response.status === 401 ? m.sessionInvalid
+        : response.status === 400 ? serverMessage || m.invalidData
+        : response.status === 403 ? serverMessage || m.failure : m.failure;
+      throw new AuthApiError(response.status, message, fields);
+    }
+    if (response.status !== 200 || !isRecord(body) || body.status !== 200 || body.data !== null || body.message !== m.success) {
+      throw new AuthApiError(response.status, m.failure);
+    }
+    clearCsrfCache();
+    return { status: 200, message: body.message, data: null };
+  } catch (error) {
+    if (error instanceof AuthApiError) {
+      if (error.status === 401 || (error.status === 403 && error.message === m.csrfInvalid)) clearCsrfCache();
+      const message = error.status === 401 ? m.sessionInvalid
+        : error.status === 400 || error.status === 403 ? error.message : m.failure;
+      throw new AuthApiError(error.status, message, error.fieldErrors);
+    }
+    throw new AuthApiError(0, m.failure);
+  }
 }
 
 /**

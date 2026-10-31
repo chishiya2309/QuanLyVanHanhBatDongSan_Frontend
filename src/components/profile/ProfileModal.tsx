@@ -10,6 +10,8 @@ interface ProfileModalProps {
   isOpen: boolean;
   controller: ProfileController;
   onClose: () => void;
+  onOpenChangePassword?: () => void;
+  focusChangePassword?: boolean;
 }
 
 function Icon({ name }: { name: 'close' | 'lock' | 'edit' | 'upload' | 'alert' | 'check' }) {
@@ -48,7 +50,7 @@ function EditField({ field, label, value, required, type = 'text', autoComplete,
   </div>;
 }
 
-export function ProfileModal({ isOpen, controller: c, onClose }: ProfileModalProps) {
+export function ProfileModal({ isOpen, controller: c, onClose, onOpenChangePassword, focusChangePassword = false }: ProfileModalProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const titleRef = useRef<HTMLHeadingElement>(null);
   const continueRef = useRef<HTMLButtonElement>(null);
@@ -66,13 +68,13 @@ export function ProfileModal({ isOpen, controller: c, onClose }: ProfileModalPro
     const previousOverflow = document.body.style.overflowY;
     document.body.style.overflowY = 'hidden';
     dialog.showModal();
-    dialog.querySelector<HTMLButtonElement>('.profile-icon-button')?.focus();
+    dialog.querySelector<HTMLButtonElement>(focusChangePassword ? '#profile-change-password' : '.profile-icon-button')?.focus();
     return () => {
       dialog.close();
       document.body.style.overflowY = previousOverflow;
       if (trigger?.isConnected) trigger.focus();
     };
-  }, [isOpen]);
+  }, [isOpen, focusChangePassword]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -212,6 +214,7 @@ export function ProfileModal({ isOpen, controller: c, onClose }: ProfileModalPro
           </>}
         </div>
         <footer className="profile-footer">
+          {showContent && !c.isEditing && onOpenChangePassword && <button id="profile-change-password" type="button" className="profile-button profile-button--secondary" onClick={onOpenChangePassword}><Icon name="lock" />Đổi mật khẩu</button>}
           {c.loadFailed ? <button type="button" className="profile-button profile-button--primary" onClick={() => void c.fetchProfile()}>Thử lại</button>
             : showContent && (c.isEditing ? <>
               <button type="button" className="profile-button profile-button--secondary" onClick={c.cancelEditing} disabled={isSaving}>Hủy bỏ</button>

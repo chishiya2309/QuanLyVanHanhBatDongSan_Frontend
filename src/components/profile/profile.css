@@ -94,3 +94,4 @@
 @media (prefers-reduced-motion: reduce) {
   .profile-spinner { animation: none; }
 }
+.profile-footer { flex-wrap: wrap; }
