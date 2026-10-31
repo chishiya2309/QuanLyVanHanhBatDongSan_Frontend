@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:browser": "node tests/browser/profile-browser.mjs"
+    "test:browser": "node tests/browser/profile-browser.mjs",
+    "test:browser:password": "node tests/browser/change-password-browser.mjs"
   },
   "dependencies": {
     "react": "^19.3.1",

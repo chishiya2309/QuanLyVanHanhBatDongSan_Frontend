@@ -1,6 +1,7 @@
 import type { FC } from 'react';
 import { useGoogleAuthCallback } from '../../hooks/useGoogleAuthCallback';
 import type { AuthenticatedUserResponse } from '../../types/auth';
+import type { AuthNotice } from '../../types/changePassword';
 import { GoogleLinkConfirmModal } from './GoogleLinkConfirmModal';
 import { LoginForm } from './LoginForm';
 import { NarrativePanel } from './NarrativePanel';
@@ -11,6 +12,8 @@ interface LoginPageProps {
   initialLoginName?: string;
   sessionError?: string | null;
   onDismissSessionError?: () => void;
+  authNotice?: AuthNotice | null;
+  onDismissAuthNotice?: () => void;
 }
 
 export const LoginPage: FC<LoginPageProps> = ({
@@ -19,6 +22,8 @@ export const LoginPage: FC<LoginPageProps> = ({
   initialLoginName = '',
   sessionError,
   onDismissSessionError,
+  authNotice,
+  onDismissAuthNotice,
 }) => {
   const {
     isLinkModalOpen,
@@ -49,6 +54,8 @@ export const LoginPage: FC<LoginPageProps> = ({
             googleError={googleError}
             sessionError={sessionError}
             onDismissSessionError={onDismissSessionError}
+            authNotice={authNotice}
+            onDismissAuthNotice={onDismissAuthNotice}
           />
         </section>
       </div>

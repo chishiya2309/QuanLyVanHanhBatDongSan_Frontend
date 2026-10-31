@@ -1,20 +1,24 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { LoginPage } from './components/auth/LoginPage';
 import { RegisterHostPage } from './components/auth/RegisterHostPage';
 import { DashboardShell } from './components/dashboard/DashboardShell';
 import { ProfileModal } from './components/profile/ProfileModal';
+import { ChangePasswordModal } from './components/auth/ChangePasswordModal';
 import { useProfile } from './hooks/useProfile';
 import { mockCurrentUser } from './mocks/dashboardMockData';
-import { getCurrentUser, logout } from './services/authApi';
+import { clearCsrfCache, getCurrentUser, logout } from './services/authApi';
+import type { AuthNotice } from './types/changePassword';
 import type { AuthenticatedUserResponse } from './types/auth';
 import type { UserProfile } from './types/dashboard';
 import { profileMessages } from './types/profile';
 
-function AuthenticatedDashboard({ user, onLogout, onSessionExpired }: {
+function AuthenticatedDashboard({ user, onLogout, onSessionExpired, onAuthenticationEnded }: {
   user: AuthenticatedUserResponse; onLogout: () => void; onSessionExpired: () => void;
+  onAuthenticationEnded: (notice: AuthNotice) => void;
 }) {
   const profileController = useProfile(onSessionExpired);
-  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [accountModal, setAccountModal] = useState<'profile' | 'password' | null>(null);
+  const [focusChangePassword, setFocusChangePassword] = useState(false);
   const profile = profileController.profile;
   const activeUserProfile: UserProfile = {
     id: user.accountId,
@@ -27,10 +31,16 @@ function AuthenticatedDashboard({ user, onLogout, onSessionExpired }: {
   };
   return <>
     <DashboardShell user={activeUserProfile} onLogout={onLogout} onOpenProfile={() => {
-      setIsProfileOpen(true);
+      setFocusChangePassword(false);
+      setAccountModal('profile');
       void profileController.fetchProfile();
     }} />
-    <ProfileModal isOpen={isProfileOpen} controller={profileController} onClose={() => setIsProfileOpen(false)} />
+    <ProfileModal isOpen={accountModal === 'profile'} controller={profileController} onClose={() => setAccountModal(null)}
+      focusChangePassword={focusChangePassword} onOpenChangePassword={() => setAccountModal('password')} />
+    {accountModal === 'password' && <ChangePasswordModal onAuthenticationEnded={onAuthenticationEnded} onClose={() => {
+      setFocusChangePassword(true);
+      setAccountModal('profile');
+    }} />}
   </>;
 }
 
@@ -38,11 +48,13 @@ export default function App() {
   const [view, setView] = useState<'login' | 'register' | 'dashboard'>('login');
   const [currentUser, setCurrentUser] = useState<AuthenticatedUserResponse | null>(null);
   const [prefilledIdentifier, setPrefilledIdentifier] = useState<string>('');
-  const [sessionError, setSessionError] = useState<string | null>(null);
+  const [authNotice, setAuthNotice] = useState<AuthNotice | null>(null);
+  const authGeneration = useRef(0);
 
   // Khi đăng nhập thành công: Nối tạm trực tiếp vào dashboard hiện có
   const handleAuthSuccess = useCallback((user: AuthenticatedUserResponse) => {
-    setSessionError(null);
+    authGeneration.current++;
+    setAuthNotice(null);
     setCurrentUser(user);
     setView('dashboard');
   }, []);
@@ -50,9 +62,10 @@ export default function App() {
   // Tự động kiểm tra phiên đăng nhập hiện tại từ cookie HttpOnly khi mở ứng dụng
   useEffect(() => {
     let cancelled = false;
+    const generation = authGeneration.current;
     getCurrentUser()
       .then((user) => {
-        if (!cancelled) handleAuthSuccess(user);
+        if (!cancelled && generation === authGeneration.current) handleAuthSuccess(user);
       })
       .catch(() => {
         // Chưa có phiên hoặc phiên hết hạn -> Giữ ở view login
@@ -60,16 +73,27 @@ export default function App() {
     return () => { cancelled = true; };
   }, [handleAuthSuccess]);
 
-  const handleLogout = useCallback(() => {
+  const resetAuthentication = useCallback((notice: AuthNotice | null = null) => {
+    authGeneration.current++;
+    clearCsrfCache();
     setCurrentUser(null);
     setView('login');
-    void logout().catch(() => undefined);
+    setAuthNotice(notice);
   }, []);
 
+  const handleLogout = useCallback(() => {
+    resetAuthentication();
+    void logout().catch(() => undefined);
+  }, [resetAuthentication]);
+
   const handleSessionExpired = useCallback(() => {
-    setSessionError(profileMessages.sessionInvalid);
-    handleLogout();
-  }, [handleLogout]);
+    resetAuthentication({ kind: 'error', message: profileMessages.sessionInvalid });
+  }, [resetAuthentication]);
+
+  const handleAuthenticationEnded = useCallback((notice: AuthNotice) => {
+    setPrefilledIdentifier(currentUser?.loginName || '');
+    resetAuthentication(notice);
+  }, [currentUser, resetAuthentication]);
 
   // 1. Màn hình Dashboard hiện có (Dùng chung tạm thời sau khi đăng nhập thành công)
   if (view === 'dashboard' && currentUser) {
@@ -79,6 +103,7 @@ export default function App() {
         user={currentUser}
         onLogout={handleLogout}
         onSessionExpired={handleSessionExpired}
+        onAuthenticationEnded={handleAuthenticationEnded}
       />
     );
   }
@@ -100,10 +125,10 @@ export default function App() {
   return (
     <LoginPage
       initialLoginName={prefilledIdentifier}
-      onNavigateToRegister={() => setView('register')}
+      onNavigateToRegister={() => { setAuthNotice(null); setView('register'); }}
       onLoginSuccess={handleAuthSuccess}
-      sessionError={sessionError}
-      onDismissSessionError={() => setSessionError(null)}
+      authNotice={authNotice}
+      onDismissAuthNotice={() => setAuthNotice(null)}
     />
   );
 }
