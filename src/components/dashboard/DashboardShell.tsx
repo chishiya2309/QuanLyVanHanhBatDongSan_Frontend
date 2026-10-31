@@ -19,9 +19,14 @@ interface DashboardShellProps {
   user: UserProfile;
   onLogout: () => void;
   onOpenProfile: () => void;
+  children?: React.ReactNode;
+  hostAccountsActive?: boolean;
+  showHostAccounts?: boolean;
+  onNavigateOverview?: () => void;
+  onNavigateHostAccounts?: () => void;
 }
 
-export const DashboardShell: React.FC<DashboardShellProps> = ({ user, onLogout, onOpenProfile }) => {
+export const DashboardShell: React.FC<DashboardShellProps> = ({ user, onLogout, onOpenProfile, children, hostAccountsActive = false, showHostAccounts = false, onNavigateOverview, onNavigateHostAccounts }) => {
   const [selectedPropertyId, setSelectedPropertyId] = useState<string>('prop_all');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
@@ -128,7 +133,7 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({ user, onLogout, 
   };
 
   return (
-    <div className="dashboard-root">
+    <div className={`dashboard-root${hostAccountsActive ? ' dashboard-root--admin' : ''}`}>
       {/* Top Navigation */}
       <Topbar
         user={user}
@@ -136,13 +141,26 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({ user, onLogout, 
         onSelectProperty={setSelectedPropertyId}
         onLogout={onLogout}
         onOpenProfile={onOpenProfile}
+        showPropertySwitcher={!hostAccountsActive}
+        showNotifications={!hostAccountsActive}
+        onNavigateOverview={onNavigateOverview}
       />
 
       {/* Main Layout: Sidebar + Canvas */}
       <div className="dashboard-layout">
-        <Sidebar />
+        <Sidebar showHostAccounts={showHostAccounts} hostAccountsActive={hostAccountsActive}
+          onNavigateOverview={onNavigateOverview} onNavigateHostAccounts={onNavigateHostAccounts} />
 
         <main className="dash-canvas" id="main-content">
+          {showHostAccounts && <nav className="host-mobile-nav" aria-label="Điều hướng quản trị">
+            <a href="/" aria-current={!hostAccountsActive ? 'page' : undefined} onClick={(event) => {
+              if (event.button === 0 && !event.ctrlKey && !event.metaKey && !event.shiftKey && !event.altKey) { event.preventDefault(); onNavigateOverview?.(); }
+            }}>Tổng quan</a>
+            <a href="/admin/host-accounts" aria-current={hostAccountsActive ? 'page' : undefined} onClick={(event) => {
+              if (event.button === 0 && !event.ctrlKey && !event.metaKey && !event.shiftKey && !event.altKey) { event.preventDefault(); onNavigateHostAccounts?.(); }
+            }}>Tài khoản Host</a>
+          </nav>}
+          {children || <>
           {/* Toast Notification */}
           {toastMessage && (
             <div className="dash-toast" role="status">
@@ -184,6 +202,7 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({ user, onLogout, 
 
           {/* Property Status Table */}
           <PropertyStatusTable rooms={currentRooms} />
+          </>}
         </main>
       </div>
     </div>
