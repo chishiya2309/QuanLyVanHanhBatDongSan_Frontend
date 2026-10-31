@@ -14,6 +14,7 @@ interface LoginPageProps {
   onDismissSessionError?: () => void;
   authNotice?: AuthNotice | null;
   onDismissAuthNotice?: () => void;
+  onForgotPassword?: () => void;
 }
 
 export const LoginPage: FC<LoginPageProps> = ({
@@ -24,6 +25,7 @@ export const LoginPage: FC<LoginPageProps> = ({
   onDismissSessionError,
   authNotice,
   onDismissAuthNotice,
+  onForgotPassword,
 }) => {
   const {
     isLinkModalOpen,
@@ -56,6 +58,7 @@ export const LoginPage: FC<LoginPageProps> = ({
             onDismissSessionError={onDismissSessionError}
             authNotice={authNotice}
             onDismissAuthNotice={onDismissAuthNotice}
+            onForgotPassword={onForgotPassword}
           />
         </section>
       </div>

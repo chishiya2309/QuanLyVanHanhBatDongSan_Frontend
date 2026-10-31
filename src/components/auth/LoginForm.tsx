@@ -14,6 +14,7 @@ interface LoginFormProps {
   onDismissSessionError?: () => void;
   authNotice?: AuthNotice | null;
   onDismissAuthNotice?: () => void;
+  onForgotPassword?: () => void;
 }
 
 export const LoginForm: FC<LoginFormProps> = ({
@@ -25,6 +26,7 @@ export const LoginForm: FC<LoginFormProps> = ({
   onDismissSessionError,
   authNotice,
   onDismissAuthNotice,
+  onForgotPassword,
 }) => {
   const {
     formData,
@@ -254,7 +256,9 @@ export const LoginForm: FC<LoginFormProps> = ({
             />
             <span>Ghi nhớ đăng nhập</span>
           </label>
-          <a href="#forgot" className="forgot-link" onClick={(e) => e.preventDefault()}>
+          <a href="/forgot-password" className="forgot-link" onClick={(event) => {
+            if (onForgotPassword) { event.preventDefault(); onDismissAuthNotice?.(); onForgotPassword(); }
+          }}>
             Quên mật khẩu?
           </a>
         </div>
