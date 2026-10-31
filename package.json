@@ -12,7 +12,8 @@
     "test:watch": "vitest",
     "test:browser": "node tests/browser/profile-browser.mjs",
     "test:browser:password": "node tests/browser/change-password-browser.mjs",
-    "test:browser:recovery": "node tests/browser/recovery-browser.mjs"
+    "test:browser:recovery": "node tests/browser/recovery-browser.mjs",
+    "test:browser:hosts": "node tests/browser/host-accounts-browser.mjs"
   },
   "dependencies": {
     "react": "^19.3.1",

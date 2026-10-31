@@ -1,12 +1,16 @@
 import React from 'react';
 
-export const Sidebar: React.FC = () => {
+interface SidebarProps {
+  showHostAccounts?: boolean; hostAccountsActive?: boolean;
+  onNavigateOverview?: () => void; onNavigateHostAccounts?: () => void;
+}
+export const Sidebar: React.FC<SidebarProps> = ({ showHostAccounts = false, hostAccountsActive = false, onNavigateOverview, onNavigateHostAccounts }) => {
   return (
     <aside className="dash-sidebar" aria-label="Thanh điều hướng chính">
       <div className="dash-nav-group">
         <span className="dash-nav-header">Vận hành</span>
 
-        <button type="button" className="dash-nav-item is-active" aria-current="page">
+        <button type="button" className={`dash-nav-item${!hostAccountsActive ? ' is-active' : ''}`} aria-current={!hostAccountsActive ? 'page' : undefined} onClick={onNavigateOverview}>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <rect x="3" y="3" width="7" height="7"></rect>
             <rect x="14" y="3" width="7" height="7"></rect>
@@ -69,9 +73,16 @@ export const Sidebar: React.FC = () => {
           </svg>
           <span>Cấu hình hệ thống</span>
         </button>
+        {showHostAccounts && <>
+          <span className="dash-nav-header">Tài khoản</span>
+          <button type="button" className={`dash-nav-item${hostAccountsActive ? ' is-active' : ''}`} aria-current={hostAccountsActive ? 'page' : undefined} onClick={onNavigateHostAccounts}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2" /><circle cx="8" cy="10" r="2" /><path d="M5 17v-1a3 3 0 0 1 6 0v1m3-7h4m-4 4h4" /></svg>
+            <span>Tài khoản Host</span>
+          </button>
+        </>}
       </div>
 
-      <div className="dash-sidebar-footer">
+      {!hostAccountsActive && <div className="dash-sidebar-footer">
         <div className="system-status-box">
           <div>
             <span className="system-status-dot" aria-hidden="true" />
@@ -79,7 +90,7 @@ export const Sidebar: React.FC = () => {
           </div>
           <div style={{ marginTop: '2px' }}>Dữ liệu đồng bộ lúc 14:30</div>
         </div>
-      </div>
+      </div>}
     </aside>
   );
 };

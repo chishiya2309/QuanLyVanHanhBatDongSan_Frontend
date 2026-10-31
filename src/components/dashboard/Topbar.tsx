@@ -9,6 +9,9 @@ interface TopbarProps {
   onSelectProperty: (propertyId: string) => void;
   onLogout: () => void;
   onOpenProfile: () => void;
+  showPropertySwitcher?: boolean;
+  showNotifications?: boolean;
+  onNavigateOverview?: () => void;
 }
 
 export const Topbar: React.FC<TopbarProps> = ({
@@ -17,12 +20,17 @@ export const Topbar: React.FC<TopbarProps> = ({
   onSelectProperty,
   onLogout,
   onOpenProfile,
+  showPropertySwitcher = true,
+  showNotifications = true,
+  onNavigateOverview,
 }) => {
 
   return (
     <header className="dash-topbar" role="banner">
       <div className="dash-topbar-left">
-        <a href="#dashboard" className="dash-brand" aria-label="Trang chủ RentOps">
+        <a href="/" className="dash-brand" aria-label="Trang chủ RentOps" onClick={(event) => {
+          if (onNavigateOverview && event.button === 0 && !event.ctrlKey && !event.metaKey && !event.shiftKey && !event.altKey) { event.preventDefault(); onNavigateOverview(); }
+        }}>
           <span className="dash-brand-icon" aria-hidden="true">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
@@ -32,7 +40,7 @@ export const Topbar: React.FC<TopbarProps> = ({
           <span>RentOps</span>
         </a>
 
-        <div className="dash-divider-v" aria-hidden="true" />
+        {showPropertySwitcher && <><div className="dash-divider-v" aria-hidden="true" />
 
         {/* Facility / Property Switcher */}
         <div className="property-switcher-container" title="Chọn cơ sở quản lý">
@@ -56,12 +64,12 @@ export const Topbar: React.FC<TopbarProps> = ({
               <polyline points="6 9 12 15 18 9"></polyline>
             </svg>
           </span>
-        </div>
+        </div></>}
       </div>
 
       <div className="dash-topbar-right">
         {/* Notification Bell */}
-        <button
+        {showNotifications && <button
           type="button"
           className="notification-btn"
           aria-label="Thông báo hệ thống, 4 việc cần xử lý"
@@ -72,7 +80,7 @@ export const Topbar: React.FC<TopbarProps> = ({
             <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
           </svg>
           <span className="notification-badge">4</span>
-        </button>
+        </button>}
 
         {/* User Identity */}
         <button type="button" className="user-profile-badge" onClick={onOpenProfile}
