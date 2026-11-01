@@ -2,15 +2,16 @@ import React from 'react';
 
 interface SidebarProps {
   showHostAccounts?: boolean; hostAccountsActive?: boolean;
+  showAssets?: boolean; assetsActive?: boolean; onNavigateAssets?: () => void;
   onNavigateOverview?: () => void; onNavigateHostAccounts?: () => void;
 }
-export const Sidebar: React.FC<SidebarProps> = ({ showHostAccounts = false, hostAccountsActive = false, onNavigateOverview, onNavigateHostAccounts }) => {
+export const Sidebar: React.FC<SidebarProps> = ({ showHostAccounts = false, hostAccountsActive = false, showAssets = false, assetsActive = false, onNavigateAssets, onNavigateOverview, onNavigateHostAccounts }) => {
   return (
     <aside className="dash-sidebar" aria-label="Thanh điều hướng chính">
       <div className="dash-nav-group">
         <span className="dash-nav-header">Vận hành</span>
 
-        <button type="button" className={`dash-nav-item${!hostAccountsActive ? ' is-active' : ''}`} aria-current={!hostAccountsActive ? 'page' : undefined} onClick={onNavigateOverview}>
+        <button type="button" className={`dash-nav-item${!hostAccountsActive && !assetsActive ? ' is-active' : ''}`} aria-current={!hostAccountsActive && !assetsActive ? 'page' : undefined} onClick={onNavigateOverview}>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <rect x="3" y="3" width="7" height="7"></rect>
             <rect x="14" y="3" width="7" height="7"></rect>
@@ -20,6 +21,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ showHostAccounts = false, host
           <span>Tổng quan</span>
         </button>
 
+        {showAssets && <button type="button" className={`dash-nav-item${assetsActive ? ' is-active' : ''}`} aria-current={assetsActive ? 'page' : undefined} onClick={onNavigateAssets}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M8 5V3h8v2M3 11h18M10 11v4h4v-4" /></svg>
+          <span>Tài sản</span>
+        </button>}
         <button type="button" className="dash-nav-item">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
@@ -82,7 +87,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ showHostAccounts = false, host
         </>}
       </div>
 
-      {!hostAccountsActive && <div className="dash-sidebar-footer">
+      {!hostAccountsActive && !assetsActive && <div className="dash-sidebar-footer">
         <div className="system-status-box">
           <div>
             <span className="system-status-dot" aria-hidden="true" />

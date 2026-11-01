@@ -17,17 +17,24 @@ import { profileMessages } from './types/profile';
 import { HostAccountsPage, HostAccountsForbidden } from './components/admin/HostAccountsPage';
 import { parseHostAccountRoute } from './utils/hostAccountNavigation';
 import { HOST_ACCOUNTS_PATH, hostAccountMessages, type HostAccountRoute } from './types/hostAccounts';
+import { AssetsPage, AssetsForbidden } from './components/assets/AssetsPage';
+import { assetMessages, type AssetRoute } from './types/assets';
+import { assetRouteKey, parseAssetRoute } from './utils/assetNavigation';
 
-function AuthenticatedDashboard({ user, onLogout, onSessionExpired, onAuthenticationEnded, hostRoute, onNavigateHost, onOverview }: {
+function AuthenticatedDashboard({ user, onLogout, onSessionExpired, onAuthenticationEnded, hostRoute, onNavigateHost, assetRoute, onNavigateAssets, onCreatePendingChange, onOverview }: {
   user: AuthenticatedUserResponse; onLogout: () => void; onSessionExpired: () => void;
   onAuthenticationEnded: (notice: AuthNotice) => void;
   hostRoute: HostAccountRoute | null; onNavigateHost: (id: string | null) => void; onOverview: () => void;
+  assetRoute: AssetRoute | null; onNavigateAssets: (url: string, replace?: boolean) => void;
+  onCreatePendingChange: (pending: boolean) => void;
 }) {
   const profileController = useProfile(onSessionExpired);
   const [accountModal, setAccountModal] = useState<'profile' | 'password' | null>(null);
   const [focusChangePassword, setFocusChangePassword] = useState(false);
   const [adminDenied, setAdminDenied] = useState(false);
+  const [assetsDenied, setAssetsDenied] = useState(false);
   const denyAdmin = useCallback(() => { setAccountModal(null); setAdminDenied(true); }, []);
+  const denyAssets = useCallback(() => { setAccountModal(null); setAssetsDenied(true); }, []);
   const profile = profileController.profile;
   const activeUserProfile: UserProfile = {
     id: user.accountId,
@@ -44,8 +51,11 @@ function AuthenticatedDashboard({ user, onLogout, onSessionExpired, onAuthentica
       setAccountModal('profile');
       void profileController.fetchProfile();
     }} hostAccountsActive={hostRoute !== null} showHostAccounts={user.role === 'ADMIN' && !adminDenied}
+      assetsActive={assetRoute !== null} showAssets={user.role === 'HOST' && !assetsDenied} onNavigateAssets={() => onNavigateAssets('/assets')}
       onNavigateOverview={onOverview} onNavigateHostAccounts={() => onNavigateHost(null)}>
-      {hostRoute && (user.role !== 'ADMIN' || adminDenied
+      {assetRoute ? (user.role !== 'HOST' || assetsDenied ? <AssetsForbidden onOverview={onOverview} /> :
+        <AssetsPage route={assetRoute} onNavigate={onNavigateAssets} onCreatePendingChange={onCreatePendingChange}
+          onSessionExpired={() => onAuthenticationEnded({ kind: 'error', message: assetMessages.sessionInvalid })} onForbidden={denyAssets} />) : hostRoute && (user.role !== 'ADMIN' || adminDenied
         ? <HostAccountsForbidden onOverview={onOverview} />
         : <HostAccountsPage accountId={hostRoute.accountId} onNavigate={onNavigateHost}
           onSessionExpired={() => onAuthenticationEnded({ kind: 'error', message: hostAccountMessages.sessionInvalid })} onForbidden={denyAdmin} />)}
@@ -68,7 +78,10 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
   const [prefilledIdentifier, setPrefilledIdentifier] = useState<string>('');
   const [authNotice, setAuthNotice] = useState<AuthNotice | null>(null);
   const authGeneration = useRef(0);
+  const pendingCreateUrl = useRef<string | null>(null);
+  const handleCreatePendingChange = useCallback((pending: boolean) => { pendingCreateUrl.current = pending ? window.location.pathname + window.location.search : null; }, []);
   const [hostRoute, setHostRoute] = useState<HostAccountRoute | null>(() => parseHostAccountRoute(window.location.pathname));
+  const [assetRoute, setAssetRoute] = useState<AssetRoute | null>(() => parseAssetRoute(window.location.pathname, window.location.search));
   const [authCheck, setAuthCheck] = useState<'checking' | 'ready' | 'error'>('checking');
   const [authRetry, setAuthRetry] = useState(0);
 
@@ -93,13 +106,14 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
       })
       .catch((error: unknown) => {
         if (cancelled || generation !== authGeneration.current) return;
-        if (parseHostAccountRoute(window.location.pathname) && (!(error instanceof AuthApiError) || error.status !== 401)) {
+        const assets = parseAssetRoute(window.location.pathname, window.location.search);
+        if ((parseHostAccountRoute(window.location.pathname) || assets) && (!(error instanceof AuthApiError) || error.status !== 401)) {
           setAuthCheck('error'); return;
         }
         setAuthCheck('ready');
-        if (parseHostAccountRoute(window.location.pathname)) {
-          window.history.replaceState(null, '', '/'); setHostRoute(null);
-          setAuthNotice({ kind: 'error', message: hostAccountMessages.sessionInvalid });
+        if (parseHostAccountRoute(window.location.pathname) || assets) {
+          window.history.replaceState(null, '', '/'); setHostRoute(null); setAssetRoute(null);
+          setAuthNotice({ kind: 'error', message: assets ? assetMessages.sessionInvalid : hostAccountMessages.sessionInvalid });
         }
       });
     return () => { cancelled = true; };
@@ -108,16 +122,18 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
   useEffect(() => {
     initialRecovery?.release();
     const onPopState = () => {
+      if (pendingCreateUrl.current) { window.history.pushState(null, '', pendingCreateUrl.current); return; }
       const next = captureRecoveryEntry();
       const wasRecovery = recoveryRoute.current !== null;
       recoveryRoute.current = next.path;
       setHostRoute(parseHostAccountRoute(window.location.pathname));
+      setAssetRoute(parseAssetRoute(window.location.pathname, window.location.search));
       // Private navigation preserves the authenticated user and pending session check.
       if (!next.path && !wasRecovery) return;
       authGeneration.current++;
       setRecovery(next); setRecoveryVisit((n) => n + 1);
       setCurrentUser(null); setView('login'); setAuthNotice(null);
-      if (!next.path && parseHostAccountRoute(window.location.pathname)) {
+      if (!next.path && (parseHostAccountRoute(window.location.pathname) || parseAssetRoute(window.location.pathname, window.location.search))) {
         setAuthCheck('checking'); setAuthRetry((n) => n + 1);
       } else setAuthCheck('ready');
     };
@@ -135,12 +151,13 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
 
   const resetAuthentication = useCallback((notice: AuthNotice | null = null) => {
     authGeneration.current++;
+    pendingCreateUrl.current = null;
     clearCsrfCache();
     setCurrentUser(null);
     setView('login');
     setAuthNotice(notice);
     setAuthCheck('ready');
-    if (parseHostAccountRoute(window.location.pathname)) { window.history.replaceState(null, '', '/'); setHostRoute(null); }
+    if (parseHostAccountRoute(window.location.pathname) || parseAssetRoute(window.location.pathname, window.location.search)) { window.history.replaceState(null, '', '/'); setHostRoute(null); setAssetRoute(null); }
   }, []);
 
   const handleLogout = useCallback(() => {
@@ -149,7 +166,7 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
   }, [resetAuthentication]);
 
   const handleSessionExpired = useCallback(() => {
-    resetAuthentication({ kind: 'error', message: profileMessages.sessionInvalid });
+    resetAuthentication({ kind: 'error', message: parseAssetRoute(window.location.pathname, window.location.search) ? assetMessages.sessionInvalid : profileMessages.sessionInvalid });
   }, [resetAuthentication]);
 
   const handleAuthenticationEnded = useCallback((notice: AuthNotice) => {
@@ -163,7 +180,7 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
     window.history.pushState(null, '', path || '/');
     setRecovery({ path, token: null }); setRecoveryVisit((n) => n + 1);
     setCurrentUser(null); setView('login'); setAuthNotice(null);
-    setHostRoute(null); setAuthCheck('ready');
+    setHostRoute(null); setAssetRoute(null); setAuthCheck('ready');
   };
   const finishRecovery = (notice: AuthNotice) => {
     recoveryRoute.current = null;
@@ -175,19 +192,36 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
     const path = HOST_ACCOUNTS_PATH + (id === null ? '' : '/' + encodeURIComponent(id));
     if (window.location.pathname !== path) window.history.pushState(null, '', path);
     setHostRoute({ accountId: id });
+    setAssetRoute(null);
   }, []);
   const navigateOverview = useCallback(() => {
     if (window.location.pathname !== '/') window.history.pushState(null, '', '/');
     setHostRoute(null);
+    setAssetRoute(null);
   }, []);
+  const navigateAssets = useCallback((url: string, replace = false) => {
+    const target = new URL(url, window.location.origin);
+    const next = parseAssetRoute(target.pathname, target.search);
+    if (!next || target.origin !== window.location.origin) return;
+    const canonical = assetRouteKey(next);
+    if (window.location.pathname + window.location.search !== canonical) {
+      if (replace) window.history.replaceState(null, '', canonical); else window.history.pushState(null, '', canonical);
+    }
+    setHostRoute(null); setAssetRoute(next);
+  }, []);
+  useEffect(() => {
+    if (!assetRoute) return;
+    const canonical = assetRouteKey(assetRoute);
+    if (window.location.pathname + window.location.search !== canonical) window.history.replaceState(null, '', canonical);
+  }, [assetRoute]);
 
   if (recovery.path === '/forgot-password') return <ForgotPasswordPage key={recoveryVisit} onLogin={() => navigateRecovery(null)} />;
   if (recovery.path === '/reset-password') return <ResetPasswordPage key={recoveryVisit} token={recovery.token}
     onLogin={() => navigateRecovery(null)} onNewRequest={() => navigateRecovery('/forgot-password')} onSuccess={finishRecovery} />;
 
-  if (hostRoute && authCheck !== 'ready') return <main className="host-boot">
-    <h1>Quản lý tài khoản Host</h1>
-    {authCheck === 'checking' ? <p role="status">Đang kiểm tra phiên đăng nhập</p> : <><p role="alert">{hostAccountMessages.listFailure}</p>
+  if ((hostRoute || assetRoute) && authCheck !== 'ready') return <main className="host-boot">
+    <h1>{assetRoute ? 'Quản lý tài sản' : 'Quản lý tài khoản Host'}</h1>
+    {authCheck === 'checking' ? <p role="status">Đang kiểm tra phiên đăng nhập</p> : <><p role="alert">{assetRoute ? assetMessages.listFailure : hostAccountMessages.listFailure}</p>
       <button type="button" className="host-button" onClick={() => { setAuthCheck('checking'); setAuthRetry((n) => n + 1); }}>Thử lại</button></>}
   </main>;
 
@@ -201,6 +235,9 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
         onSessionExpired={handleSessionExpired}
         onAuthenticationEnded={handleAuthenticationEnded}
         hostRoute={hostRoute}
+        assetRoute={assetRoute}
+        onNavigateAssets={navigateAssets}
+        onCreatePendingChange={handleCreatePendingChange}
         onNavigateHost={navigateHost}
         onOverview={navigateOverview}
       />
