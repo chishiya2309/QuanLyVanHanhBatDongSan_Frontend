@@ -13,9 +13,11 @@
     "test:browser": "node tests/browser/profile-browser.mjs",
     "test:browser:password": "node tests/browser/change-password-browser.mjs",
     "test:browser:recovery": "node tests/browser/recovery-browser.mjs",
-    "test:browser:hosts": "node tests/browser/host-accounts-browser.mjs"
+    "test:browser:hosts": "node tests/browser/host-accounts-browser.mjs",
+    "test:browser:assets": "node tests/browser/assets-browser.mjs"
   },
   "dependencies": {
+    "lossless-json": "^4.3.3",
     "react": "^19.3.1",
     "react-dom": "^19.3.1"
   },

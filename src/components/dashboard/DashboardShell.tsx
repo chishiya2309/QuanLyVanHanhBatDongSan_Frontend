@@ -22,11 +22,14 @@ interface DashboardShellProps {
   children?: React.ReactNode;
   hostAccountsActive?: boolean;
   showHostAccounts?: boolean;
+  assetsActive?: boolean;
+  showAssets?: boolean;
+  onNavigateAssets?: () => void;
   onNavigateOverview?: () => void;
   onNavigateHostAccounts?: () => void;
 }
 
-export const DashboardShell: React.FC<DashboardShellProps> = ({ user, onLogout, onOpenProfile, children, hostAccountsActive = false, showHostAccounts = false, onNavigateOverview, onNavigateHostAccounts }) => {
+export const DashboardShell: React.FC<DashboardShellProps> = ({ user, onLogout, onOpenProfile, children, hostAccountsActive = false, showHostAccounts = false, assetsActive = false, showAssets = false, onNavigateAssets, onNavigateOverview, onNavigateHostAccounts }) => {
   const [selectedPropertyId, setSelectedPropertyId] = useState<string>('prop_all');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
@@ -133,7 +136,7 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({ user, onLogout, 
   };
 
   return (
-    <div className={`dashboard-root${hostAccountsActive ? ' dashboard-root--admin' : ''}`}>
+    <div className={`dashboard-root${hostAccountsActive ? ' dashboard-root--admin' : ''}${assetsActive ? ' dashboard-root--assets' : ''}`}>
       {/* Top Navigation */}
       <Topbar
         user={user}
@@ -141,17 +144,26 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({ user, onLogout, 
         onSelectProperty={setSelectedPropertyId}
         onLogout={onLogout}
         onOpenProfile={onOpenProfile}
-        showPropertySwitcher={!hostAccountsActive}
-        showNotifications={!hostAccountsActive}
+        showPropertySwitcher={!hostAccountsActive && !assetsActive}
+        showNotifications={!hostAccountsActive && !assetsActive}
         onNavigateOverview={onNavigateOverview}
       />
 
       {/* Main Layout: Sidebar + Canvas */}
       <div className="dashboard-layout">
         <Sidebar showHostAccounts={showHostAccounts} hostAccountsActive={hostAccountsActive}
+          showAssets={showAssets} assetsActive={assetsActive} onNavigateAssets={onNavigateAssets}
           onNavigateOverview={onNavigateOverview} onNavigateHostAccounts={onNavigateHostAccounts} />
 
         <main className="dash-canvas" id="main-content">
+          {showAssets && <nav className="asset-mobile-nav" aria-label="Điều hướng Host">
+            <a href="/" aria-current={!assetsActive && !hostAccountsActive ? 'page' : undefined} onClick={(event) => {
+              if (event.button === 0 && !event.ctrlKey && !event.metaKey && !event.shiftKey && !event.altKey) { event.preventDefault(); onNavigateOverview?.(); }
+            }}>Tổng quan</a>
+            <a href="/assets" aria-current={assetsActive ? 'page' : undefined} onClick={(event) => {
+              if (event.button === 0 && !event.ctrlKey && !event.metaKey && !event.shiftKey && !event.altKey) { event.preventDefault(); onNavigateAssets?.(); }
+            }}>Tài sản</a>
+          </nav>}
           {showHostAccounts && <nav className="host-mobile-nav" aria-label="Điều hướng quản trị">
             <a href="/" aria-current={!hostAccountsActive ? 'page' : undefined} onClick={(event) => {
               if (event.button === 0 && !event.ctrlKey && !event.metaKey && !event.shiftKey && !event.altKey) { event.preventDefault(); onNavigateOverview?.(); }

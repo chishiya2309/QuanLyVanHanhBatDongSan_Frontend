@@ -31,6 +31,7 @@ export async function getCsrfToken(): Promise<{ token: string; headerName: strin
     const response = await fetch(`${API_BASE_URL}/auth/csrf`, {
       method: 'GET',
       credentials: 'include',
+      cache: 'no-store',
       headers: {
         'Accept': 'application/json',
       },
