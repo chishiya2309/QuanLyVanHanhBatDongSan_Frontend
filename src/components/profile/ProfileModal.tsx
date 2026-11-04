@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import type { ProfileController } from '../../hooks/useProfile';
 import type { ProfileEditableField, ProfileFormErrors } from '../../types/profile';
 import { profileBirthDate, profileIdentityType, profileRoleLabels } from '../../utils/profilePresentation';
+import { PHONE_NUMBER_HELP } from '../../utils/phoneNumber';
 import { ProfileAvatar } from './ProfileAvatar';
 import './profile.css';
 
@@ -45,7 +46,7 @@ function EditField({ field, label, value, required, type = 'text', autoComplete,
       value={value} onChange={(event) => onChange(field, event.target.value)} required={required}
       aria-required={required || undefined} aria-invalid={!!errors[field]} aria-describedby={`${id}-help`} disabled={disabled} />
     <p className={`profile-help${errors[field] ? ' profile-help--error' : ''}`} id={`${id}-help`}>
-      {errors[field] || (type === 'tel' ? 'Định dạng quốc tế, ví dụ +84901234567' : '')}
+      {errors[field] || (type === 'tel' ? PHONE_NUMBER_HELP : '')}
     </p>
   </div>;
 }

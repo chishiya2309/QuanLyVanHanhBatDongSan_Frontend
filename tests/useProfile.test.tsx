@@ -6,6 +6,24 @@ import { adminProfile, customerProfile, hostProfile } from './fixtures/profiles'
 import { deferred, failure, installApi, ok } from './apiMock';
 
 describe('profile state', () => {
+  it.each([adminProfile, hostProfile])('submits a domestic $role phone while preserving the draft until the server responds', async (profile) => {
+    const api = installApi(profile);
+    const expired = vi.fn();
+    const { result } = renderHook(() => useProfile(expired));
+    await waitFor(() => expect(result.current.profile).toEqual(profile));
+    act(() => result.current.startEditing());
+    act(() => result.current.handleFieldChange('phoneNumber', '0347983243'));
+    const gate = deferred<Response>();
+    api.patchProfile.mockReturnValueOnce(gate.promise);
+    let pending!: Promise<void>;
+    act(() => { pending = result.current.handleSubmit(); });
+    await waitFor(() => expect(api.patchProfile).toHaveBeenCalledTimes(1));
+    expect(JSON.parse(String(api.patchProfile.mock.calls[0][0].body)).phoneNumber).toBe('+84347983243');
+    expect(result.current.formData?.phoneNumber).toBe('0347983243');
+    await act(async () => { gate.resolve(ok({ ...profile, phoneNumber: '+84347983243' })); await pending; });
+    expect(result.current.profile?.phoneNumber).toBe('+84347983243');
+    expect(result.current.isEditing).toBe(false);
+  });
   it('keeps the draft after a failure, rejects double submission and updates from the server on retry', async () => {
     const api = installApi(adminProfile);
     const expired = vi.fn();

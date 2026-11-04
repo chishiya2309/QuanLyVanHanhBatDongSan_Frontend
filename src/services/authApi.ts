@@ -6,6 +6,7 @@ import type {
   RegisterHostResponse,
 } from '../types/auth';
 import { changePasswordFields, changePasswordMessages as m, type ChangePasswordRequest, type ChangePasswordResponse } from '../types/changePassword';
+import { normalizePhoneNumber } from '../utils/phoneNumber';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || '/api/v1';
 
@@ -310,7 +311,7 @@ export async function registerHost(
       body: JSON.stringify({
         fullName: request.fullName.trim(),
         email: request.email.trim().toLowerCase(),
-        phoneNumber: request.phoneNumber.trim(),
+        phoneNumber: normalizePhoneNumber(request.phoneNumber),
         password: request.password,
         confirmPassword: request.confirmPassword,
       }),
