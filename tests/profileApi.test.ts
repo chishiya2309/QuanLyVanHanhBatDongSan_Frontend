@@ -59,8 +59,9 @@ describe('profile API', () => {
   });
   it.each([[400, m.emailProtected], [401, m.sessionInvalid], [403, m.forbidden], [404, m.notFound], [409, m.phoneDuplicate], [500, m.saveFailure]] as const)('preserves status and messages for HTTP %i', async (status, message) => {
     const api = installApi(hostProfile);
+    if (status === 401) api.me.mockImplementation(async () => failure(401, 'expired'));
     api.patchProfile.mockResolvedValueOnce(failure(status, message, { phoneNumber: message }));
-    await expect(updateHostProfile({ ...hostProfile, removeLogo: false })).rejects.toMatchObject({ status, message, fieldErrors: { phoneNumber: message } });
+    await expect(updateHostProfile({ ...hostProfile, removeLogo: false })).rejects.toMatchObject({ status, message, fieldErrors: status === 401 ? {} : { phoneNumber: message } });
   });
   it('normalizes malformed responses, network errors and CSRF failures', async () => {
     const api = installApi(adminProfile);
@@ -69,6 +70,6 @@ describe('profile API', () => {
     api.patchProfile.mockRejectedValueOnce(new TypeError('offline'));
     await expect(updateAdminProfile(adminProfile)).rejects.toMatchObject({ status: 0, message: m.saveFailure });
     api.csrf.mockResolvedValueOnce(failure(401, 'expired'));
-    await expect(updateAdminProfile(adminProfile)).rejects.toMatchObject({ status: 401, message: m.sessionInvalid });
+    await expect(updateAdminProfile(adminProfile)).rejects.toMatchObject({ status: 503, message: m.saveFailure });
   });
 });

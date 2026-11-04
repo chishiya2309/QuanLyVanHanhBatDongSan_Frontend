@@ -2,7 +2,7 @@ import type { FC } from 'react';
 import { useGoogleAuthCallback } from '../../hooks/useGoogleAuthCallback';
 import type { AuthenticatedUserResponse } from '../../types/auth';
 import type { AuthNotice } from '../../types/changePassword';
-import { GoogleLinkConfirmModal } from './GoogleLinkConfirmModal';
+import { GoogleOnboardingForm } from './GoogleOnboardingForm';
 import { LoginForm } from './LoginForm';
 import { NarrativePanel } from './NarrativePanel';
 
@@ -27,19 +27,7 @@ export const LoginPage: FC<LoginPageProps> = ({
   onDismissAuthNotice,
   onForgotPassword,
 }) => {
-  const {
-    isLinkModalOpen,
-    googleError,
-    linkFormData,
-    linkFieldErrors,
-    linkGeneralError,
-    linkStatus,
-    showLinkPassword,
-    setShowLinkPassword,
-    handleLinkChange,
-    handleLinkSubmit,
-    handleCloseLinkModal,
-  } = useGoogleAuthCallback(onLoginSuccess);
+  const google = useGoogleAuthCallback(onLoginSuccess);
 
   return (
     <main className="page-shell">
@@ -49,33 +37,20 @@ export const LoginPage: FC<LoginPageProps> = ({
 
         {/* CỘT PHẢI: Form Đăng nhập hệ thống */}
         <section className="form-panel" aria-label="Khu vực đăng nhập">
-          <LoginForm
+          {google.isOnboarding ? <GoogleOnboardingForm controller={google} /> : <LoginForm
             onNavigateToRegister={onNavigateToRegister}
             onSuccess={onLoginSuccess}
             initialLoginName={initialLoginName}
-            googleError={googleError}
+            googleError={google.googleError}
             sessionError={sessionError}
             onDismissSessionError={onDismissSessionError}
             authNotice={authNotice}
             onDismissAuthNotice={onDismissAuthNotice}
             onForgotPassword={onForgotPassword}
-          />
+          />}
         </section>
       </div>
 
-      {/* Modal Xác nhận liên kết Google (khi status=link_required) */}
-      <GoogleLinkConfirmModal
-        isOpen={isLinkModalOpen}
-        formData={linkFormData}
-        fieldErrors={linkFieldErrors}
-        generalError={linkGeneralError}
-        status={linkStatus}
-        showPassword={showLinkPassword}
-        onToggleShowPassword={() => setShowLinkPassword((prev) => !prev)}
-        onChange={handleLinkChange}
-        onSubmit={handleLinkSubmit}
-        onClose={handleCloseLinkModal}
-      />
     </main>
   );
 };

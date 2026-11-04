@@ -1,4 +1,6 @@
-import { AuthApiError, clearCsrfCache, getCsrfToken } from './authApi';
+import { AuthApiError } from './authErrors';
+import { clearCsrfCache, getCsrfToken } from './csrfClient';
+import { authenticatedFetch, sessionGuard } from './sessionClient';
 import { hostAccountMessages as m, type HostAccountAction, type HostAccountDetail, type HostAccountResponse, type HostAccountSummary } from '../types/hostAccounts';
 
 const BASE = `${import.meta.env.VITE_API_URL || '/api/v1'}/admin/host-accounts`;
@@ -23,9 +25,9 @@ function safeError(status: number, message: unknown, fallback: string): string {
   return fallback;
 }
 
-async function request<T>(path: string, fallback: string, check: (data: unknown) => data is T, init: RequestInit = {}, expectedMessage?: string): Promise<HostAccountResponse<T>> {
+async function request<T>(path: string, fallback: string, check: (data: unknown) => data is T, init: RequestInit = {}, expectedMessage?: string, shouldSend = () => true): Promise<HostAccountResponse<T>> {
   try {
-    const response = await fetch(BASE + path, { ...init, credentials: 'include', cache: 'no-store', headers: { Accept: 'application/json', ...init.headers } });
+    const response = await authenticatedFetch(BASE + path, { ...init, credentials: 'include', cache: 'no-store', headers: { Accept: 'application/json', ...init.headers } }, { shouldSend });
     const body: unknown = await response.json().catch(() => null);
     if (!response.ok) throw new AuthApiError(response.status, safeError(response.status, record(body) ? body.message : null, fallback));
     if (response.status !== 200 || !record(body) || body.status !== 200 || typeof body.message !== 'string'
@@ -35,6 +37,7 @@ async function request<T>(path: string, fallback: string, check: (data: unknown)
     if (error instanceof Error && error.name === 'AbortError') throw error;
     if (error instanceof AuthApiError) {
       if (error.message === m.csrfInvalid) clearCsrfCache();
+      if (error.status === 401) throw new AuthApiError(401, m.sessionInvalid);
       throw error;
     }
     throw new AuthApiError(0, fallback);
@@ -49,20 +52,20 @@ export async function getHostAccount(accountId: string, signal?: AbortSignal): P
   return (await request('/' + encodeURIComponent(accountId), m.detailFailure,
     (value): value is HostAccountDetail => isDetail(value) && value.accountId.toLowerCase() === accountId.toLowerCase(), { signal }, m.detailSuccess)).data;
 }
-async function changeHostAccount(accountId: string, action: HostAccountAction): Promise<HostAccountResponse<null>> {
+async function changeHostAccount(accountId: string, action: HostAccountAction, shouldSend: () => boolean): Promise<HostAccountResponse<null>> {
   if (!UUID.test(accountId)) throw new AuthApiError(400, m.invalidData);
   const fallback = action === 'lock' ? m.lockFailure : m.unlockFailure;
+  const active = sessionGuard(shouldSend);
   let csrf;
   try {
     csrf = await getCsrfToken();
     if (!csrf || typeof csrf.token !== 'string' || !csrf.token || typeof csrf.headerName !== 'string' || !csrf.headerName) throw new AuthApiError(0, fallback);
   } catch (error) {
     if (error instanceof AuthApiError && error.status === 403) { clearCsrfCache(); throw new AuthApiError(403, m.csrfInvalid); }
-    throw new AuthApiError(error instanceof AuthApiError ? error.status : 0,
-      error instanceof AuthApiError && error.status === 401 ? m.sessionInvalid : fallback);
+    throw new AuthApiError(error instanceof AuthApiError ? error.status === 401 ? 503 : error.status : 0, fallback);
   }
   return request('/' + encodeURIComponent(accountId) + '/' + action, fallback, (data): data is null => data === null,
-    { method: 'PATCH', headers: { [csrf.headerName]: csrf.token } }, action === 'lock' ? m.lockSuccess : m.unlockSuccess);
+    { method: 'PATCH', headers: { [csrf.headerName]: csrf.token } }, action === 'lock' ? m.lockSuccess : m.unlockSuccess, active);
 }
-export function lockHostAccount(accountId: string): Promise<HostAccountResponse<null>> { return changeHostAccount(accountId, 'lock'); }
-export function unlockHostAccount(accountId: string): Promise<HostAccountResponse<null>> { return changeHostAccount(accountId, 'unlock'); }
+export function lockHostAccount(accountId: string, shouldSend = () => true): Promise<HostAccountResponse<null>> { return changeHostAccount(accountId, 'lock', shouldSend); }
+export function unlockHostAccount(accountId: string, shouldSend = () => true): Promise<HostAccountResponse<null>> { return changeHostAccount(accountId, 'unlock', shouldSend); }

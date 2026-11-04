@@ -16,6 +16,7 @@ function install() {
   });
   const fetch = vi.fn(async (input: RequestInfo | URL, init: RequestInit = {}): Promise<Response> => {
     const url = String(input);
+    if (url.endsWith('/auth/me') || url.endsWith('/auth/refresh')) return failure(401, 'expired');
     if (url.endsWith('/auth/csrf')) return csrf();
     return init.method === 'POST' || init.method === 'PUT' ? write(url, init) : read();
   }); vi.stubGlobal('fetch', fetch); return { csrf, read, write, fetch };
@@ -82,7 +83,7 @@ describe('UC17 API boundary', () => {
   });
   it.each([[401, 'SQL stack', m.sessionInvalid], [403, 'SQL', m.forbidden], [403, m.csrfInvalid, m.csrfInvalid], [404, 'foreign', m.notFound], [400, m.nameRequired, m.nameRequired], [500, 'SQL', m.saveFailure]])('maps safe errors %s %s', async (status, message, expected) => {
     const api = install(); api.write.mockResolvedValueOnce(failure(Number(status), String(message), { name: m.nameRequired, owner: 'secret', note: 'SQL stack' }));
-    await expect(createAsset({ name: 'Máy', purchaseValue: '0' })).rejects.toMatchObject({ message: expected, fieldErrors: { name: m.nameRequired } });
+    await expect(createAsset({ name: 'Máy', purchaseValue: '0' })).rejects.toMatchObject({ message: expected, fieldErrors: status === 401 ? {} : { name: m.nameRequired } });
     expect(api.write).toHaveBeenCalledTimes(1);
   });
   it('distinguishes CSRF failure before sending from uncertain network outcome', async () => {

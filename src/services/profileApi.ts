@@ -1,4 +1,6 @@
-import { AuthApiError, getCsrfToken } from './authApi';
+import { AuthApiError } from './authErrors';
+import { getCsrfToken } from './csrfClient';
+import { authenticatedFetch, sessionGuard } from './sessionClient';
 import { normalizePhoneNumber } from '../utils/phoneNumber';
 import { profileMessages, type AdminProfileUpdateRequest, type HostProfileUpdateRequest, type PersonalProfileResponse } from '../types/profile';
 
@@ -29,15 +31,15 @@ function isProfile(value: unknown): value is PersonalProfileResponse {
   return value.role === 'ADMIN' || (value.role === 'CUSTOMER' && ['identityType', 'identityNo', 'birthDate', 'address'].every(optionalString));
 }
 
-async function requestProfile(init: RequestInit, expectedRole?: 'ADMIN' | 'HOST'): Promise<PersonalProfileResponse> {
+async function requestProfile(init: RequestInit, expectedRole?: 'ADMIN' | 'HOST', shouldSend = () => true): Promise<PersonalProfileResponse> {
   const fallback = init.method === 'PATCH' ? profileMessages.saveFailure : profileMessages.loadFailure;
   try {
-    const response = await fetch(`${API_BASE_URL}/profile`, {
+    const response = await authenticatedFetch(`${API_BASE_URL}/profile`, {
       ...init,
       cache: 'no-store',
       credentials: 'include',
       headers: { Accept: 'application/json', 'Cache-Control': 'no-store', ...init.headers },
-    });
+    }, { shouldSend });
     const body: unknown = await response.json().catch(() => null);
     if (!response.ok) {
       const defaults: Record<number, string> = {
@@ -57,6 +59,7 @@ async function requestProfile(init: RequestInit, expectedRole?: 'ADMIN' | 'HOST'
     return body.data;
   } catch (error) {
     if (error instanceof ProfileApiError || (error instanceof Error && error.name === 'AbortError')) throw error;
+    if (error instanceof AuthApiError) throw new ProfileApiError(error.status, error.status === 401 ? profileMessages.sessionInvalid : error.message);
     throw new ProfileApiError(0, fallback);
   }
 }
@@ -70,8 +73,7 @@ async function csrfHeaders(): Promise<Record<string, string>> {
     return { [csrf.headerName]: csrf.token };
   } catch (error) {
     if (error instanceof ProfileApiError) throw error;
-    throw new ProfileApiError(error instanceof AuthApiError ? error.status : 0,
-      error instanceof AuthApiError && error.status === 401 ? profileMessages.sessionInvalid : profileMessages.saveFailure);
+    throw new ProfileApiError(error instanceof AuthApiError ? error.status === 401 ? 503 : error.status : 0, profileMessages.saveFailure);
   }
 }
 
@@ -79,14 +81,16 @@ export function getPersonalProfile(signal?: AbortSignal): Promise<PersonalProfil
   return requestProfile({ method: 'GET', signal });
 }
 
-export async function updateAdminProfile(payload: AdminProfileUpdateRequest): Promise<PersonalProfileResponse> {
+export async function updateAdminProfile(payload: AdminProfileUpdateRequest, shouldSend = () => true): Promise<PersonalProfileResponse> {
+  const active = sessionGuard(shouldSend);
   const headers = await csrfHeaders();
   return requestProfile({ method: 'PATCH', headers: { ...headers, 'Content-Type': 'application/json' }, body: JSON.stringify({
     fullName: payload.fullName.trim(), phoneNumber: normalizePhoneNumber(payload.phoneNumber ?? '') || null,
-  }) }, 'ADMIN');
+  }) }, 'ADMIN', active);
 }
 
-export async function updateHostProfile(payload: HostProfileUpdateRequest, logoFile?: File | null): Promise<PersonalProfileResponse> {
+export async function updateHostProfile(payload: HostProfileUpdateRequest, logoFile?: File | null, shouldSend = () => true): Promise<PersonalProfileResponse> {
+  const active = sessionGuard(shouldSend);
   const headers = await csrfHeaders();
   const profile: HostProfileUpdateRequest = {
     businessName: payload.businessName.trim(), phoneNumber: normalizePhoneNumber(payload.phoneNumber),
@@ -96,7 +100,7 @@ export async function updateHostProfile(payload: HostProfileUpdateRequest, logoF
     const body = new FormData();
     body.append('profile', new Blob([JSON.stringify(profile)], { type: 'application/json' }));
     body.append('logo', logoFile);
-    return requestProfile({ method: 'PATCH', headers, body }, 'HOST');
+    return requestProfile({ method: 'PATCH', headers, body }, 'HOST', active);
   }
-  return requestProfile({ method: 'PATCH', headers: { ...headers, 'Content-Type': 'application/json' }, body: JSON.stringify(profile) }, 'HOST');
+  return requestProfile({ method: 'PATCH', headers: { ...headers, 'Content-Type': 'application/json' }, body: JSON.stringify(profile) }, 'HOST', active);
 }

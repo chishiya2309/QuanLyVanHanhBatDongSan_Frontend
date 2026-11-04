@@ -77,7 +77,7 @@ export function useChangePassword(onAuthenticationEnded: (notice: AuthNotice) =>
     const request = ++generation.current;
     setStatus('submitting');
     try {
-      await changePassword(formData);
+      await changePassword(formData, () => alive.current && request === generation.current);
       if (!alive.current || request !== generation.current) return;
       setFormData(emptyForm());
       setVisibleFields({});

@@ -1,3 +1,4 @@
+import { announceSession, invalidateSession } from '../src/services/sessionClient';
 import { cleanup } from '@testing-library/react';
 import { afterEach, beforeEach, vi } from 'vitest';
 
@@ -9,6 +10,10 @@ if (!URL.createObjectURL) URL.createObjectURL = () => '';
 if (!URL.revokeObjectURL) URL.revokeObjectURL = () => undefined;
 
 beforeEach(() => {
+  invalidateSession();
+  announceSession(null);
+  localStorage.clear();
+  sessionStorage.clear();
   let sequence = 0;
   vi.spyOn(URL, 'createObjectURL').mockImplementation(() => `blob:profile-${++sequence}`);
   vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined);

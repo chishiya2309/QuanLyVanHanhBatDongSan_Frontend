@@ -20,6 +20,7 @@ function install(role = 'HOST') {
   const fetch = vi.fn(async (input: RequestInfo | URL, init: RequestInit = {}): Promise<Response> => {
     const url = new URL(String(input), 'http://localhost');
     if (url.pathname.endsWith('/auth/me')) return me();
+    if (url.pathname.endsWith('/auth/refresh')) return failure(401, 'expired');
     if (url.pathname.endsWith('/auth/csrf')) return csrf();
     if (url.pathname.endsWith('/assets') && !init.method) return list(url);
     if (url.pathname.includes('/assets')) return init.method === 'POST' || init.method === 'PUT' ? write(url, init) : detail(url.pathname.split('/').at(-1) || '');
@@ -60,7 +61,7 @@ describe('UC17 authorization and integration', () => {
     expect(screen.queryByText(/Dữ liệu đồng bộ/)).toBeNull(); expect(screen.queryByText(/Chào buổi sáng/)).toBeNull();
   });
   it('initial invalid session returns to login with exact notice and no logout', async () => {
-    const api = install(); api.me.mockResolvedValueOnce(failure(401, 'Expired')); render(<App />);
+    const api = install(); api.me.mockImplementation(async () => failure(401, 'Expired')); render(<App />);
     await screen.findByText(m.sessionInvalid); expect(api.list).not.toHaveBeenCalled(); expect(window.location.pathname).toBe('/');
     expect(api.fetch.mock.calls.some(([url]) => String(url).includes('/logout'))).toBe(false);
   });
@@ -202,10 +203,12 @@ describe('UC17 forms, focus and errors', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Lưu ghi nhận' })); await screen.findByText(m.conditionInvalid); expect(api.write).not.toHaveBeenCalled();
     fireEvent.change(select, { target: { value: 'GOOD' } }); fireEvent.change(screen.getByLabelText(/Ghi chú kiểm tra/), { target: { value: 'Kiểm tra' } });
     fireEvent.click(screen.getByRole('button', { name: 'Lưu ghi nhận' })); await screen.findByText(m.conditionSuccess); expect(api.write).toHaveBeenCalledTimes(1); expect(api.write.mock.calls[0][1].body).toBe('{"condition":"GOOD","note":"Kiểm tra"}');
-    expect(api.detail).toHaveBeenCalledTimes(2);
+    await waitFor(() => expect(api.detail).toHaveBeenCalledTimes(2));
   });
   it.each([[401, m.sessionInvalid], [403, m.forbidden], [404, m.notFound], [500, m.detailFailure]])('handles read %s', async (status, message) => {
-    const api = install(); window.history.replaceState(null, '', '/assets/' + assetId); api.detail.mockResolvedValueOnce(failure(Number(status), 'SQL stack')); render(<App />);
+    const api = install(); window.history.replaceState(null, '', '/assets/' + assetId); api.detail.mockResolvedValueOnce(failure(Number(status), 'SQL stack'));
+    if (status === 401) api.me.mockResolvedValueOnce(ok({ accountId: 'host-account', loginName: 'Chủ nhà', role: 'HOST', hostId: assetId, customerId: null })).mockImplementation(async () => failure(401, 'expired'));
+    render(<App />);
     await screen.findByText(String(message)); expect(screen.queryByText('SQL stack')).toBeNull();
     if (status === 404) { expect(window.location.pathname).toBe('/assets'); await ready(); }
     if (status === 401) { expect(window.location.pathname).toBe('/'); expect(api.fetch.mock.calls.some(([url]) => String(url).endsWith('/logout'))).toBe(false); }
