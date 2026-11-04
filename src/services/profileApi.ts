@@ -1,4 +1,5 @@
 import { AuthApiError, getCsrfToken } from './authApi';
+import { normalizePhoneNumber } from '../utils/phoneNumber';
 import { profileMessages, type AdminProfileUpdateRequest, type HostProfileUpdateRequest, type PersonalProfileResponse } from '../types/profile';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || '/api/v1';
@@ -81,14 +82,14 @@ export function getPersonalProfile(signal?: AbortSignal): Promise<PersonalProfil
 export async function updateAdminProfile(payload: AdminProfileUpdateRequest): Promise<PersonalProfileResponse> {
   const headers = await csrfHeaders();
   return requestProfile({ method: 'PATCH', headers: { ...headers, 'Content-Type': 'application/json' }, body: JSON.stringify({
-    fullName: payload.fullName.trim(), phoneNumber: payload.phoneNumber || null,
+    fullName: payload.fullName.trim(), phoneNumber: normalizePhoneNumber(payload.phoneNumber ?? '') || null,
   }) }, 'ADMIN');
 }
 
 export async function updateHostProfile(payload: HostProfileUpdateRequest, logoFile?: File | null): Promise<PersonalProfileResponse> {
   const headers = await csrfHeaders();
   const profile: HostProfileUpdateRequest = {
-    businessName: payload.businessName.trim(), phoneNumber: payload.phoneNumber,
+    businessName: payload.businessName.trim(), phoneNumber: normalizePhoneNumber(payload.phoneNumber),
     officeAddress: payload.officeAddress?.trim() || null, removeLogo: payload.removeLogo,
   };
   if (logoFile) {

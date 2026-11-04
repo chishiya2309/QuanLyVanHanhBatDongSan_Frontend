@@ -1,5 +1,6 @@
 import type { FC } from 'react';
 import { useRegisterHost } from '../../hooks/useRegisterHost';
+import { PHONE_NUMBER_HELP } from '../../utils/phoneNumber';
 
 interface RegisterHostFormProps {
   onNavigateToLogin: () => void;
@@ -161,7 +162,7 @@ export const RegisterHostForm: FC<RegisterHostFormProps> = ({
                 name="phoneNumber"
                 type="tel"
                 autoComplete="tel"
-                placeholder="0901234567 hoặc +84..."
+                placeholder="0347983243 hoặc +84347983243"
                 className="text-input"
                 value={formData.phoneNumber}
                 onChange={handleChange}
@@ -171,7 +172,7 @@ export const RegisterHostForm: FC<RegisterHostFormProps> = ({
               />
             </div>
             <span className="field-helper-text" id="phoneNumber-helper">
-              Hỗ trợ 09… hoặc quốc tế (+84…)
+              {PHONE_NUMBER_HELP}
             </span>
             {fieldErrors.phoneNumber && (
               <p className="field-error-message" id="phoneNumber-error" role="alert">
