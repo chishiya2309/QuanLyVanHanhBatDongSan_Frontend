@@ -20,12 +20,40 @@ import { HOST_ACCOUNTS_PATH, hostAccountMessages, type HostAccountRoute } from '
 import { AssetsPage, AssetsForbidden } from './components/assets/AssetsPage';
 import { assetMessages, type AssetRoute } from './types/assets';
 import { assetRouteKey, parseAssetRoute } from './utils/assetNavigation';
+import { PropertiesPage } from './components/properties/PropertiesPage';
+import { RoomsPage } from './components/properties/RoomsPage';
+import type { PropertiesRoute, RoomsRoute } from './types/properties';
+import { parsePropertiesRoute, parseRoomsRoute } from './utils/propertyNavigation';
 
-function AuthenticatedDashboard({ user, onLogout, onSessionExpired, onAuthenticationEnded, hostRoute, onNavigateHost, assetRoute, onNavigateAssets, onCreatePendingChange, onOverview }: {
-  user: AuthenticatedUserResponse; onLogout: () => void; onSessionExpired: () => void;
+function AuthenticatedDashboard({
+  user,
+  onLogout,
+  onSessionExpired,
+  onAuthenticationEnded,
+  hostRoute,
+  onNavigateHost,
+  assetRoute,
+  onNavigateAssets,
+  propertiesRoute,
+  onNavigateProperties,
+  roomsRoute,
+  onNavigateRooms,
+  onCreatePendingChange,
+  onOverview,
+}: {
+  user: AuthenticatedUserResponse;
+  onLogout: () => void;
+  onSessionExpired: () => void;
   onAuthenticationEnded: (notice: AuthNotice) => void;
-  hostRoute: HostAccountRoute | null; onNavigateHost: (id: string | null) => void; onOverview: () => void;
-  assetRoute: AssetRoute | null; onNavigateAssets: (url: string, replace?: boolean) => void;
+  hostRoute: HostAccountRoute | null;
+  onNavigateHost: (id: string | null) => void;
+  onOverview: () => void;
+  assetRoute: AssetRoute | null;
+  onNavigateAssets: (url: string, replace?: boolean) => void;
+  propertiesRoute: PropertiesRoute | null;
+  onNavigateProperties: (url: string) => void;
+  roomsRoute: RoomsRoute | null;
+  onNavigateRooms: (url: string) => void;
   onCreatePendingChange: (pending: boolean) => void;
 }) {
   const profileController = useProfile(onSessionExpired);
@@ -45,28 +73,95 @@ function AuthenticatedDashboard({ user, onLogout, onSessionExpired, onAuthentica
     role: user.role,
     managedProperties: mockCurrentUser.managedProperties,
   };
-  return <>
-    <DashboardShell user={activeUserProfile} onLogout={onLogout} onOpenProfile={() => {
-      setFocusChangePassword(false);
-      setAccountModal('profile');
-      void profileController.fetchProfile();
-    }} hostAccountsActive={hostRoute !== null} showHostAccounts={user.role === 'ADMIN' && !adminDenied}
-      assetsActive={assetRoute !== null} showAssets={user.role === 'HOST' && !assetsDenied} onNavigateAssets={() => onNavigateAssets('/assets')}
-      onNavigateOverview={onOverview} onNavigateHostAccounts={() => onNavigateHost(null)}>
-      {assetRoute ? (user.role !== 'HOST' || assetsDenied ? <AssetsForbidden onOverview={onOverview} /> :
-        <AssetsPage route={assetRoute} onNavigate={onNavigateAssets} onCreatePendingChange={onCreatePendingChange}
-          onSessionExpired={() => onAuthenticationEnded({ kind: 'error', message: assetMessages.sessionInvalid })} onForbidden={denyAssets} />) : hostRoute && (user.role !== 'ADMIN' || adminDenied
-        ? <HostAccountsForbidden onOverview={onOverview} />
-        : <HostAccountsPage accountId={hostRoute.accountId} onNavigate={onNavigateHost}
-          onSessionExpired={() => onAuthenticationEnded({ kind: 'error', message: hostAccountMessages.sessionInvalid })} onForbidden={denyAdmin} />)}
-    </DashboardShell>
-    <ProfileModal isOpen={accountModal === 'profile'} controller={profileController} onClose={() => setAccountModal(null)}
-      focusChangePassword={focusChangePassword} onOpenChangePassword={() => setAccountModal('password')} />
-    {accountModal === 'password' && <ChangePasswordModal onAuthenticationEnded={onAuthenticationEnded} onClose={() => {
-      setFocusChangePassword(true);
-      setAccountModal('profile');
-    }} />}
-  </>;
+
+  return (
+    <>
+      <DashboardShell
+        user={activeUserProfile}
+        onLogout={onLogout}
+        onOpenProfile={() => {
+          setFocusChangePassword(false);
+          setAccountModal('profile');
+          void profileController.fetchProfile();
+        }}
+        hostAccountsActive={hostRoute !== null}
+        showHostAccounts={user.role === 'ADMIN' && !adminDenied}
+        assetsActive={assetRoute !== null}
+        showAssets={user.role === 'HOST' && !assetsDenied}
+        onNavigateAssets={() => onNavigateAssets('/assets')}
+        showProperties={user.role === 'HOST'}
+        propertiesActive={propertiesRoute !== null}
+        onNavigateProperties={() => onNavigateProperties('/properties')}
+        showRooms={user.role === 'HOST'}
+        roomsActive={roomsRoute !== null}
+        onNavigateRooms={() => onNavigateRooms('/rooms')}
+        onNavigateOverview={onOverview}
+        onNavigateHostAccounts={() => onNavigateHost(null)}
+      >
+        {propertiesRoute ? (
+          <PropertiesPage
+            route={propertiesRoute}
+            onNavigate={onNavigateProperties}
+            onNavigateRooms={(bId) => onNavigateRooms(`/rooms?view=matrix&buildingId=${bId}`)}
+            onSessionExpired={() =>
+              onAuthenticationEnded({
+                kind: 'error',
+                message: 'Phiên đăng nhập không hợp lệ hoặc đã hết hạn. Vui lòng đăng nhập lại',
+              })
+            }
+          />
+        ) : roomsRoute ? (
+          <RoomsPage
+            route={roomsRoute}
+            onNavigate={onNavigateRooms}
+            onSessionExpired={() =>
+              onAuthenticationEnded({
+                kind: 'error',
+                message: 'Phiên đăng nhập không hợp lệ hoặc đã hết hạn. Vui lòng đăng nhập lại',
+              })
+            }
+          />
+        ) : assetRoute ? (
+          user.role !== 'HOST' || assetsDenied ? (
+            <AssetsForbidden onOverview={onOverview} />
+          ) : (
+            <AssetsPage
+              route={assetRoute}
+              onNavigate={onNavigateAssets}
+              onCreatePendingChange={onCreatePendingChange}
+              onSessionExpired={() => onAuthenticationEnded({ kind: 'error', message: assetMessages.sessionInvalid })}
+              onForbidden={denyAssets}
+            />
+          )
+        ) : hostRoute && (user.role !== 'ADMIN' || adminDenied ? (
+          <HostAccountsForbidden onOverview={onOverview} />
+        ) : (
+          <HostAccountsPage
+            accountId={hostRoute.accountId}
+            onNavigate={onNavigateHost}
+            onSessionExpired={() => onAuthenticationEnded({ kind: 'error', message: hostAccountMessages.sessionInvalid })}
+            onForbidden={denyAdmin}
+          />
+        ))}
+      </DashboardShell>
+      <ProfileModal
+        isOpen={accountModal === 'profile'}
+        controller={profileController}
+        onClose={() => setAccountModal(null)}
+        focusChangePassword={focusChangePassword}
+        onOpenChangePassword={() => setAccountModal('password')}
+      />
+      {accountModal === 'password' && (
+        <ChangePasswordModal
+          onAuthenticationEnded={onAuthenticationEnded}
+          onClose={() => {
+            setFocusChangePassword(true);
+            setAccountModal('profile');
+          }}
+        />
+      )}
+    </>
+  );
 }
 
 export default function App({ initialRecovery }: { initialRecovery?: RecoveryBootstrap }) {
@@ -82,6 +177,9 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
   const handleCreatePendingChange = useCallback((pending: boolean) => { pendingCreateUrl.current = pending ? window.location.pathname + window.location.search : null; }, []);
   const [hostRoute, setHostRoute] = useState<HostAccountRoute | null>(() => parseHostAccountRoute(window.location.pathname));
   const [assetRoute, setAssetRoute] = useState<AssetRoute | null>(() => parseAssetRoute(window.location.pathname, window.location.search));
+  const [propertiesRoute, setPropertiesRoute] = useState<PropertiesRoute | null>(() => parsePropertiesRoute(window.location.pathname, window.location.search));
+  const [roomsRoute, setRoomsRoute] = useState<RoomsRoute | null>(() => parseRoomsRoute(window.location.pathname, window.location.search));
+
   const [authCheck, setAuthCheck] = useState<'checking' | 'ready' | 'error'>('checking');
   const [authRetry, setAuthRetry] = useState(0);
 
@@ -107,13 +205,25 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
       .catch((error: unknown) => {
         if (cancelled || generation !== authGeneration.current) return;
         const assets = parseAssetRoute(window.location.pathname, window.location.search);
-        if ((parseHostAccountRoute(window.location.pathname) || assets) && (!(error instanceof AuthApiError) || error.status !== 401)) {
-          setAuthCheck('error'); return;
+        const properties = parsePropertiesRoute(window.location.pathname, window.location.search);
+        const rooms = parseRoomsRoute(window.location.pathname, window.location.search);
+        const hasProtectedPath = parseHostAccountRoute(window.location.pathname) || assets || properties || rooms;
+
+        if (hasProtectedPath && (!(error instanceof AuthApiError) || error.status !== 401)) {
+          setAuthCheck('error');
+          return;
         }
         setAuthCheck('ready');
-        if (parseHostAccountRoute(window.location.pathname) || assets) {
-          window.history.replaceState(null, '', '/'); setHostRoute(null); setAssetRoute(null);
-          setAuthNotice({ kind: 'error', message: assets ? assetMessages.sessionInvalid : hostAccountMessages.sessionInvalid });
+        if (hasProtectedPath) {
+          window.history.replaceState(null, '', '/');
+          setHostRoute(null);
+          setAssetRoute(null);
+          setPropertiesRoute(null);
+          setRoomsRoute(null);
+          setAuthNotice({
+            kind: 'error',
+            message: assets ? assetMessages.sessionInvalid : hostAccountMessages.sessionInvalid,
+          });
         }
       });
     return () => { cancelled = true; };
@@ -128,6 +238,9 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
       recoveryRoute.current = next.path;
       setHostRoute(parseHostAccountRoute(window.location.pathname));
       setAssetRoute(parseAssetRoute(window.location.pathname, window.location.search));
+      setPropertiesRoute(parsePropertiesRoute(window.location.pathname, window.location.search));
+      setRoomsRoute(parseRoomsRoute(window.location.pathname, window.location.search));
+
       // Private navigation preserves the authenticated user and pending session check.
       if (!next.path && !wasRecovery) return;
       authGeneration.current++;
@@ -157,7 +270,11 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
     setView('login');
     setAuthNotice(notice);
     setAuthCheck('ready');
-    if (parseHostAccountRoute(window.location.pathname) || parseAssetRoute(window.location.pathname, window.location.search)) { window.history.replaceState(null, '', '/'); setHostRoute(null); setAssetRoute(null); }
+    window.history.replaceState(null, '', '/');
+    setHostRoute(null);
+    setAssetRoute(null);
+    setPropertiesRoute(null);
+    setRoomsRoute(null);
   }, []);
 
   const handleLogout = useCallback(() => {
@@ -180,25 +297,33 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
     window.history.pushState(null, '', path || '/');
     setRecovery({ path, token: null }); setRecoveryVisit((n) => n + 1);
     setCurrentUser(null); setView('login'); setAuthNotice(null);
-    setHostRoute(null); setAssetRoute(null); setAuthCheck('ready');
+    setHostRoute(null); setAssetRoute(null); setPropertiesRoute(null); setRoomsRoute(null); setAuthCheck('ready');
   };
+
   const finishRecovery = (notice: AuthNotice) => {
     recoveryRoute.current = null;
     window.history.replaceState(null, '', '/');
     setRecovery({ path: null, token: null }); setPrefilledIdentifier('');
     resetAuthentication(notice);
   };
+
   const navigateHost = useCallback((id: string | null) => {
     const path = HOST_ACCOUNTS_PATH + (id === null ? '' : '/' + encodeURIComponent(id));
     if (window.location.pathname !== path) window.history.pushState(null, '', path);
     setHostRoute({ accountId: id });
     setAssetRoute(null);
+    setPropertiesRoute(null);
+    setRoomsRoute(null);
   }, []);
+
   const navigateOverview = useCallback(() => {
     if (window.location.pathname !== '/') window.history.pushState(null, '', '/');
     setHostRoute(null);
     setAssetRoute(null);
+    setPropertiesRoute(null);
+    setRoomsRoute(null);
   }, []);
+
   const navigateAssets = useCallback((url: string, replace = false) => {
     const target = new URL(url, window.location.origin);
     const next = parseAssetRoute(target.pathname, target.search);
@@ -207,8 +332,28 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
     if (window.location.pathname + window.location.search !== canonical) {
       if (replace) window.history.replaceState(null, '', canonical); else window.history.pushState(null, '', canonical);
     }
-    setHostRoute(null); setAssetRoute(next);
+    setHostRoute(null);
+    setPropertiesRoute(null);
+    setRoomsRoute(null);
+    setAssetRoute(next);
   }, []);
+
+  const navigateProperties = useCallback((url: string) => {
+    window.history.pushState(null, '', url);
+    setHostRoute(null);
+    setAssetRoute(null);
+    setRoomsRoute(null);
+    setPropertiesRoute(parsePropertiesRoute(window.location.pathname, window.location.search));
+  }, []);
+
+  const navigateRooms = useCallback((url: string) => {
+    window.history.pushState(null, '', url);
+    setHostRoute(null);
+    setAssetRoute(null);
+    setPropertiesRoute(null);
+    setRoomsRoute(parseRoomsRoute(window.location.pathname, window.location.search));
+  }, []);
+
   useEffect(() => {
     if (!assetRoute) return;
     const canonical = assetRouteKey(assetRoute);
@@ -225,7 +370,7 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
       <button type="button" className="host-button" onClick={() => { setAuthCheck('checking'); setAuthRetry((n) => n + 1); }}>Thử lại</button></>}
   </main>;
 
-  // 1. Màn hình Dashboard hiện có (Dùng chung tạm thời sau khi đăng nhập thành công)
+  // 1. Màn hình Dashboard hiện có
   if (view === 'dashboard' && currentUser) {
     return (
       <AuthenticatedDashboard
@@ -237,6 +382,10 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
         hostRoute={hostRoute}
         assetRoute={assetRoute}
         onNavigateAssets={navigateAssets}
+        propertiesRoute={propertiesRoute}
+        onNavigateProperties={navigateProperties}
+        roomsRoute={roomsRoute}
+        onNavigateRooms={navigateRooms}
         onCreatePendingChange={handleCreatePendingChange}
         onNavigateHost={navigateHost}
         onOverview={navigateOverview}
