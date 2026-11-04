@@ -157,6 +157,7 @@ describe('App profile integration', () => {
   });
   it.each(['GET', 'PATCH'])('redirects on %s 401 and preserves the session notice on LoginPage', async (method) => {
     const api = installApi(adminProfile);
+    api.me.mockResolvedValueOnce(ok({ accountId: 'fixture-session', loginName: 'profile-user', role: 'ADMIN', hostId: null, customerId: null })).mockImplementation(async () => failure(401, 'expired'));
     if (method === 'GET') api.getProfile.mockImplementation(async () => failure(401, m.sessionInvalid));
     render(<App />);
     if (method === 'PATCH') {

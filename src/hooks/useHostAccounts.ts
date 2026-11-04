@@ -124,7 +124,7 @@ export function useHostAccounts(accountId: string | null, callbacks: Callbacks) 
     mutatingRef.current = true; setMutating(true);
     const epoch = epochRef.current; const { account, action } = confirmation;
     try {
-      await (action === 'lock' ? lockHostAccount(account.accountId) : unlockHostAccount(account.accountId));
+      await (action === 'lock' ? lockHostAccount(account.accountId, () => aliveRef.current && epoch === epochRef.current) : unlockHostAccount(account.accountId, () => aliveRef.current && epoch === epochRef.current));
       if (!aliveRef.current || epoch !== epochRef.current) return;
       setConfirmation(null); setNotice({ kind: 'success', message: action === 'lock' ? m.lockSuccess : m.unlockSuccess });
       await refresh();

@@ -11,6 +11,7 @@ function api(response: () => Promise<Response> = async () => success()) {
   const post = vi.fn(response);
   const fetch = vi.fn(async (url: RequestInfo | URL, init?: RequestInit) => {
     void init;
+    if (String(url).endsWith('/me') || String(url).endsWith('/refresh')) return failure(401, 'expired');
     return String(url).endsWith('/csrf') ? csrf() : post();
   });
   vi.stubGlobal('fetch', fetch);

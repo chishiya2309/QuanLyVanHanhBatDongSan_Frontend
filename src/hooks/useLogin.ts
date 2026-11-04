@@ -1,4 +1,4 @@
-import { useState, type ChangeEvent, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from 'react';
 import { validateLoginForm } from '../schemas/loginValidation';
 import { AuthApiError, login } from '../services/authApi';
 import type {
@@ -22,6 +22,11 @@ export function useLogin(
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [showPassword, setShowPassword] = useState(false);
+  const alive = useRef(false);
+  useEffect(() => {
+    alive.current = true;
+    return () => { alive.current = false; };
+  }, []);
 
   const focusFirstErrorField = (errors: LoginFieldErrors) => {
     const fieldOrder: (keyof LoginFieldErrors)[] = ['loginName', 'password'];
@@ -89,16 +94,14 @@ export function useLogin(
         loginName: formData.loginName,
         password: formData.password,
       });
+      if (!alive.current) return;
 
       setStatus('success');
       setSuccessMessage('Đăng nhập thành công');
 
-      if (onSuccessCallback) {
-        setTimeout(() => {
-          onSuccessCallback(user);
-        }, 600);
-      }
+      onSuccessCallback?.(user);
     } catch (err) {
+      if (!alive.current || (err instanceof Error && err.name === 'AbortError')) return;
       setStatus('error');
       if (err instanceof AuthApiError) {
         const serverFieldErrors = err.fieldErrors || {};

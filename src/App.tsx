@@ -19,7 +19,13 @@ import { parseHostAccountRoute } from './utils/hostAccountNavigation';
 import { HOST_ACCOUNTS_PATH, hostAccountMessages, type HostAccountRoute } from './types/hostAccounts';
 import { AssetsPage, AssetsForbidden } from './components/assets/AssetsPage';
 import { assetMessages, type AssetRoute } from './types/assets';
+import { invalidateSession, onSessionChange, rememberSession } from './services/sessionClient';
 import { assetRouteKey, parseAssetRoute } from './utils/assetNavigation';
+
+function isGoogleEntry(): boolean {
+  return window.location.pathname === '/auth/onboarding' || window.location.pathname === '/auth/callback'
+    || new URLSearchParams(window.location.search).has('status');
+}
 
 function AuthenticatedDashboard({ user, onLogout, onSessionExpired, onAuthenticationEnded, hostRoute, onNavigateHost, assetRoute, onNavigateAssets, onCreatePendingChange, onOverview }: {
   user: AuthenticatedUserResponse; onLogout: () => void; onSessionExpired: () => void;
@@ -82,13 +88,18 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
   const handleCreatePendingChange = useCallback((pending: boolean) => { pendingCreateUrl.current = pending ? window.location.pathname + window.location.search : null; }, []);
   const [hostRoute, setHostRoute] = useState<HostAccountRoute | null>(() => parseHostAccountRoute(window.location.pathname));
   const [assetRoute, setAssetRoute] = useState<AssetRoute | null>(() => parseAssetRoute(window.location.pathname, window.location.search));
-  const [authCheck, setAuthCheck] = useState<'checking' | 'ready' | 'error'>('checking');
+  const googleEntry = useRef(isGoogleEntry());
+  const [authCheck, setAuthCheck] = useState<'checking' | 'ready' | 'error'>(() => isGoogleEntry() ? 'ready' : 'checking');
   const [authRetry, setAuthRetry] = useState(0);
 
   // Khi đăng nhập thành công: Nối tạm trực tiếp vào dashboard hiện có
   const handleAuthSuccess = useCallback((user: AuthenticatedUserResponse) => {
     if (recoveryRoute.current) return;
     authGeneration.current++;
+    googleEntry.current = false;
+    if (window.location.pathname === '/auth/onboarding' || window.location.pathname === '/auth/callback') window.history.replaceState(null, '', '/');
+    clearCsrfCache();
+    rememberSession(user);
     setAuthNotice(null);
     setCurrentUser(user);
     setAuthCheck('ready');
@@ -97,17 +108,18 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
 
   // Tự động kiểm tra phiên đăng nhập hiện tại từ cookie HttpOnly khi mở ứng dụng
   useEffect(() => {
-    if (recoveryRoute.current) return;
+    if (recoveryRoute.current || googleEntry.current) return;
+    const controller = new AbortController();
     let cancelled = false;
     const generation = authGeneration.current;
-    getCurrentUser()
+    getCurrentUser({ signal: controller.signal })
       .then((user) => {
         if (!cancelled && generation === authGeneration.current) handleAuthSuccess(user);
       })
       .catch((error: unknown) => {
         if (cancelled || generation !== authGeneration.current) return;
         const assets = parseAssetRoute(window.location.pathname, window.location.search);
-        if ((parseHostAccountRoute(window.location.pathname) || assets) && (!(error instanceof AuthApiError) || error.status !== 401)) {
+        if (!(error instanceof AuthApiError) || error.status !== 401) {
           setAuthCheck('error'); return;
         }
         setAuthCheck('ready');
@@ -116,7 +128,7 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
           setAuthNotice({ kind: 'error', message: assets ? assetMessages.sessionInvalid : hostAccountMessages.sessionInvalid });
         }
       });
-    return () => { cancelled = true; };
+    return () => { cancelled = true; controller.abort(); };
   }, [handleAuthSuccess, authRetry]);
 
   useEffect(() => {
@@ -151,6 +163,7 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
 
   const resetAuthentication = useCallback((notice: AuthNotice | null = null) => {
     authGeneration.current++;
+    invalidateSession();
     pendingCreateUrl.current = null;
     clearCsrfCache();
     setCurrentUser(null);
@@ -159,6 +172,11 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
     setAuthCheck('ready');
     if (parseHostAccountRoute(window.location.pathname) || parseAssetRoute(window.location.pathname, window.location.search)) { window.history.replaceState(null, '', '/'); setHostRoute(null); setAssetRoute(null); }
   }, []);
+
+  useEffect(() => onSessionChange((event) => {
+    resetAuthentication({ kind: 'error', message: 'Phiên đăng nhập đã thay đổi ở tab khác. Vui lòng tiếp tục với phiên hiện tại.' });
+    if (event.accountId) { googleEntry.current = false; setAuthCheck('checking'); setAuthRetry((n) => n + 1); }
+  }), [resetAuthentication]);
 
   const handleLogout = useCallback(() => {
     resetAuthentication();
@@ -176,6 +194,8 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
 
   const navigateRecovery = (path: RecoveryEntry['path']) => {
     authGeneration.current++;
+    invalidateSession();
+    googleEntry.current = false;
     recoveryRoute.current = path;
     window.history.pushState(null, '', path || '/');
     setRecovery({ path, token: null }); setRecoveryVisit((n) => n + 1);
@@ -219,10 +239,11 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
   if (recovery.path === '/reset-password') return <ResetPasswordPage key={recoveryVisit} token={recovery.token}
     onLogin={() => navigateRecovery(null)} onNewRequest={() => navigateRecovery('/forgot-password')} onSuccess={finishRecovery} />;
 
-  if ((hostRoute || assetRoute) && authCheck !== 'ready') return <main className="host-boot">
-    <h1>{assetRoute ? 'Quản lý tài sản' : 'Quản lý tài khoản Host'}</h1>
-    {authCheck === 'checking' ? <p role="status">Đang kiểm tra phiên đăng nhập</p> : <><p role="alert">{assetRoute ? assetMessages.listFailure : hostAccountMessages.listFailure}</p>
-      <button type="button" className="host-button" onClick={() => { setAuthCheck('checking'); setAuthRetry((n) => n + 1); }}>Thử lại</button></>}
+  if (authCheck !== 'ready') return <main className="host-boot">
+    <h1>{assetRoute ? 'Quản lý tài sản' : hostRoute ? 'Quản lý tài khoản Host' : 'RentOps'}</h1>
+    {authCheck === 'checking' ? <p role="status">Đang kiểm tra phiên đăng nhập</p> : <><p role="alert">{assetRoute ? assetMessages.listFailure : hostRoute ? hostAccountMessages.listFailure : 'Chưa thể khôi phục phiên đăng nhập. Vui lòng kiểm tra kết nối rồi thử lại.'}</p>
+      <button type="button" className="host-button" onClick={() => { setAuthCheck('checking'); setAuthRetry((n) => n + 1); }}>Thử lại</button>
+      <button type="button" className="host-button" onClick={() => resetAuthentication()}>Đăng nhập lại</button></>}
   </main>;
 
   // 1. Màn hình Dashboard hiện có (Dùng chung tạm thời sau khi đăng nhập thành công)

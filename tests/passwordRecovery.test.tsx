@@ -20,6 +20,7 @@ function install() {
   const fetch = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input); void init;
     if (url.endsWith('/auth/csrf')) return csrf();
+    if (url.endsWith('/auth/refresh')) return failure(401, 'expired');
     if (url.endsWith('/auth/me')) return failure(401, 'guest');
     if (url.endsWith('/forgot-password')) return forgot();
     if (url.endsWith('/reset-password/validate')) return validate();
@@ -105,7 +106,7 @@ describe('UC06 integrated screens', () => {
   it('connects login, validates email, acknowledges honestly and only resubmits manually', async () => {
     const api = install(); render(<App />);
     const user = userEvent.setup();
-    await user.click(screen.getByRole('link', { name: 'Quên mật khẩu?' }));
+    await user.click(await screen.findByRole('link', { name: 'Quên mật khẩu?' }));
     expect(location.pathname).toBe('/forgot-password');
     await user.click(screen.getByRole('button', { name: 'Gửi yêu cầu' }));
     expect(screen.getByText(m.emailRequired)).toBeTruthy(); expect(api.forgot).not.toHaveBeenCalled();

@@ -1,5 +1,6 @@
 import { AuthApiError, clearCsrfCache, getCsrfToken } from './authApi';
 import { recoveryMessages as m, type ForgotPasswordRequest, type RecoveryField, type RecoveryResponse, type ResetPasswordRequest } from '../types/passwordRecovery';
+import { announceSession, invalidateSession, withSessionLock } from './sessionClient';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || '/api/v1';
 const allowedErrors: Record<RecoveryField, readonly string[]> = {
@@ -55,9 +56,13 @@ export function validatePasswordResetToken(token: string): Promise<RecoveryRespo
   return postRecovery('reset-password/validate', { token }, m.linkValid, [], m.linkInvalid);
 }
 export async function resetPassword(request: ResetPasswordRequest): Promise<RecoveryResponse> {
-  const response = await postRecovery('reset-password', {
-    token: request.token, newPassword: request.newPassword, confirmPassword: request.confirmPassword,
-  }, m.success, ['newPassword', 'confirmPassword'], m.requestInvalid);
-  clearCsrfCache();
-  return response;
+  invalidateSession();
+  return withSessionLock(async () => {
+    const response = await postRecovery('reset-password', {
+      token: request.token, newPassword: request.newPassword, confirmPassword: request.confirmPassword,
+    }, m.success, ['newPassword', 'confirmPassword'], m.requestInvalid);
+    invalidateSession();
+    announceSession(null);
+    return response;
+  });
 }

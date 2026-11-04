@@ -15,17 +15,20 @@ export function deferred<T>() {
 
 export function installApi(profile: PersonalProfileResponse) {
   clearCsrfCache();
+  const me = vi.fn(async (): Promise<Response> => ok({ accountId: 'fixture-session', loginName: 'profile-user', role: profile.role, hostId: null, customerId: null }));
+  const refresh = vi.fn(async (): Promise<Response> => failure(401, 'Expired'));
   const getProfile = vi.fn(async () => ok(profile));
   const patchProfile = vi.fn(async (init: RequestInit) => { void init; return ok(profile); });
   const csrf = vi.fn(async () => ok({ token: 'csrf-fixture', headerName: 'X-CSRF-TOKEN' }));
   const fetchMock = vi.fn(async (input: RequestInfo | URL, init: RequestInit = {}): Promise<Response> => {
     const path = String(input);
-    if (path.endsWith('/auth/me')) return ok({ accountId: 'fixture-session', loginName: 'profile-user', role: profile.role, hostId: null, customerId: null });
+    if (path.endsWith('/auth/me')) return me();
+    if (path.endsWith('/auth/refresh')) return refresh();
     if (path.endsWith('/auth/csrf')) return csrf();
     if (path.endsWith('/auth/logout')) return ok(null);
     if (path.endsWith('/profile')) return init.method === 'PATCH' ? patchProfile(init) : getProfile();
     throw new Error(`Unexpected test request: ${path}`);
   });
   vi.stubGlobal('fetch', fetchMock);
-  return { fetchMock, getProfile, patchProfile, csrf };
+  return { fetchMock, getProfile, patchProfile, csrf, me, refresh };
 }
