@@ -31,12 +31,10 @@ export const LoginPage: FC<LoginPageProps> = ({
 
   return (
     <main className="page-shell">
-      <div className="auth-container">
-        {/* CỘT TRÁI: Thương hiệu & Giá trị nền tảng RentOps */}
-        <NarrativePanel />
-
+      <div className="auth-container auth-container--login">
         {/* CỘT PHẢI: Form Đăng nhập hệ thống */}
         <section className="form-panel" aria-label="Khu vực đăng nhập">
+          <p className="auth-mobile-brand">RentOps<span className="brand-dot">.</span></p>
           {google.isOnboarding ? <GoogleOnboardingForm controller={google} /> : <LoginForm
             onNavigateToRegister={onNavigateToRegister}
             onSuccess={onLoginSuccess}
@@ -49,6 +47,7 @@ export const LoginPage: FC<LoginPageProps> = ({
             onForgotPassword={onForgotPassword}
           />}
         </section>
+        <NarrativePanel />
       </div>
 
     </main>

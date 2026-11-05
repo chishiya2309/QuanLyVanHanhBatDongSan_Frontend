@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+import { PropertyDialog } from './PropertyDialog';
 import type { Floor, RoomDetail, CreateRoomInput, UpdateRoomInput } from '../../types/properties';
 
 interface RoomModalProps {
@@ -15,8 +16,12 @@ interface RoomModalProps {
   onOpenAddFloor: () => void;
 }
 
-export const RoomModal: React.FC<RoomModalProps> = ({
-  isOpen,
+export const RoomModal: React.FC<RoomModalProps> = (props) => {
+  if (!props.isOpen) return null;
+  return <RoomModalForm key={`${props.buildingId}:${props.roomDetail?.id ?? 'create'}`} {...props} />;
+};
+
+const RoomModalForm: React.FC<RoomModalProps> = ({
   buildingName,
   floors,
   roomDetail,
@@ -27,35 +32,16 @@ export const RoomModal: React.FC<RoomModalProps> = ({
   onSubmit,
   onOpenAddFloor,
 }) => {
-  const [floorId, setFloorId] = useState('');
-  const [code, setCode] = useState('');
-  const [name, setName] = useState('');
-  const [area, setArea] = useState<number | ''>(28);
-  const [defaultRent, setDefaultRent] = useState<number | ''>(4500000);
-  const [defaultDeposit, setDefaultDeposit] = useState<number | ''>(4500000);
+  const [selectedFloorId, setFloorId] = useState<string | null>(roomDetail?.floorId ?? null);
+  const floorId = selectedFloorId === '' ? '' : floors.find((floor) => floor.id === selectedFloorId)?.id ?? floors[0]?.id ?? '';
+  const [code, setCode] = useState(roomDetail?.code ?? '');
+  const [name, setName] = useState(roomDetail?.name ?? '');
+  const [area, setArea] = useState<number | ''>(roomDetail?.area ?? 28);
+  const [defaultRent, setDefaultRent] = useState<number | ''>(roomDetail?.defaultRent ?? 4500000);
+  const [defaultDeposit, setDefaultDeposit] = useState<number | ''>(roomDetail?.defaultDeposit ?? 4500000);
 
   // Determine if basic fields (code, name, area) are locked
   const isLocked = roomDetail ? !roomDetail.canEditBasicInfo : false;
-
-  useEffect(() => {
-    if (roomDetail) {
-      setFloorId(roomDetail.floorId || '');
-      setCode(roomDetail.code || '');
-      setName(roomDetail.name || '');
-      setArea(roomDetail.area || 28);
-      setDefaultRent(roomDetail.defaultRent || 0);
-      setDefaultDeposit(roomDetail.defaultDeposit || 0);
-    } else {
-      setFloorId(floors[0]?.id || '');
-      setCode('');
-      setName('');
-      setArea(28);
-      setDefaultRent(4500000);
-      setDefaultDeposit(4500000);
-    }
-  }, [roomDetail, floors, isOpen]);
-
-  if (!isOpen) return null;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -88,19 +74,13 @@ export const RoomModal: React.FC<RoomModalProps> = ({
   };
 
   return (
-    <div className="prop-drawer-backdrop" onClick={onClose}>
-      <dialog
-        open
-        className="prop-dialog"
-        onClick={(e) => e.stopPropagation()}
-        aria-labelledby="room-modal-title"
-      >
+    <PropertyDialog labelledBy="room-modal-title" onClose={onClose} pending={isPending}>
         <div className="prop-dialog-header">
           <div>
             <h2 id="room-modal-title">{roomDetail ? `Cập nhật phòng: ${roomDetail.code}` : 'Khai báo phòng mới'}</h2>
             {buildingName && <p className="prop-help" style={{ margin: 0 }}>Tòa nhà: {buildingName}</p>}
           </div>
-          <button type="button" className="prop-btn prop-btn--outline prop-btn--sm" onClick={onClose} disabled={isPending}>
+          <button type="button" className="prop-btn prop-btn--outline prop-btn--sm" aria-label="Đóng hộp thoại" onClick={onClose} disabled={isPending}>
             ✕
           </button>
         </div>
@@ -117,7 +97,7 @@ export const RoomModal: React.FC<RoomModalProps> = ({
             {isLocked && (
               <div className="prop-banner prop-banner--warn" role="alert">
                 <p>
-                  <strong>Khóa trường cốt lõi (Ngoại lệ 10d):</strong> Phòng đang có hợp đồng thuê hoặc giữ chỗ còn hiệu lực.
+                  <strong>Thông tin phòng đang được khóa:</strong> Phòng đang có hợp đồng thuê hoặc giữ chỗ còn hiệu lực.
                   Hệ thống đã khóa mã phòng, tên và diện tích. Bạn chỉ được phép cập nhật giá thuê và tiền cọc mặc định.
                 </p>
               </div>
@@ -165,7 +145,7 @@ export const RoomModal: React.FC<RoomModalProps> = ({
             {/* Room Code */}
             <div className="prop-field">
               <label htmlFor="room-code">
-                Mã phòng (*) {isLocked && <span title="Đã khóa do có hợp đồng">🔒 (Đã khóa)</span>}
+                Mã phòng (*) {isLocked && <span title="Đã khóa do có hợp đồng">(Đã khóa)</span>}
               </label>
               <input
                 id="room-code"
@@ -183,7 +163,7 @@ export const RoomModal: React.FC<RoomModalProps> = ({
             {/* Room Name */}
             <div className="prop-field">
               <label htmlFor="room-name">
-                Tên phòng (*) {isLocked && <span title="Đã khóa do có hợp đồng">🔒 (Đã khóa)</span>}
+                Tên phòng (*) {isLocked && <span title="Đã khóa do có hợp đồng">(Đã khóa)</span>}
               </label>
               <input
                 id="room-name"
@@ -200,7 +180,7 @@ export const RoomModal: React.FC<RoomModalProps> = ({
             {/* Room Area */}
             <div className="prop-field">
               <label htmlFor="room-area">
-                Diện tích phòng (m²) (*) {isLocked && <span title="Đã khóa do có hợp đồng">🔒 (Đã khóa)</span>}
+                Diện tích phòng (m²) (*) {isLocked && <span title="Đã khóa do có hợp đồng">(Đã khóa)</span>}
               </label>
               <input
                 id="room-area"
@@ -275,8 +255,7 @@ export const RoomModal: React.FC<RoomModalProps> = ({
             </button>
           </div>
         </form>
-      </dialog>
-    </div>
+      </PropertyDialog>
   );
 };
 

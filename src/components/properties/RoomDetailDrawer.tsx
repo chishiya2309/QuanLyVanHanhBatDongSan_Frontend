@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { PropertyDialog } from './PropertyDialog';
 import type { RoomDetail, RoomHistory } from '../../types/properties';
 import { getRoomDetail, getRoomHistory, PropertyApiError } from '../../services/propertiesApi';
 
@@ -12,8 +13,12 @@ interface RoomDetailDrawerProps {
   onSessionExpired: () => void;
 }
 
-export const RoomDetailDrawer: React.FC<RoomDetailDrawerProps> = ({
-  isOpen,
+export const RoomDetailDrawer: React.FC<RoomDetailDrawerProps> = (props) => {
+  if (!props.isOpen || !props.roomId) return null;
+  return <RoomDetailDrawerContent key={`${props.buildingId ?? ''}:${props.roomId}:${props.initialTab ?? 'detail'}`} {...props} roomId={props.roomId} />;
+};
+
+const RoomDetailDrawerContent: React.FC<RoomDetailDrawerProps & { roomId: string }> = ({
   roomId,
   buildingId,
   initialTab = 'detail',
@@ -26,23 +31,11 @@ export const RoomDetailDrawer: React.FC<RoomDetailDrawerProps> = ({
   );
   const [detail, setDetail] = useState<RoomDetail | null>(null);
   const [history, setHistory] = useState<RoomHistory | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    setActiveTab(initialTab === 'history' ? 'state' : 'detail');
-  }, [initialTab]);
-
-  useEffect(() => {
-    if (!isOpen || !roomId) {
-      setDetail(null);
-      setHistory(null);
-      return;
-    }
-
     let isMounted = true;
-    setLoading(true);
-    setError(null);
 
     Promise.all([
       getRoomDetail(roomId, buildingId || undefined),
@@ -68,9 +61,7 @@ export const RoomDetailDrawer: React.FC<RoomDetailDrawerProps> = ({
     return () => {
       isMounted = false;
     };
-  }, [isOpen, roomId, buildingId, onSessionExpired]);
-
-  if (!isOpen || !roomId) return null;
+  }, [roomId, buildingId, onSessionExpired]);
 
   const renderStatusBadge = (status?: string, isMaintenance?: boolean) => {
     switch (status) {
@@ -87,20 +78,15 @@ export const RoomDetailDrawer: React.FC<RoomDetailDrawerProps> = ({
   };
 
   return (
-    <div className="prop-drawer-backdrop" onClick={onClose}>
-      <aside
-        className="prop-drawer"
-        onClick={(e) => e.stopPropagation()}
-        aria-label="Chi tiết và lịch sử phòng"
-      >
+    <PropertyDialog drawer labelledBy="room-detail-title" onClose={onClose}>
         <header className="prop-drawer-header">
           <div>
-            <h2 style={{ margin: 0, fontSize: 'var(--text-lg)', fontWeight: 600 }}>
+            <h2 id="room-detail-title" style={{ margin: 0, fontSize: 'var(--text-lg)', fontWeight: 600 }}>
               {detail ? `Phòng: ${detail.code}` : 'Chi tiết phòng'}
             </h2>
             {detail && <div style={{ marginTop: '4px' }}>{renderStatusBadge(detail.status, detail.maintenance)}</div>}
           </div>
-          <button type="button" className="prop-btn prop-btn--outline prop-btn--sm" onClick={onClose}>
+          <button type="button" className="prop-btn prop-btn--outline prop-btn--sm" aria-label="Đóng chi tiết phòng" onClick={onClose}>
             ✕
           </button>
         </header>
@@ -181,7 +167,7 @@ export const RoomDetailDrawer: React.FC<RoomDetailDrawerProps> = ({
                   <dd>
                     {detail.hasActiveContractOrReservation ? (
                       <span style={{ color: 'var(--color-status-warn)', fontSize: 'var(--text-xs)' }}>
-                        🔒 Khóa thông tin cơ bản (Đang có hợp đồng/giữ chỗ)
+                        Khóa thông tin cơ bản (Đang có hợp đồng/giữ chỗ)
                       </span>
                     ) : (
                       <span style={{ color: 'var(--color-success)', fontSize: 'var(--text-xs)' }}>
@@ -292,8 +278,7 @@ export const RoomDetailDrawer: React.FC<RoomDetailDrawerProps> = ({
             </button>
           )}
         </footer>
-      </aside>
-    </div>
+      </PropertyDialog>
   );
 };
 

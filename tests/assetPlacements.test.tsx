@@ -33,7 +33,9 @@ describe('UC18 authorization and routes', () => {
   });
   it('opens from the list, retains context, restores focus and reloads confirmation on revisit', async () => {
     const api = installTrackingApi(); enter('/assets?q=Máy%25_%21&page=0&size=50'); render(<App />);
-    const table = await screen.findByRole('table'); const trigger = within(table).getByRole('button', { name: 'Gán vào phòng' }); trigger.focus(); fireEvent.click(trigger);
+    const table = await screen.findByRole('table'); const trigger = within(table).getByRole('button', { name: /Thao tác khác:/ }); trigger.focus(); fireEvent.click(trigger);
+    // jsdom does not lay out native popovers; the browser suite verifies their visibility and keyboard behavior.
+    fireEvent.click(within(table).getByRole('button', { name: 'Gán vào phòng', hidden: true }));
     const dialog = await modalReady(); expect(document.activeElement).toBe(within(dialog).getByRole('combobox'));
     expect(new URLSearchParams(location.search).get('targetAssetId')).toBe(assetId); choose(dialog);
     fireEvent.click(within(dialog).getByRole('button', { name: 'Hủy' })); expect(screen.queryByRole('dialog')).toBeNull(); expect(document.activeElement).toBe(trigger);
@@ -98,7 +100,8 @@ describe('UC18 placement forms and concurrency', () => {
     const api = installTrackingApi(); render(<App />);
     const table = await screen.findByRole('table');
     api.detail.mockResolvedValueOnce(failure(404, m.notFound)); api.list.mockResolvedValueOnce(assetPageReply({ q: '', page: 0, size: 20 }, []));
-    fireEvent.click(within(table).getByRole('button', { name: 'Gán vào phòng' }));
+    fireEvent.click(within(table).getByRole('button', { name: /Thao tác khác:/ }));
+    fireEvent.click(within(table).getByRole('button', { name: 'Gán vào phòng', hidden: true }));
     await screen.findByText(m.notFound); await screen.findByRole('heading', { name: 'Chưa có tài sản' });
     expect(screen.queryByRole('dialog')).toBeNull(); expect(api.write).not.toHaveBeenCalled(); expect(api.list).toHaveBeenCalledTimes(2);
   });

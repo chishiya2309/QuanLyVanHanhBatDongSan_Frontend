@@ -40,6 +40,10 @@ interface PropertiesPageProps {
   onSessionExpired: () => void;
 }
 
+function fetchProperties() {
+  return Promise.all([getAreas(), getBuildings(), getActiveAreas()]);
+}
+
 export const PropertiesPage: React.FC<PropertiesPageProps> = ({
   route,
   onNavigate,
@@ -77,36 +81,42 @@ export const PropertiesPage: React.FC<PropertiesPageProps> = ({
   const [modalError, setModalError] = useState<string | null>(null);
   const [modalFieldErrors, setModalFieldErrors] = useState<Record<string, string>>({});
 
-  // Fetch initial data
-  const loadData = useCallback(async () => {
+  const applyData = useCallback(([areasRes, buildingsRes, activeAreasRes]: [Area[], Building[], Area[]]) => {
+    setAreas(areasRes);
+    setBuildings(buildingsRes);
+    setActiveAreas(activeAreasRes);
+    setLoading(false);
+  }, []);
+
+  const handleLoadError = useCallback((err: unknown) => {
+    setLoading(false);
+    if (err instanceof PropertyApiError && err.status === 401) {
+      onSessionExpired();
+      return;
+    }
+    setBanner({
+      kind: 'error',
+      message: err instanceof Error ? err.message : 'Không thể tải dữ liệu cơ sở và bất động sản',
+    });
+  }, [onSessionExpired]);
+
+  const loadData = async () => {
     setLoading(true);
     setBanner(null);
     try {
-      const [areasRes, buildingsRes, activeAreasRes] = await Promise.all([
-        getAreas(),
-        getBuildings(),
-        getActiveAreas(),
-      ]);
-      setAreas(areasRes);
-      setBuildings(buildingsRes);
-      setActiveAreas(activeAreasRes);
+      applyData(await fetchProperties());
     } catch (err) {
-      if (err instanceof PropertyApiError && err.status === 401) {
-        onSessionExpired();
-        return;
-      }
-      setBanner({
-        kind: 'error',
-        message: err instanceof Error ? err.message : 'Không thể tải dữ liệu cơ sở và bất động sản',
-      });
-    } finally {
-      setLoading(false);
+      handleLoadError(err);
     }
-  }, [onSessionExpired]);
+  };
 
   useEffect(() => {
-    void loadData();
-  }, [loadData]);
+    let active = true;
+    fetchProperties()
+      .then((data) => { if (active) applyData(data); })
+      .catch((err: unknown) => { if (active) handleLoadError(err); });
+    return () => { active = false; };
+  }, [applyData, handleLoadError]);
 
   // Tab change
   const handleTabChange = (tab: 'areas' | 'buildings') => {
@@ -366,7 +376,7 @@ export const PropertiesPage: React.FC<PropertiesPageProps> = ({
             <div className="prop-toolbar-group">
               <input
                 className="prop-input"
-                style={{ minWidth: '240px' }}
+                aria-label="Tìm kiếm"
                 placeholder="Tìm kiếm theo tên hoặc mô tả khu vực..."
                 value={areaKeyword}
                 onChange={(e) => setAreaKeyword(e.target.value)}
@@ -412,16 +422,16 @@ export const PropertiesPage: React.FC<PropertiesPageProps> = ({
                 <tbody>
                   {filteredAreas.map((area) => (
                     <tr key={area.id}>
-                      <td>
+                      <td data-label="Tên khu vực">
                         <strong>{area.name}</strong>
                       </td>
-                      <td style={{ color: 'var(--color-muted)' }}>{area.description || 'Chưa có mô tả'}</td>
-                      <td>
+                      <td data-label="Mô tả" style={{ color: 'var(--color-muted)' }}>{area.description || 'Chưa có mô tả'}</td>
+                      <td data-label="Trạng thái">
                         <span className={`prop-badge ${area.active ? 'prop-badge--active' : 'prop-badge--inactive'}`}>
                           {area.active ? 'Đang hoạt động' : 'Ngừng hoạt động'}
                         </span>
                       </td>
-                      <td>
+                      <td data-label="Thao tác">
                         <div style={{ display: 'flex', gap: '8px' }}>
                           <button
                             type="button"
@@ -468,7 +478,7 @@ export const PropertiesPage: React.FC<PropertiesPageProps> = ({
             <div className="prop-toolbar-group">
               <input
                 className="prop-input"
-                style={{ minWidth: '240px' }}
+                aria-label="Tìm kiếm"
                 placeholder="Tìm tên hoặc địa chỉ tòa nhà..."
                 value={buildingKeyword}
                 onChange={(e) => setBuildingKeyword(e.target.value)}
@@ -527,19 +537,19 @@ export const PropertiesPage: React.FC<PropertiesPageProps> = ({
                 <tbody>
                   {filteredBuildings.map((b) => (
                     <tr key={b.id}>
-                      <td>
+                      <td data-label="Tên tòa nhà">
                         <strong>{b.name}</strong>
                       </td>
-                      <td>
+                      <td data-label="Khu vực trực thuộc">
                         <span className="prop-badge prop-badge--active">{b.areaName}</span>
                       </td>
-                      <td style={{ color: 'var(--color-muted)' }}>{b.address}</td>
-                      <td>
+                      <td data-label="Địa chỉ" style={{ color: 'var(--color-muted)' }}>{b.address}</td>
+                      <td data-label="Trạng thái">
                         <span className={`prop-badge ${b.active ? 'prop-badge--active' : 'prop-badge--inactive'}`}>
                           {b.active ? 'Đang hoạt động' : 'Ngừng hoạt động'}
                         </span>
                       </td>
-                      <td>
+                      <td data-label="Thao tác">
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', alignItems: 'center' }}>
                           <button
                             type="button"

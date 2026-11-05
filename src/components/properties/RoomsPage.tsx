@@ -54,11 +54,11 @@ export const RoomsPage: React.FC<RoomsPageProps> = ({
 
   // Overview Data (for Matrix View)
   const [overview, setOverview] = useState<BuildingOverview | null>(null);
-  const [overviewLoading, setOverviewLoading] = useState(false);
+  const [overviewLoading, setOverviewLoading] = useState(route.view === 'matrix' && Boolean(route.buildingId));
 
   // Search Results (for Table View)
   const [searchResults, setSearchResults] = useState<RoomSearchItem[]>([]);
-  const [searchLoading, setSearchLoading] = useState(false);
+  const [searchLoading, setSearchLoading] = useState(route.view === 'table');
   const [filterParams, setFilterParams] = useState<RoomFilterParams>({
     buildingId: route.buildingId || undefined,
   });
@@ -94,10 +94,12 @@ export const RoomsPage: React.FC<RoomsPageProps> = ({
         setAreas(areasRes);
         setBuildings(buildingsRes);
         if (!selectedBuildingId && buildingsRes.length > 0) {
+          setOverviewLoading(true);
           setSelectedBuildingId(buildingsRes[0].id);
         }
       })
       .catch((err) => {
+        if (!isMounted) return;
         if (err instanceof PropertyApiError && err.status === 401) {
           onSessionExpired();
           return;
@@ -125,10 +127,15 @@ export const RoomsPage: React.FC<RoomsPageProps> = ({
   }, [onSessionExpired]);
 
   useEffect(() => {
-    if (selectedBuildingId) {
-      void loadFloors(selectedBuildingId);
-    }
-  }, [selectedBuildingId, loadFloors]);
+    if (!selectedBuildingId) return;
+    let active = true;
+    getFloors(selectedBuildingId)
+      .then((data) => { if (active) setFloors(data); })
+      .catch((err: unknown) => {
+        if (active && err instanceof PropertyApiError && err.status === 401) onSessionExpired();
+      });
+    return () => { active = false; };
+  }, [selectedBuildingId, onSessionExpired]);
 
   // 3. Load Matrix Overview
   const loadOverview = useCallback(async (bId: string) => {
@@ -149,10 +156,21 @@ export const RoomsPage: React.FC<RoomsPageProps> = ({
   }, [onSessionExpired]);
 
   useEffect(() => {
-    if (viewMode === 'matrix' && selectedBuildingId) {
-      void loadOverview(selectedBuildingId);
-    }
-  }, [viewMode, selectedBuildingId, loadOverview]);
+    if (viewMode !== 'matrix' || !selectedBuildingId) return;
+    let active = true;
+    getBuildingOverview(selectedBuildingId)
+      .then((data) => { if (active) setOverview(data); })
+      .catch((err: unknown) => {
+        if (!active) return;
+        if (err instanceof PropertyApiError && err.status === 401) {
+          onSessionExpired();
+          return;
+        }
+        setBanner({ kind: 'error', message: err instanceof Error ? err.message : 'Lỗi khi tải sơ đồ tầng' });
+      })
+      .finally(() => { if (active) setOverviewLoading(false); });
+    return () => { active = false; };
+  }, [viewMode, selectedBuildingId, onSessionExpired]);
 
   // 4. Load Search Table Results
   const executeSearch = useCallback(async (params: RoomFilterParams) => {
@@ -172,19 +190,37 @@ export const RoomsPage: React.FC<RoomsPageProps> = ({
   }, [onSessionExpired]);
 
   useEffect(() => {
-    if (viewMode === 'table') {
-      void executeSearch(filterParams);
-    }
-  }, [viewMode, filterParams, executeSearch]);
+    if (viewMode !== 'table') return;
+    let active = true;
+    searchRooms(filterParams)
+      .then((data) => { if (active) setSearchResults(data); })
+      .catch((err: unknown) => {
+        if (!active) return;
+        if (err instanceof PropertyApiError && err.status === 401) {
+          onSessionExpired();
+          return;
+        }
+        setBanner({ kind: 'error', message: err instanceof Error ? err.message : 'Lỗi khi tra cứu danh sách phòng' });
+      })
+      .finally(() => { if (active) setSearchLoading(false); });
+    return () => { active = false; };
+  }, [viewMode, filterParams, onSessionExpired]);
 
   // Change view mode
   const handleSwitchView = (mode: 'matrix' | 'table') => {
+    if (mode === viewMode) return;
+    if (mode === 'matrix') setOverviewLoading(Boolean(selectedBuildingId));
+    else setSearchLoading(true);
     setViewMode(mode);
     onNavigate(`/rooms?view=${mode}${selectedBuildingId ? `&buildingId=${selectedBuildingId}` : ''}`);
   };
 
   // Change selected building in Matrix
   const handleSelectBuilding = (bId: string) => {
+    if (bId === selectedBuildingId) return;
+    setOverviewLoading(Boolean(bId));
+    setOverview(null);
+    setFloors([]);
     setSelectedBuildingId(bId);
     onNavigate(`/rooms?view=matrix&buildingId=${bId}`);
   };
@@ -411,12 +447,12 @@ export const RoomsPage: React.FC<RoomsPageProps> = ({
           buildings={buildings}
           floors={floors}
           filterParams={filterParams}
-          onFilterChange={(params) => setFilterParams(params)}
+          onFilterChange={(params) => { setSearchLoading(true); setFilterParams(params); }}
           onApplyFilter={() => executeSearch(filterParams)}
           onResetFilter={() => {
             const emptyParams = {};
+            setSearchLoading(true);
             setFilterParams(emptyParams);
-            void executeSearch(emptyParams);
           }}
           onSelectRoom={handleSelectRoomAction}
         />

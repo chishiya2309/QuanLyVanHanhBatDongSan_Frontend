@@ -94,7 +94,8 @@ try {
   await page.setViewport({ width: 1440, height: 900 });
   await check('List/detail dialogs, cancel focus, Back/Forward and query context', async () => {
     await open('/assets?q=Máy&page=0&size=50'); await waitText('Chưa bố trí');
-    await page.focus('.asset-table button'); await click('Gán vào phòng', '.asset-table'); await modal();
+    await page.focus('.asset-table button[popovertarget]'); await page.keyboard.press('Enter');
+    await page.waitForSelector('.asset-action-menu:popover-open'); await click('Gán vào phòng', '.asset-table'); await modal();
     assert.equal(await page.evaluate(() => document.activeElement.id), 'asset-roomId');
     await page.goBack(); await page.waitForFunction(() => !document.querySelector('dialog[open]')); await page.goForward(); await modal();
     await choose(roomA); await click('Hủy', 'dialog'); assert.equal(new URL(page.url()).searchParams.get('q'), 'Máy'); assert.equal(writes().length, 0);

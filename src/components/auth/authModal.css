@@ -2,8 +2,7 @@
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background-color: oklch(21% 0.012 38 / 0.55);
-  backdrop-filter: blur(4px);
+  background-color: var(--color-profile-backdrop);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -18,7 +17,7 @@
   background-color: var(--color-cotton);
   border: 1px solid var(--color-rule);
   border-radius: var(--radius-card);
-  box-shadow: 0 20px 40px -10px oklch(21% 0.012 38 / 0.25);
+  box-shadow: var(--shadow-card);
   padding: var(--space-xl);
   box-sizing: border-box;
   animation: modalSlideUp 0.25s var(--ease-out);

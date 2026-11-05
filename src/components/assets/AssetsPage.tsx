@@ -1,4 +1,4 @@
-import { useCallback, useLayoutEffect, useRef, type ReactNode } from 'react';
+import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { useAssets } from '../../hooks/useAssets';
 import { assetMessages as m, type Asset, type AssetQuery, type AssetRoute } from '../../types/assets';
 import { assetPlacementUrl, assetRouteKey, assetUrl } from '../../utils/assetNavigation';
@@ -10,10 +10,49 @@ import { AssetHistory } from './AssetHistory';
 import './assets.css';
 
 function AssetActions({ asset, route, navigate, disabled, onPlacement }: { asset: Asset; route: AssetRoute; navigate: AssetNavigate; disabled: boolean; onPlacement: (asset: Asset) => void }) {
+  const id = useId();
+  const trigger = useRef<HTMLButtonElement>(null);
+  const menu = useRef<HTMLDivElement>(null);
+  const [open, setOpen] = useState(false);
+  const close = (restoreFocus = false) => { menu.current?.hidePopover?.(); if (restoreFocus) trigger.current?.focus(); };
+  const positionMenu = useCallback(() => {
+    const panel = menu.current;
+    if (!panel || !trigger.current) return;
+    const box = trigger.current.getBoundingClientRect();
+    const gutter = 8;
+    const width = panel.offsetWidth || Math.min(240, window.innerWidth - gutter * 2);
+    const height = panel.offsetHeight || 192;
+    panel.style.left = `${Math.max(gutter, Math.min(box.right - width, window.innerWidth - width - gutter))}px`;
+    panel.style.top = `${Math.max(gutter, box.bottom + height + gutter <= window.innerHeight ? box.bottom + gutter : box.top - height - gutter)}px`;
+  }, []);
+  useEffect(() => {
+    if (!open) return;
+    window.addEventListener('resize', positionMenu);
+    window.addEventListener('scroll', positionMenu, true);
+    return () => {
+      window.removeEventListener('resize', positionMenu);
+      window.removeEventListener('scroll', positionMenu, true);
+    };
+  }, [open, positionMenu]);
   return <div className="asset-row-actions"><AssetLink href={assetUrl(route, asset.assetId)} navigate={navigate}>Xem chi tiết</AssetLink>
-    <AssetLink href={assetUrl(route, asset.assetId, 'edit')} navigate={navigate} disabled={disabled}>Chỉnh sửa</AssetLink>
-    <AssetLink href={assetUrl(route, asset.assetId, 'condition')} navigate={navigate} disabled={disabled}>Ghi nhận tình trạng</AssetLink>
-    <PlacementActions asset={asset} route={route} navigate={navigate} disabled={disabled} onPlacement={onPlacement} />
+    <button ref={trigger} type="button" className="asset-button" popoverTarget={id} aria-controls={id} aria-expanded={open}
+      onClick={positionMenu} aria-label={`Thao tác khác: ${asset.name}`} title="Thao tác khác">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.5" /><circle cx="12" cy="12" r="1.5" /><circle cx="19" cy="12" r="1.5" /></svg>
+    </button>
+    <div ref={menu} id={id} popover="auto" className="asset-action-menu" aria-label={`Thao tác với ${asset.name}`}
+      onToggle={() => {
+        const panel = menu.current;
+        const visible = panel?.matches(':popover-open') ?? false;
+        setOpen(visible);
+        if (visible) positionMenu();
+      }} onKeyDown={(event) => {
+        if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); close(true); }
+      }}>
+      <AssetLink href={assetUrl(route, asset.assetId, 'edit')} navigate={(url) => { close(); navigate(url); }} disabled={disabled}>Chỉnh sửa</AssetLink>
+      <AssetLink href={assetUrl(route, asset.assetId, 'condition')} navigate={(url) => { close(); navigate(url); }} disabled={disabled}>Ghi nhận tình trạng</AssetLink>
+      <PlacementActions asset={asset} route={route} navigate={(url) => { close(); navigate(url); }} disabled={disabled}
+        onPlacement={(target) => { close(true); onPlacement(target); }} />
+    </div>
   </div>;
 }
 function PlacementActions({ asset, route, navigate, disabled, onPlacement }: { asset: Asset; route: AssetRoute; navigate: AssetNavigate; disabled: boolean; onPlacement: (asset: Asset) => void }) {

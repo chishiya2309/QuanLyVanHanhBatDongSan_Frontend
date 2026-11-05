@@ -21,7 +21,7 @@ export function GoogleOnboardingForm({ controller: c }: { controller: Controller
     { name: 'confirmPassword', label: 'Xác nhận mật khẩu', autoComplete: 'new-password', type: 'password' },
   ];
   return <div className="form-inner form-inner-wide google-onboarding">
-    <div className="form-heading-group"><span className="google-onboarding-badge">Tiếp tục với Google</span>
+    <div className="form-heading-group">
       <h2 className="form-title" ref={heading} tabIndex={-1}>{register || !c.context ? 'Hoàn tất tài khoản của bạn' : 'Đặt mật khẩu để hoàn tất đăng nhập'}</h2>
       {c.context && <p className="form-subtitle">{register
         ? 'Bổ sung thông tin để bắt đầu sử dụng RentOps. Sau đó bạn có thể đăng nhập bằng Google hoặc email và mật khẩu này.'

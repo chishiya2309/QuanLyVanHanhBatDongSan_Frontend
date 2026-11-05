@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+import { PropertyDialog } from './PropertyDialog';
 import type { Floor, CreateFloorInput, UpdateFloorInput } from '../../types/properties';
 
 interface FloorModalProps {
@@ -12,8 +13,12 @@ interface FloorModalProps {
   onSubmit: (input: CreateFloorInput | UpdateFloorInput) => void;
 }
 
-export const FloorModal: React.FC<FloorModalProps> = ({
-  isOpen,
+export const FloorModal: React.FC<FloorModalProps> = (props) => {
+  if (!props.isOpen) return null;
+  return <FloorModalForm key={`${props.buildingId}:${props.floor?.id ?? 'create'}`} {...props} />;
+};
+
+const FloorModalForm: React.FC<FloorModalProps> = ({
   floor,
   isPending,
   error,
@@ -21,20 +26,8 @@ export const FloorModal: React.FC<FloorModalProps> = ({
   onClose,
   onSubmit,
 }) => {
-  const [name, setName] = useState('');
-  const [level, setLevel] = useState<number | ''>(1);
-
-  useEffect(() => {
-    if (floor) {
-      setName(floor.name);
-      setLevel(floor.level);
-    } else {
-      setName('');
-      setLevel(1);
-    }
-  }, [floor, isOpen]);
-
-  if (!isOpen) return null;
+  const [name, setName] = useState(floor?.name ?? '');
+  const [level, setLevel] = useState<number | ''>(floor?.level ?? 1);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,16 +39,10 @@ export const FloorModal: React.FC<FloorModalProps> = ({
   };
 
   return (
-    <div className="prop-drawer-backdrop" onClick={onClose}>
-      <dialog
-        open
-        className="prop-dialog"
-        onClick={(e) => e.stopPropagation()}
-        aria-labelledby="floor-modal-title"
-      >
+    <PropertyDialog labelledBy="floor-modal-title" onClose={onClose} pending={isPending}>
         <div className="prop-dialog-header">
           <h2 id="floor-modal-title">{floor ? 'Cập nhật tầng' : 'Thêm tầng mới'}</h2>
-          <button type="button" className="prop-btn prop-btn--outline prop-btn--sm" onClick={onClose} disabled={isPending}>
+          <button type="button" className="prop-btn prop-btn--outline prop-btn--sm" aria-label="Đóng hộp thoại" onClick={onClose} disabled={isPending}>
             ✕
           </button>
         </div>
@@ -113,8 +100,7 @@ export const FloorModal: React.FC<FloorModalProps> = ({
             </button>
           </div>
         </form>
-      </dialog>
-    </div>
+      </PropertyDialog>
   );
 };
 

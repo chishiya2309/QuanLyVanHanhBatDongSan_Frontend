@@ -1,4 +1,8 @@
 :root {
+  --color-prop-danger-hover: oklch(52% 0.19 27 / 0.15);
+  --color-prop-segment-shadow: oklch(21% 0.012 38 / 0.08);
+  --color-prop-warn-wash: oklch(62% 0.17 65 / 0.1);
+  --color-prop-drawer-shadow: oklch(21% 0.012 38 / 0.15);
   --color-asset-repair-wash: oklch(96% 0.035 80);
   --color-asset-repair-ink: oklch(40% 0.09 65);
   color-scheme: light;
