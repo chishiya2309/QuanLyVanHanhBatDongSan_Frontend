@@ -67,14 +67,14 @@ export const BuildingOverviewMatrix: React.FC<BuildingOverviewMatrixProps> = ({
         };
 
         return (
-          <section key={floor.floorId} className="floor-card" aria-label={`Tầng ${floor.floorName}`}>
+          <section key={floor.floorId} className="floor-section" aria-label={`Tầng ${floor.floorName}`}>
             <header className="floor-header">
               <div className="floor-header-title">
                 <h3>
                   {floor.floorName} (Cấp {floor.floorLevel})
                 </h3>
                 <span className="floor-occupancy">
-                  {total} phòng · {occupied} đã ở/cọc ({rate}%)
+                  {total} phòng, {occupied} đã ở/cọc ({rate}%)
                 </span>
               </div>
               <div className="floor-actions">

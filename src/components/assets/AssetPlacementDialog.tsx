@@ -51,7 +51,7 @@ export function AssetPlacementDialog({ assetId, action, opener, onClose, onFinis
       {asset.error && <AssetReadError message={asset.error} retry={asset.refresh} stale={asset.stale} />}
       {data && <div className="asset-placement-identity"><h3>{data.name}</h3><p className="asset-id">{data.assetId}</p>
         <p>Tình trạng hiện tại: <ConditionBadge condition={data.condition} /></p>
-        <p>Phòng hiện tại: {source ? `${source.roomCode} — ${source.roomName}` : 'Chưa bố trí'}</p>
+        <p>Phòng hiện tại: {source ? `${source.roomCode}: ${source.roomName}` : 'Chưa bố trí'}</p>
         {source && <p>Bắt đầu bố trí: <AssetTime value={source.fromAt} precise /></p>}
       </div>}
       {rooms.status === 'loading' && <p role="status">Đang tải danh sách phòng.</p>}
@@ -62,11 +62,11 @@ export function AssetPlacementDialog({ assetId, action, opener, onClose, onFinis
         <div className="asset-field"><label htmlFor="asset-roomId">Phòng đích <span aria-hidden="true">*</span></label>
           <select ref={select} id="asset-roomId" value={roomId} onChange={(event) => controller.selectRoom(event.target.value)} required
             disabled={!enabled} aria-invalid={!!fieldError} aria-describedby={fieldError ? 'asset-roomId-error' : undefined}>
-            <option value="">Chọn phòng</option>{availableRooms.map((room) => <option key={room.id} value={room.id}>{[room.areaName, room.buildingName, room.floorName, `${room.code} — ${room.name}`].filter(Boolean).join(' / ')}</option>)}
+            <option value="">Chọn phòng</option>{availableRooms.map((room) => <option key={room.id} value={room.id}>{[room.areaName, room.buildingName, room.floorName, `${room.code}: ${room.name}`].filter(Boolean).join(' / ')}</option>)}
           </select>
           {fieldError && <p className="asset-field-error" id="asset-roomId-error" role="alert">{fieldError}</p>}
         </div>
-        {target && <div className="asset-placement-summary"><p>Tài sản: <strong>{data?.name}</strong></p><p>{action === 'transfer' ? `Từ phòng ${source?.roomCode} — ${source?.roomName} sang phòng ` : 'Gán vào phòng '}<strong>{target.code} — {target.name}</strong></p></div>}
+        {target && <div className="asset-placement-summary"><p>Tài sản: <strong>{data?.name}</strong></p><p>{action === 'transfer' ? `Từ phòng ${source?.roomCode}: ${source?.roomName} sang phòng ` : 'Gán vào phòng '}<strong>{target.code}: {target.name}</strong></p></div>}
         <div className="asset-form-actions"><button type="submit" className="asset-button asset-button--primary" disabled={!enabled}>{pending ? 'Đang lưu…' : action === 'assign' ? 'Xác nhận gán' : 'Xác nhận chuyển'}</button>
           <button type="button" className="asset-button" onClick={onClose} disabled={pending}>Hủy</button></div>
       </form>

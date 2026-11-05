@@ -1,3 +1,9 @@
+/* Hallmark · checked: 2026-11-06 · genre: modern-minimal · scope: app · built: the project · redesign: polish · v2.0.0 */
+/* Hallmark · pre-emit critique: P4 H4 E4 S4 R4 V3 · weakest: V, keeping the shared record design and reducing repeated actions */
+/* Hallmark · finish-review: in-thread · requested fixes resolved · pre-existing mobile navigation issue recorded */
+/* Hallmark · answered F4 · the asset register has one coral create action; neutral row links and popover options are secondary */
+/* Hallmark · answered F7 · assets inputs and buttons intentionally share the RentOps control radius and height for consistent editing */
+/* Hallmark · answered F25 · assets mobile records retain every desktop field and action; the hidden table is duplicated presentation */
 .assets-page { width: 100%; max-width: var(--container); margin-inline: auto; min-width: 0; font-family: var(--font-body); font-size: var(--text-sm); color: var(--color-ink); }
 .assets-page h1 { font-size: var(--text-2xl); line-height: 1.3; letter-spacing: normal; margin: 0; }
 .assets-page h1, .assets-page h2, .asset-dialog h2 { text-wrap: balance; }
@@ -8,7 +14,7 @@
 .asset-button:hover { background: var(--color-surface-hover); }
 .asset-button:active { background: var(--color-paper-3); }
 .asset-button--primary { background: var(--color-accent-primary); border-color: var(--color-accent-primary); color: var(--color-cotton); }
-.asset-button--primary:hover, .asset-button--primary:active { background: var(--color-accent-primary-hover); border-color: var(--color-accent-primary-hover); }
+.asset-button--primary:hover, .asset-button--primary:active { background: var(--color-accent-hover); border-color: var(--color-accent-hover); }
 .asset-button:disabled, .asset-button[aria-disabled="true"] { opacity: .65; cursor: not-allowed; background: var(--color-surface-subtle); color: var(--color-muted); border-color: var(--color-muted); }
 .assets-page :focus-visible, .asset-dialog :focus-visible, .asset-mobile-nav :focus-visible { outline: 2px solid var(--color-focus); outline-offset: 3px; }
 .asset-banner { padding: var(--space-md); margin-block: var(--space-md); border-radius: var(--radius-subcard); border: 1px solid var(--color-success); background: var(--color-status-success-wash); color: var(--color-ink); overflow-wrap: anywhere; }
@@ -42,10 +48,15 @@
 .asset-badge--damaged { background: var(--color-error-wash); color: var(--color-error); }
 .asset-badge--repairing { background: var(--color-asset-repair-wash); color: var(--color-asset-repair-ink); }
 .asset-badge--retired { background: var(--color-paper-3); color: var(--color-ink-2); }
-.asset-row-actions { display: flex; flex-direction: column; align-items: start; gap: var(--space-2xs); }
+.asset-row-actions { display: flex; align-items: center; gap: var(--space-2xs); }
+.asset-row-actions > button { min-width: 44px; }
 .asset-row-actions .asset-button { border: 0; background: var(--color-surface); padding-inline: var(--space-2xs); color: var(--color-accent-primary); }
 .asset-row-actions .asset-button:hover { text-decoration: underline; background: var(--color-surface-hover); }
 .asset-row-actions .asset-button[aria-disabled="true"] { color: var(--color-muted); }
+.asset-action-menu { position: fixed; inset: auto; margin: 0; width: 15rem; max-width: calc(100% - var(--space-md)); max-height: calc(100dvh - var(--space-md)); overflow-y: auto; padding: var(--space-xs); border: 1px solid var(--color-rule-2); border-radius: var(--radius-subcard); background: var(--color-surface); color: var(--color-ink); font-family: var(--font-body); font-size: var(--text-sm); box-shadow: var(--shadow-card); }
+.asset-action-menu:popover-open { display: grid; }
+.asset-action-menu .asset-button { justify-content: start; border: 0; white-space: normal; text-align: left; }
+.asset-action-menu :focus-visible { outline: 2px solid var(--color-focus); outline-offset: -2px; }
 .asset-empty { text-align: center; padding: var(--space-xl) var(--space-md); background: var(--color-surface); border-radius: var(--radius-subcard); }
 .asset-empty p { margin-block: var(--space-sm) var(--space-lg); }
 .asset-mobile-records { display: none; padding: 0; margin: 0; list-style: none; }

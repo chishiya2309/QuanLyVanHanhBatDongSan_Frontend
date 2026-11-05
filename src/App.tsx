@@ -31,7 +31,16 @@ function isGoogleEntry(): boolean {
     || new URLSearchParams(window.location.search).has('status');
 }
 
-function AuthenticatedDashboard({ user, onLogout, onSessionExpired, onAuthenticationEnded, hostRoute, onNavigateHost, assetRoute, onNavigateAssets, onCreatePendingChange, onOverview }: {
+function isProtectedPath(pathname: string, search: string): boolean {
+  return Boolean(
+    parseHostAccountRoute(pathname)
+    || parseAssetRoute(pathname, search)
+    || parsePropertiesRoute(pathname, search)
+    || parseRoomsRoute(pathname, search)
+  );
+}
+
+function AuthenticatedDashboard({ user, onLogout, onSessionExpired, onAuthenticationEnded, hostRoute, onNavigateHost, assetRoute, onNavigateAssets, propertiesRoute, onNavigateProperties, roomsRoute, onNavigateRooms, onCreatePendingChange, onOverview }: {
   user: AuthenticatedUserResponse; onLogout: () => void; onSessionExpired: () => void;
   onAuthenticationEnded: (notice: AuthNotice) => void;
   hostRoute: HostAccountRoute | null;
@@ -166,6 +175,8 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
   const handleCreatePendingChange = useCallback((pending: boolean) => { pendingCreateUrl.current = pending ? window.location.pathname + window.location.search : null; }, []);
   const [hostRoute, setHostRoute] = useState<HostAccountRoute | null>(() => parseHostAccountRoute(window.location.pathname));
   const [assetRoute, setAssetRoute] = useState<AssetRoute | null>(() => parseAssetRoute(window.location.pathname, window.location.search));
+  const [propertiesRoute, setPropertiesRoute] = useState<PropertiesRoute | null>(() => parsePropertiesRoute(window.location.pathname, window.location.search));
+  const [roomsRoute, setRoomsRoute] = useState<RoomsRoute | null>(() => parseRoomsRoute(window.location.pathname, window.location.search));
   const googleEntry = useRef(isGoogleEntry());
   const [authCheck, setAuthCheck] = useState<'checking' | 'ready' | 'error'>(() => isGoogleEntry() ? 'ready' : 'checking');
   const [authRetry, setAuthRetry] = useState(0);
@@ -201,7 +212,7 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
           setAuthCheck('error'); return;
         }
         setAuthCheck('ready');
-        if (hasProtectedPath) {
+        if (isProtectedPath(window.location.pathname, window.location.search)) {
           window.history.replaceState(null, '', '/');
           setHostRoute(null);
           setAssetRoute(null);
@@ -233,7 +244,7 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
       authGeneration.current++;
       setRecovery(next); setRecoveryVisit((n) => n + 1);
       setCurrentUser(null); setView('login'); setAuthNotice(null);
-      if (!next.path && (parseHostAccountRoute(window.location.pathname) || parseAssetRoute(window.location.pathname, window.location.search))) {
+      if (!next.path && isProtectedPath(window.location.pathname, window.location.search)) {
         setAuthCheck('checking'); setAuthRetry((n) => n + 1);
       } else setAuthCheck('ready');
     };

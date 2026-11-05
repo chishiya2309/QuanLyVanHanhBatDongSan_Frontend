@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+import { PropertyDialog } from './PropertyDialog';
 import type {
   Area,
   Building,
@@ -22,8 +23,12 @@ interface AreaModalProps {
   onSubmit: (input: CreateAreaInput | UpdateAreaInput) => void;
 }
 
-export const AreaModal: React.FC<AreaModalProps> = ({
-  isOpen,
+export const AreaModal: React.FC<AreaModalProps> = (props) => {
+  if (!props.isOpen) return null;
+  return <AreaModalForm key={props.area?.id ?? 'create'} {...props} />;
+};
+
+const AreaModalForm: React.FC<AreaModalProps> = ({
   area,
   isPending,
   error,
@@ -31,20 +36,8 @@ export const AreaModal: React.FC<AreaModalProps> = ({
   onClose,
   onSubmit,
 }) => {
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
-
-  useEffect(() => {
-    if (area) {
-      setName(area.name);
-      setDescription(area.description || '');
-    } else {
-      setName('');
-      setDescription('');
-    }
-  }, [area, isOpen]);
-
-  if (!isOpen) return null;
+  const [name, setName] = useState(area?.name ?? '');
+  const [description, setDescription] = useState(area?.description ?? '');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -55,16 +48,10 @@ export const AreaModal: React.FC<AreaModalProps> = ({
   };
 
   return (
-    <div className="prop-drawer-backdrop" onClick={onClose}>
-      <dialog
-        open
-        className="prop-dialog"
-        onClick={(e) => e.stopPropagation()}
-        aria-labelledby="area-modal-title"
-      >
+    <PropertyDialog labelledBy="area-modal-title" onClose={onClose} pending={isPending}>
         <div className="prop-dialog-header">
           <h2 id="area-modal-title">{area ? 'Cập nhật khu vực' : 'Thêm khu vực mới'}</h2>
-          <button type="button" className="prop-btn prop-btn--outline prop-btn--sm" onClick={onClose} disabled={isPending}>
+          <button type="button" className="prop-btn prop-btn--outline prop-btn--sm" aria-label="Đóng hộp thoại" onClick={onClose} disabled={isPending}>
             ✕
           </button>
         </div>
@@ -116,8 +103,7 @@ export const AreaModal: React.FC<AreaModalProps> = ({
             </button>
           </div>
         </form>
-      </dialog>
-    </div>
+      </PropertyDialog>
   );
 };
 
@@ -144,16 +130,10 @@ export const AreaDeactivateModal: React.FC<AreaDeactivateModalProps> = ({
   if (!isOpen || !area) return null;
 
   return (
-    <div className="prop-drawer-backdrop" onClick={onClose}>
-      <dialog
-        open
-        className="prop-dialog"
-        onClick={(e) => e.stopPropagation()}
-        aria-labelledby="area-deactivate-title"
-      >
+    <PropertyDialog labelledBy="area-deactivate-title" onClose={onClose} pending={isPending}>
         <div className="prop-dialog-header">
           <h2 id="area-deactivate-title">Xác nhận ngừng hoạt động khu vực</h2>
-          <button type="button" className="prop-btn prop-btn--outline prop-btn--sm" onClick={onClose} disabled={isPending}>
+          <button type="button" className="prop-btn prop-btn--outline prop-btn--sm" aria-label="Đóng hộp thoại" onClick={onClose} disabled={isPending}>
             ✕
           </button>
         </div>
@@ -188,8 +168,7 @@ export const AreaDeactivateModal: React.FC<AreaDeactivateModalProps> = ({
             {isPending ? 'Đang xử lý...' : 'Xác nhận ngừng hoạt động'}
           </button>
         </div>
-      </dialog>
-    </div>
+      </PropertyDialog>
   );
 };
 
@@ -207,8 +186,12 @@ interface BuildingModalProps {
   onSubmit: (input: CreateBuildingInput | UpdateBuildingInput) => void;
 }
 
-export const BuildingModal: React.FC<BuildingModalProps> = ({
-  isOpen,
+export const BuildingModal: React.FC<BuildingModalProps> = (props) => {
+  if (!props.isOpen) return null;
+  return <BuildingModalForm key={props.building?.id ?? 'create'} {...props} />;
+};
+
+const BuildingModalForm: React.FC<BuildingModalProps> = ({
   building,
   activeAreas,
   isPending,
@@ -217,23 +200,10 @@ export const BuildingModal: React.FC<BuildingModalProps> = ({
   onClose,
   onSubmit,
 }) => {
-  const [areaId, setAreaId] = useState('');
-  const [name, setName] = useState('');
-  const [address, setAddress] = useState('');
-
-  useEffect(() => {
-    if (building) {
-      setAreaId(building.areaId);
-      setName(building.name);
-      setAddress(building.address);
-    } else {
-      setAreaId(activeAreas[0]?.id || '');
-      setName('');
-      setAddress('');
-    }
-  }, [building, activeAreas, isOpen]);
-
-  if (!isOpen) return null;
+  const [selectedAreaId, setAreaId] = useState<string | null>(building?.areaId ?? null);
+  const areaId = selectedAreaId === '' ? '' : activeAreas.find((area) => area.id === selectedAreaId)?.id ?? activeAreas[0]?.id ?? '';
+  const [name, setName] = useState(building?.name ?? '');
+  const [address, setAddress] = useState(building?.address ?? '');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -245,16 +215,10 @@ export const BuildingModal: React.FC<BuildingModalProps> = ({
   };
 
   return (
-    <div className="prop-drawer-backdrop" onClick={onClose}>
-      <dialog
-        open
-        className="prop-dialog"
-        onClick={(e) => e.stopPropagation()}
-        aria-labelledby="building-modal-title"
-      >
+    <PropertyDialog labelledBy="building-modal-title" onClose={onClose} pending={isPending}>
         <div className="prop-dialog-header">
           <h2 id="building-modal-title">{building ? 'Cập nhật thông tin tòa nhà' : 'Tạo tòa nhà mới'}</h2>
-          <button type="button" className="prop-btn prop-btn--outline prop-btn--sm" onClick={onClose} disabled={isPending}>
+          <button type="button" className="prop-btn prop-btn--outline prop-btn--sm" aria-label="Đóng hộp thoại" onClick={onClose} disabled={isPending}>
             ✕
           </button>
         </div>
@@ -338,8 +302,7 @@ export const BuildingModal: React.FC<BuildingModalProps> = ({
             </button>
           </div>
         </form>
-      </dialog>
-    </div>
+      </PropertyDialog>
   );
 };
 
@@ -356,8 +319,12 @@ interface ChangeBuildingAreaModalProps {
   onSubmit: (input: ChangeBuildingAreaInput) => void;
 }
 
-export const ChangeBuildingAreaModal: React.FC<ChangeBuildingAreaModalProps> = ({
-  isOpen,
+export const ChangeBuildingAreaModal: React.FC<ChangeBuildingAreaModalProps> = (props) => {
+  if (!props.isOpen || !props.building) return null;
+  return <ChangeBuildingAreaForm key={props.building.id} {...props} building={props.building} />;
+};
+
+const ChangeBuildingAreaForm: React.FC<ChangeBuildingAreaModalProps & { building: Building }> = ({
   building,
   activeAreas,
   isPending,
@@ -365,16 +332,11 @@ export const ChangeBuildingAreaModal: React.FC<ChangeBuildingAreaModalProps> = (
   onClose,
   onSubmit,
 }) => {
-  const [targetAreaId, setTargetAreaId] = useState('');
+  const [selectedAreaId, setTargetAreaId] = useState<string | null>(null);
 
   // Lọc ra các khu vực khác khu vực hiện tại
-  const availableAreas = activeAreas.filter((a) => a.id !== building?.areaId && a.active);
-
-  useEffect(() => {
-    setTargetAreaId(availableAreas[0]?.id || '');
-  }, [building, activeAreas, isOpen]);
-
-  if (!isOpen || !building) return null;
+  const availableAreas = activeAreas.filter((a) => a.id !== building.areaId && a.active);
+  const targetAreaId = selectedAreaId === '' ? '' : availableAreas.find((area) => area.id === selectedAreaId)?.id ?? availableAreas[0]?.id ?? '';
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -384,16 +346,10 @@ export const ChangeBuildingAreaModal: React.FC<ChangeBuildingAreaModalProps> = (
   };
 
   return (
-    <div className="prop-drawer-backdrop" onClick={onClose}>
-      <dialog
-        open
-        className="prop-dialog"
-        onClick={(e) => e.stopPropagation()}
-        aria-labelledby="change-area-title"
-      >
+    <PropertyDialog labelledBy="change-area-title" onClose={onClose} pending={isPending}>
         <div className="prop-dialog-header">
           <h2 id="change-area-title">Chuyển khu vực trực thuộc</h2>
-          <button type="button" className="prop-btn prop-btn--outline prop-btn--sm" onClick={onClose} disabled={isPending}>
+          <button type="button" className="prop-btn prop-btn--outline prop-btn--sm" aria-label="Đóng hộp thoại" onClick={onClose} disabled={isPending}>
             ✕
           </button>
         </div>
@@ -452,8 +408,7 @@ export const ChangeBuildingAreaModal: React.FC<ChangeBuildingAreaModalProps> = (
             </button>
           </div>
         </form>
-      </dialog>
-    </div>
+      </PropertyDialog>
   );
 };
 
@@ -480,16 +435,10 @@ export const BuildingDeactivateModal: React.FC<BuildingDeactivateModalProps> = (
   if (!isOpen || !building) return null;
 
   return (
-    <div className="prop-drawer-backdrop" onClick={onClose}>
-      <dialog
-        open
-        className="prop-dialog"
-        onClick={(e) => e.stopPropagation()}
-        aria-labelledby="building-deactivate-title"
-      >
+    <PropertyDialog labelledBy="building-deactivate-title" onClose={onClose} pending={isPending}>
         <div className="prop-dialog-header">
           <h2 id="building-deactivate-title">Xác nhận ngừng hoạt động tòa nhà</h2>
-          <button type="button" className="prop-btn prop-btn--outline prop-btn--sm" onClick={onClose} disabled={isPending}>
+          <button type="button" className="prop-btn prop-btn--outline prop-btn--sm" aria-label="Đóng hộp thoại" onClick={onClose} disabled={isPending}>
             ✕
           </button>
         </div>
@@ -524,8 +473,7 @@ export const BuildingDeactivateModal: React.FC<BuildingDeactivateModalProps> = (
             {isPending ? 'Đang xử lý...' : 'Xác nhận ngừng hoạt động'}
           </button>
         </div>
-      </dialog>
-    </div>
+      </PropertyDialog>
   );
 };
 

@@ -88,8 +88,8 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 }
 
 async function mutate<T>(path: string, method: 'POST' | 'PUT' | 'PATCH', body?: unknown): Promise<T> {
-  let headerName = 'X-CSRF-TOKEN';
-  let token = '';
+  let headerName: string;
+  let token: string;
 
   try {
     const csrf = await getCsrfToken();

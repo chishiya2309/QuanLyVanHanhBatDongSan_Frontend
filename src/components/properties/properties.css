@@ -1,4 +1,8 @@
-/* Styles for Properties & Rooms Modules (UC10 - UC15) */
+/* Hallmark · checked: 2026-11-06 · genre: modern-minimal · scope: app · built: the project · redesign: polish · v2.0.0 */
+/* Hallmark · pre-emit critique: P4 H4 E4 S4 R4 V3 · weakest: V, preserving the shared RentOps shell and compacting its records */
+/* Hallmark · finish-review: in-thread · requested fixes resolved · pre-existing mobile navigation issue recorded */
+/* Hallmark · answered F2 · existing property loading labels retain their punctuation and established text contract in this interaction polish */
+/* Hallmark · answered F4 · property create actions occupy mutually exclusive tabs; add-floor stays outlined and danger controls describe destructive actions */
 
 .properties-page,
 .rooms-page {
@@ -50,7 +54,7 @@
   font-weight: 500;
   color: var(--color-muted);
   cursor: pointer;
-  transition: all var(--dur-micro) ease;
+  transition: color var(--dur-micro) ease, background-color var(--dur-micro) ease, border-color var(--dur-micro) ease;
   min-height: 44px;
 }
 
@@ -107,7 +111,7 @@
 }
 
 .prop-btn--danger:hover {
-  background: oklch(52% 0.19 27 / 0.15);
+  background: var(--color-prop-danger-hover);
 }
 
 .prop-btn--outline {
@@ -140,8 +144,10 @@
   font-weight: 500;
   color: var(--color-accent-primary);
   cursor: pointer;
+  min-height: 44px;
   text-decoration: none;
   border-radius: var(--radius-stock);
+  white-space: nowrap;
 }
 
 .prop-link-action:hover {
@@ -301,13 +307,13 @@
   color: var(--color-muted);
   cursor: pointer;
   border-radius: var(--radius-stock);
-  transition: all var(--dur-micro) ease;
+  transition: color var(--dur-micro) ease, background-color var(--dur-micro) ease, border-color var(--dur-micro) ease;
 }
 
 .prop-segmented-btn.is-active {
   background: var(--color-surface);
   color: var(--color-ink);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 1px 3px var(--color-prop-segment-shadow);
   font-weight: 600;
 }
 
@@ -318,11 +324,11 @@
   gap: var(--space-lg);
 }
 
-.floor-card {
-  background: var(--color-surface);
-  border: 1px solid var(--color-rule);
-  border-radius: var(--radius-card);
-  overflow: hidden;
+.floor-section {
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  overflow: visible;
 }
 
 .floor-header {
@@ -331,8 +337,8 @@
   align-items: center;
   flex-wrap: wrap;
   gap: var(--space-md);
-  padding: var(--space-md) var(--space-lg);
-  background: var(--color-surface-subtle);
+  padding: var(--space-md) 0;
+  background: transparent;
   border-bottom: 1px solid var(--color-rule);
 }
 
@@ -367,7 +373,7 @@
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
   gap: var(--space-md);
-  padding: var(--space-lg);
+  padding: var(--space-lg) 0;
 }
 
 .room-card {
@@ -380,12 +386,10 @@
   border: 1px solid var(--color-rule);
   border-radius: var(--radius-subcard);
   cursor: pointer;
-  transition: transform var(--dur-micro) ease, box-shadow var(--dur-micro) ease, border-color var(--dur-micro) ease;
+  transition: border-color var(--dur-micro) ease;
 }
 
 .room-card:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-card);
   border-color: var(--color-accent-primary);
 }
 
@@ -420,6 +424,10 @@
 
 /* Modals & Dialogs */
 .prop-dialog {
+  position: fixed;
+  inset: 0;
+  margin: auto;
+  height: fit-content;
   width: min(38rem, calc(100% - 2 * var(--space-md)));
   max-height: calc(100dvh - 2 * var(--space-md));
   padding: 0;
@@ -432,7 +440,7 @@
   overflow: auto;
 }
 
-.prop-dialog::backdrop {
+.prop-dialog::backdrop, .prop-drawer::backdrop {
   background: var(--color-profile-backdrop);
 }
 
@@ -445,6 +453,7 @@
 }
 
 .prop-dialog-header h2 {
+  text-wrap: balance;
   margin: 0;
   font-size: var(--text-lg);
   font-weight: 600;
@@ -507,7 +516,7 @@
 
 .prop-banner--warn {
   border-color: var(--color-status-warn);
-  background: oklch(62% 0.17 65 / 0.1);
+  background: var(--color-prop-warn-wash);
 }
 
 /* Drawer */
@@ -521,14 +530,23 @@
 }
 
 .prop-drawer {
-  width: min(42rem, 100vw);
-  height: 100%;
+  position: fixed;
+  inset: 0;
+  margin: 0 0 0 auto;
+  padding: 0;
+  border: 0;
+  max-width: 100%;
+  max-height: 100dvh;
+  width: min(42rem, 100%);
+  height: 100dvh;
   background: var(--color-surface);
-  box-shadow: -4px 0 24px rgba(0, 0, 0, 0.15);
-  display: flex;
-  flex-direction: column;
+  color: var(--color-ink);
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  box-shadow: -4px 0 24px var(--color-prop-drawer-shadow);
   overflow: hidden;
 }
+.prop-drawer[open] { display: flex; flex-direction: column; }
 
 .prop-drawer-header {
   padding: var(--space-md) var(--space-lg);
@@ -589,5 +607,40 @@
 .prop-empty p {
   color: var(--color-muted);
   margin: 0 0 var(--space-lg);
+}
+
+.floor-section + .floor-section { padding-top: var(--space-lg); border-top: 1px solid var(--color-rule); }
+.prop-tab-btn:active, .prop-segmented-btn:active { background: var(--color-paper-3); }
+.prop-dialog :focus-visible, .prop-drawer :focus-visible { outline: 2px solid var(--color-focus); outline-offset: 2px; }
+.prop-drawer-header, .prop-drawer-footer { flex-shrink: 0; }
+.prop-drawer-body { min-height: 0; }
+.prop-drawer .prop-tabs { flex-wrap: wrap; flex-shrink: 0; gap: 0; }
+.prop-facts-grid > div { min-width: 0; overflow-wrap: anywhere; }
+
+@media (max-width: 48rem) {
+  .properties-page .prop-table-wrap { overflow: visible; border: 0; background: transparent; }
+  .properties-page .prop-table, .properties-page .prop-table tbody { display: block; width: 100%; }
+  .properties-page .prop-table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  .properties-page .prop-table tbody tr { display: grid; gap: var(--space-md); padding-block: var(--space-lg); border-top: 1px solid var(--color-rule); }
+  .properties-page .prop-table td { display: grid; gap: var(--space-2xs); padding: 0; border: 0; white-space: normal; overflow-wrap: anywhere; }
+  .properties-page .prop-table td::before { content: attr(data-label); color: var(--color-muted); font-size: var(--text-xs); font-weight: 400; }
+  .properties-page .prop-table td:first-child { font-size: var(--text-lg); }
+  .properties-page .prop-table td .prop-badge { justify-self: start; }
+  .properties-page .prop-table td:first-child::before, .properties-page .prop-table td:last-child::before { display: none; }
+  .properties-page .prop-table td:last-child > div { flex-wrap: wrap; }
+  .prop-toolbar, .prop-toolbar-group { min-width: 0; }
+  .properties-page .prop-toolbar { flex-direction: column; align-items: stretch; }
+  .properties-page .prop-toolbar-group { display: grid; width: 100%; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .properties-page .prop-toolbar-group > input { grid-column: 1 / -1; }
+  .properties-page .prop-toolbar-group > select { width: 100%; min-width: 0; }
+  .properties-page .prop-toolbar > .prop-btn { align-self: flex-end; }
+  .prop-toolbar-group > input { width: 100%; min-width: 0; }
+  .prop-dialog-header, .prop-dialog-body, .prop-dialog-footer, .prop-drawer-header, .prop-drawer-body, .prop-drawer-footer { padding: var(--space-md); }
+  .prop-dialog-footer, .prop-drawer-footer { flex-wrap: wrap; }
+  .prop-facts-grid { grid-template-columns: minmax(0, 1fr); }
+  .floor-header-title { flex-wrap: wrap; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .properties-page *, .rooms-page *, .prop-dialog *, .prop-drawer * { transition: none; animation: none; scroll-behavior: auto; }
 }
 

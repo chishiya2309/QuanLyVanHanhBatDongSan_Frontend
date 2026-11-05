@@ -1,21 +1,27 @@
-.google-onboarding { padding-block: 2rem; }
-.google-onboarding-badge { display: inline-block; margin-bottom: 1rem; color: var(--color-primary, #147d68); font-size: .82rem; font-weight: 650; }
-.google-onboarding .form-title:focus { outline: none; }
-.google-onboarding-identity { display: flex; justify-content: space-between; gap: 1rem; align-items: center; padding: 1rem; margin-bottom: 1.5rem; border: 1px solid #dce5e1; border-radius: 12px; background: #f6faf8; }
-.google-onboarding-identity div { min-width: 0; }
-.google-onboarding-identity span { display: block; font-size: .78rem; color: #54655f; margin-bottom: .3rem; }
-.google-onboarding-identity strong { font-size: .9rem; overflow-wrap: anywhere; }
-.google-onboarding-identity button, .google-onboarding-back { background: transparent; border: 0; color: #176d59; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; min-height: 44px; }
-.google-onboarding-identity button { flex-shrink: 0; max-width: 125px; }
-.google-onboarding .form-field { margin-bottom: 1.2rem; }
-.google-onboarding-required, .google-onboarding-help { display: block; font-size: .78rem; line-height: 1.6; color: #596c63; margin-bottom: .75rem; }
-.google-onboarding-help { margin: .4rem 0 0; }
+/* Hallmark · checked: 2026-11-06 · genre: modern-minimal · scope: app · built: the project · redesign: polish · v2.0.0 */
+/* Hallmark · pre-emit critique: P4 H4 E4 S4 R4 V3 · weakest: V, reusing the RentOps auth controls for Google */
+.google-onboarding { padding-block: var(--space-lg); }
+.google-onboarding-identity { display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--space-md); align-items: center; padding: var(--space-md); margin-bottom: var(--space-lg); border: 1px solid var(--color-rule); border-radius: var(--radius-subcard); background: var(--color-paper-2); }
+.google-onboarding-identity div { min-width: 0; flex: 1 1 12rem; }
+.google-onboarding-identity span { display: block; font-size: var(--text-xs); color: var(--color-muted); margin-bottom: var(--space-2xs); }
+.google-onboarding-identity strong { font-size: var(--text-sm); overflow-wrap: anywhere; }
+.google-onboarding-identity button, .google-onboarding-back { background: transparent; border: 0; color: var(--color-accent-primary); cursor: pointer; text-decoration: underline; text-underline-offset: 3px; min-height: 44px; }
+.google-onboarding-identity button { flex-shrink: 0; white-space: nowrap; line-height: 1.45; }
+.google-onboarding .form-field { margin-bottom: var(--space-md); }
+.google-onboarding-required, .google-onboarding-help { display: block; font-size: var(--text-xs); line-height: 1.6; color: var(--color-muted); margin-bottom: var(--space-sm); }
+.google-onboarding-help { margin: var(--space-2xs) 0 0; min-height: 1lh; }
 .google-onboarding-input { display: flex; position: relative; }
-.google-onboarding-input .text-input { width: 100%; min-width: 0; padding: .85rem 1rem; min-height: 48px; }
-.google-onboarding-input:has(.google-password-toggle) .text-input { padding-right: 4rem; }
-.google-password-toggle { position: absolute; right: .25rem; top: 0; bottom: 0; min-width: 48px; min-height: 44px; color: #176d59; background: transparent; border: 0; cursor: pointer; }
-.google-onboarding-primary { display: block; width: 100%; min-height: 48px; padding: .8rem 1rem; border: 0; border-radius: 10px; color: #fff; background: #176d59; font: inherit; font-weight: 650; cursor: pointer; margin-top: 1rem; }
-.google-onboarding button:disabled { opacity: .55; cursor: wait; }
-.google-onboarding-back { display: block; margin: 1rem auto 0; font: inherit; font-size: .85rem; padding: .5rem; }
-.google-onboarding button:focus-visible { outline: 3px solid #c19a48; outline-offset: 3px; }
-@media (max-width: 480px) { .google-onboarding-identity { flex-direction: column; align-items: flex-start; gap: .3rem; } .google-onboarding-identity button { max-width: none; padding: 0; } }
+.google-onboarding-input .text-input { width: 100%; min-width: 0; padding: var(--space-sm) var(--space-md); min-height: 48px; }
+.google-onboarding-input:has(.google-password-toggle) .text-input { padding-right: var(--space-2xl); }
+.google-password-toggle { position: absolute; right: var(--space-2xs); top: 0; bottom: 0; min-width: 48px; min-height: 44px; color: var(--color-accent-primary); background: transparent; border: 0; cursor: pointer; }
+.google-onboarding-primary { display: block; width: 100%; min-height: 48px; padding: var(--space-sm) var(--space-md); border: 1px solid var(--color-accent-primary); border-radius: var(--radius-input); color: var(--color-cotton); background: var(--color-accent-primary); font: inherit; font-weight: 600; cursor: pointer; margin-top: var(--space-md); }
+.google-onboarding button:active { background: var(--color-paper-3); }
+.google-onboarding-primary:active { color: var(--color-cotton); background: var(--color-accent-hover); border-color: var(--color-accent-hover); }
+@media (hover: hover) {
+  .google-onboarding-identity button:hover, .google-onboarding-back:hover, .google-password-toggle:hover { background: var(--color-accent-wash); }
+  .google-onboarding-primary:hover { background: var(--color-accent-hover); border-color: var(--color-accent-hover); }
+}
+.google-onboarding button:disabled { opacity: .65; cursor: not-allowed; color: var(--color-muted); background: var(--color-surface-subtle); border-color: var(--color-muted); }
+.google-onboarding-back { display: block; margin: var(--space-md) auto 0; font: inherit; font-size: var(--text-sm); padding: var(--space-xs); }
+.google-onboarding button:focus-visible { outline: 2px solid var(--color-focus); outline-offset: 2px; }
+@media (max-width: 30rem) { .google-onboarding-identity { flex-direction: column; align-items: flex-start; gap: var(--space-2xs); } .google-onboarding-identity div { flex: none; max-width: 100%; } .google-onboarding-identity button { padding: 0; } }

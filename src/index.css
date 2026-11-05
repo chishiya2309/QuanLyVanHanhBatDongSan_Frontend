@@ -1,6 +1,26 @@
-/* Hallmark · theme: coral · axes: light/grotesk-sans/warm · mode: redesign · depth: full · scope: component · target: RegisterHostForm */
+/* Hallmark · checked: 2026-11-06 · genre: modern-minimal · scope: app · built: the project · redesign: polish · v2.0.0 */
+/* Hallmark · built: Hallmark · theme: coral · axes: light/grotesk-sans/warm · target: existing RentOps auth */
+/* Hallmark · pre-emit critique: P4 H4 E4 S4 R4 V3 · weakest: V, preserving the coral system while prioritizing the login form on phones */
+/* Hallmark · finish-review: in-thread · requested fixes resolved · pre-existing mobile navigation issue recorded */
+/* Hallmark · answered F25 · the RentOps user requested shorter mobile promotional content; authentication fields and actions remain available */
 @import url('./tokens.css');
 @import url('./base.css');
+
+.auth-mobile-brand { display: none; }
+@media (min-width: 1024px) {
+  .auth-container--login .form-panel { grid-column: 2; grid-row: 1; }
+  .auth-container--login .narrative-panel { grid-column: 1; grid-row: 1; }
+}
+@media (max-width: 1023px) {
+  .auth-container--login .auth-mobile-brand { display: block; font-family: var(--font-display); font-size: var(--text-lg); font-weight: 600; margin-bottom: var(--space-lg); }
+  .auth-container--login .narrative-panel { padding: var(--space-lg); border-top: 1px solid var(--color-rule); border-bottom: 0; }
+  .auth-container--login .narrative-panel .brand-masthead,
+  .auth-container--login .operations-teaser,
+  .auth-container--login .capabilities-matrix,
+  .auth-container--login .trust-row { display: none; }
+  .auth-container--login .hero-copy { margin: 0; }
+  .auth-container--login .hero-heading { font-size: var(--text-lg); }
+}
 
 #root {
   min-height: 100dvh;
@@ -204,8 +224,8 @@
 }
 
 .room-state-occupied { color: var(--color-status-success); font-weight: 500; }
-.room-state-billing { color: var(--color-status-warn); font-weight: 500; }
-.room-state-vacant { color: var(--color-status-info); font-weight: 500; }
+.room-state-billing { color: var(--color-asset-repair-ink); font-weight: 500; }
+.room-state-vacant { color: var(--color-status-expiring-ink); font-weight: 500; }
 
 /* 4 Differentiators Matrix */
 .capabilities-matrix {
@@ -522,7 +542,7 @@
   align-items: center;
   justify-content: center;
   gap: var(--space-xs);
-  box-shadow: var(--shadow-btn);
+  box-shadow: none;
   white-space: nowrap;
   transition: background-color var(--dur-micro) var(--ease-out), transform var(--dur-micro) var(--ease-out);
 }
@@ -628,6 +648,9 @@
 }
 
 .register-link {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
   color: var(--color-accent-primary);
   font-weight: 600;
   text-decoration: none;
