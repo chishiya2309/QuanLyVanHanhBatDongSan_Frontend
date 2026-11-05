@@ -25,11 +25,35 @@ interface DashboardShellProps {
   assetsActive?: boolean;
   showAssets?: boolean;
   onNavigateAssets?: () => void;
+  showProperties?: boolean;
+  propertiesActive?: boolean;
+  onNavigateProperties?: () => void;
+  showRooms?: boolean;
+  roomsActive?: boolean;
+  onNavigateRooms?: () => void;
   onNavigateOverview?: () => void;
   onNavigateHostAccounts?: () => void;
 }
 
-export const DashboardShell: React.FC<DashboardShellProps> = ({ user, onLogout, onOpenProfile, children, hostAccountsActive = false, showHostAccounts = false, assetsActive = false, showAssets = false, onNavigateAssets, onNavigateOverview, onNavigateHostAccounts }) => {
+export const DashboardShell: React.FC<DashboardShellProps> = ({
+  user,
+  onLogout,
+  onOpenProfile,
+  children,
+  hostAccountsActive = false,
+  showHostAccounts = false,
+  assetsActive = false,
+  showAssets = false,
+  onNavigateAssets,
+  showProperties = false,
+  propertiesActive = false,
+  onNavigateProperties,
+  showRooms = false,
+  roomsActive = false,
+  onNavigateRooms,
+  onNavigateOverview,
+  onNavigateHostAccounts,
+}) => {
   const [selectedPropertyId, setSelectedPropertyId] = useState<string>('prop_all');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
@@ -135,6 +159,8 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({ user, onLogout, 
     setTimeout(() => setToastMessage(null), 3000);
   };
 
+  const isCustomView = hostAccountsActive || assetsActive || propertiesActive || roomsActive;
+
   return (
     <div className={`dashboard-root${hostAccountsActive ? ' dashboard-root--admin' : ''}${assetsActive ? ' dashboard-root--assets' : ''}`}>
       {/* Top Navigation */}
@@ -144,77 +170,75 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({ user, onLogout, 
         onSelectProperty={setSelectedPropertyId}
         onLogout={onLogout}
         onOpenProfile={onOpenProfile}
-        showPropertySwitcher={!hostAccountsActive && !assetsActive}
-        showNotifications={!hostAccountsActive && !assetsActive}
+        showPropertySwitcher={!isCustomView}
+        showNotifications={!isCustomView}
         onNavigateOverview={onNavigateOverview}
       />
 
       {/* Main Layout: Sidebar + Canvas */}
       <div className="dashboard-layout">
-        <Sidebar showHostAccounts={showHostAccounts} hostAccountsActive={hostAccountsActive}
-          showAssets={showAssets} assetsActive={assetsActive} onNavigateAssets={onNavigateAssets}
-          onNavigateOverview={onNavigateOverview} onNavigateHostAccounts={onNavigateHostAccounts} />
+        <Sidebar
+          showHostAccounts={showHostAccounts}
+          hostAccountsActive={hostAccountsActive}
+          showAssets={showAssets}
+          assetsActive={assetsActive}
+          onNavigateAssets={onNavigateAssets}
+          showProperties={showProperties}
+          propertiesActive={propertiesActive}
+          onNavigateProperties={onNavigateProperties}
+          showRooms={showRooms}
+          roomsActive={roomsActive}
+          onNavigateRooms={onNavigateRooms}
+          onNavigateOverview={onNavigateOverview}
+          onNavigateHostAccounts={onNavigateHostAccounts}
+        />
 
         <main className="dash-canvas" id="main-content">
-          {showAssets && <nav className="asset-mobile-nav" aria-label="Điều hướng Host">
-            <a href="/" aria-current={!assetsActive && !hostAccountsActive ? 'page' : undefined} onClick={(event) => {
-              if (event.button === 0 && !event.ctrlKey && !event.metaKey && !event.shiftKey && !event.altKey) { event.preventDefault(); onNavigateOverview?.(); }
-            }}>Tổng quan</a>
-            <a href="/assets" aria-current={assetsActive ? 'page' : undefined} onClick={(event) => {
-              if (event.button === 0 && !event.ctrlKey && !event.metaKey && !event.shiftKey && !event.altKey) { event.preventDefault(); onNavigateAssets?.(); }
-            }}>Tài sản</a>
-          </nav>}
-          {showHostAccounts && <nav className="host-mobile-nav" aria-label="Điều hướng quản trị">
-            <a href="/" aria-current={!hostAccountsActive ? 'page' : undefined} onClick={(event) => {
-              if (event.button === 0 && !event.ctrlKey && !event.metaKey && !event.shiftKey && !event.altKey) { event.preventDefault(); onNavigateOverview?.(); }
-            }}>Tổng quan</a>
-            <a href="/admin/host-accounts" aria-current={hostAccountsActive ? 'page' : undefined} onClick={(event) => {
-              if (event.button === 0 && !event.ctrlKey && !event.metaKey && !event.shiftKey && !event.altKey) { event.preventDefault(); onNavigateHostAccounts?.(); }
-            }}>Tài khoản Host</a>
-          </nav>}
-          {children || <>
-          {/* Toast Notification */}
-          {toastMessage && (
-            <div className="dash-toast" role="status">
-              <span>{toastMessage}</span>
-              <button
-                type="button"
-                onClick={() => setToastMessage(null)}
-                className="dash-toast-close"
-                aria-label="Đóng thông báo"
-              >
-                ✕
-              </button>
-            </div>
+          {children || (
+            <>
+              {/* Toast Notification */}
+              {toastMessage && (
+                <div className="dash-toast" role="status">
+                  <span>{toastMessage}</span>
+                  <button
+                    type="button"
+                    onClick={() => setToastMessage(null)}
+                    className="dash-toast-close"
+                    aria-label="Đóng thông báo"
+                  >
+                    ✕
+                  </button>
+                </div>
+              )}
+
+              {/* Context & Greeting Row */}
+              <section className="dash-context-row" aria-label="Lời chào và thông tin phiên làm việc">
+                <div>
+                  <h1 className="greeting-title">
+                    Chào buổi sáng, {user.fullName}
+                  </h1>
+                  <p className="greeting-subtitle">
+                    Đang quản lý: <strong style={{ color: 'var(--color-ink)' }}>{selectedPropertyName}</strong> • {todayFormatted}
+                  </p>
+                </div>
+
+                {/* Quick Action Buttons */}
+                <QuickActionBar onActionClick={handleQuickAction} />
+              </section>
+
+              {/* Metric KPIs Strip */}
+              <MetricSection metrics={currentMetrics} />
+
+              {/* Analytics (Chart) & Alerts Grid */}
+              <section className="analytics-alerts-grid" aria-label="Thống kê tài chính và cảnh báo">
+                <RevenueCashflowChart data={mockRevenueTrend} />
+                <UrgentTasksList alerts={currentAlerts} />
+              </section>
+
+              {/* Property Status Table */}
+              <PropertyStatusTable rooms={currentRooms} />
+            </>
           )}
-
-          {/* Context & Greeting Row */}
-          <section className="dash-context-row" aria-label="Lời chào và thông tin phiên làm việc">
-            <div>
-              <h1 className="greeting-title">
-                Chào buổi sáng, {user.fullName}
-              </h1>
-              <p className="greeting-subtitle">
-                Đang quản lý: <strong style={{ color: 'var(--color-ink)' }}>{selectedPropertyName}</strong> • {todayFormatted}
-              </p>
-            </div>
-
-            {/* Quick Action Buttons */}
-            <QuickActionBar onActionClick={handleQuickAction} />
-          </section>
-
-          {/* Metric KPIs Strip */}
-          <MetricSection metrics={currentMetrics} />
-
-          {/* Analytics (Chart) & Alerts Grid */}
-          <section className="analytics-alerts-grid" aria-label="Thống kê tài chính và cảnh báo">
-            <RevenueCashflowChart data={mockRevenueTrend} />
-            <UrgentTasksList alerts={currentAlerts} />
-          </section>
-
-          {/* Property Status Table */}
-          <PropertyStatusTable rooms={currentRooms} />
-          </>}
         </main>
       </div>
     </div>
