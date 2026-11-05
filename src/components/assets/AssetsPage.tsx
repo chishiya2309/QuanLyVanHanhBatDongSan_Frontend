@@ -1,18 +1,26 @@
 import { useCallback, useLayoutEffect, useRef, type ReactNode } from 'react';
 import { useAssets } from '../../hooks/useAssets';
 import { assetMessages as m, type Asset, type AssetQuery, type AssetRoute } from '../../types/assets';
-import { assetUrl } from '../../utils/assetNavigation';
+import { assetPlacementUrl, assetRouteKey, assetUrl } from '../../utils/assetNavigation';
 import { formatAssetMoney } from '../../utils/assetValidation';
 import { AssetLink, AssetReadError, AssetSearch, AssetSize, AssetSkeleton, AssetTime, ConditionBadge, type AssetNavigate } from './AssetControls';
 import { AssetForm, CreateAssetDialog } from './AssetForm';
+import { AssetPlacementDialog } from './AssetPlacementDialog';
+import { AssetHistory } from './AssetHistory';
 import './assets.css';
 
-function AssetActions({ asset, route, navigate, disabled }: { asset: Asset; route: AssetRoute; navigate: AssetNavigate; disabled: boolean }) {
+function AssetActions({ asset, route, navigate, disabled, onPlacement }: { asset: Asset; route: AssetRoute; navigate: AssetNavigate; disabled: boolean; onPlacement: (asset: Asset) => void }) {
   return <div className="asset-row-actions"><AssetLink href={assetUrl(route, asset.assetId)} navigate={navigate}>Xem chi tiết</AssetLink>
     <AssetLink href={assetUrl(route, asset.assetId, 'edit')} navigate={navigate} disabled={disabled}>Chỉnh sửa</AssetLink>
     <AssetLink href={assetUrl(route, asset.assetId, 'condition')} navigate={navigate} disabled={disabled}>Ghi nhận tình trạng</AssetLink>
+    <PlacementActions asset={asset} route={route} navigate={navigate} disabled={disabled} onPlacement={onPlacement} />
   </div>;
 }
+function PlacementActions({ asset, route, navigate, disabled, onPlacement }: { asset: Asset; route: AssetRoute; navigate: AssetNavigate; disabled: boolean; onPlacement: (asset: Asset) => void }) {
+  return <><button type="button" className="asset-button" disabled={disabled} onClick={() => onPlacement(asset)}>{asset.currentPlacement ? 'Chuyển phòng' : 'Gán vào phòng'}</button>
+    <AssetLink href={assetUrl(route, asset.assetId, 'history')} navigate={navigate}>Xem lịch sử</AssetLink></>;
+}
+function PlacementRoom({ asset }: { asset: Asset }) { return <>{asset.currentPlacement ? `${asset.currentPlacement.roomCode} — ${asset.currentPlacement.roomName}` : 'Chưa bố trí'}</>; }
 function AssetData({ asset }: { asset: Asset }) {
   const row = (label: string, content: ReactNode) => <div><dt>{label}</dt><dd>{content}</dd></div>;
   return <dl className="asset-facts">
@@ -20,6 +28,9 @@ function AssetData({ asset }: { asset: Asset }) {
     {row('Giá trị', <span className="asset-money">{formatAssetMoney(asset.purchaseValue)}</span>)}{row('Tình trạng', <ConditionBadge condition={asset.condition} />)}
     {row('Ghi chú chung', <span className="asset-note">{asset.note ?? 'Chưa có ghi chú'}</span>)}
     {row('Ngày tạo', <AssetTime value={asset.createdAt} />)}{row('Cập nhật gần nhất', <AssetTime value={asset.updatedAt} />)}
+    {row('Phòng hiện tại', <PlacementRoom asset={asset} />)}
+    {asset.currentPlacement && <>{row('Bắt đầu bố trí', <AssetTime value={asset.currentPlacement.fromAt} precise />)}
+      {row('Tình trạng khi bắt đầu bố trí', <ConditionBadge condition={asset.currentPlacement.conditionAtStart} />)}</>}
   </dl>;
 }
 export function AssetsForbidden({ onOverview }: { onOverview: () => void }) {
@@ -37,10 +48,15 @@ export function AssetsPage({ route, onNavigate, onSessionExpired, onForbidden, o
   const backToList = () => onNavigate(assetUrl(route));
   const openCreate = () => { opener.current = document.activeElement instanceof HTMLElement ? document.activeElement : null; onNavigate(assetUrl(route, null, 'list', true)); };
   const closeCreate = () => { if (!pending) onNavigate(assetUrl(route), true); };
+  const openPlacement = (target: Asset) => {
+    opener.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    onNavigate(assetPlacementUrl(route, target));
+  };
+  const closePlacement = () => onNavigate(assetUrl(route, route.assetId, route.screen), true);
   const asset = detail.data;
-  const title = isList ? 'Quản lý tài sản' : route.screen === 'edit' ? 'Chỉnh sửa tài sản' : route.screen === 'condition' ? 'Ghi nhận tình trạng' : 'Chi tiết tài sản';
+  const title = isList ? 'Quản lý tài sản' : route.screen === 'history' ? 'Lịch sử tài sản' : route.screen === 'edit' ? 'Chỉnh sửa tài sản' : route.screen === 'condition' ? 'Ghi nhận tình trạng' : 'Chi tiết tài sản';
   return <section className="assets-page" aria-labelledby="assets-title">
-    <header className="asset-page-heading"><div><h1 id="assets-title" ref={heading} tabIndex={-1}>{title}</h1><p>{isList ? 'Tra cứu và cập nhật tài sản của bạn.' : 'Quản lý thông tin chung và tình trạng tài sản.'}</p></div>
+    <header className="asset-page-heading"><div><h1 id="assets-title" ref={heading} tabIndex={-1}>{title}</h1><p>{isList ? 'Tra cứu và cập nhật tài sản của bạn.' : route.screen === 'history' ? 'Theo dõi vị trí và từng lần ghi nhận tình trạng của tài sản.' : 'Quản lý thông tin chung và tình trạng tài sản.'}</p></div>
       {isList ? <button className="asset-button asset-button--primary" data-create-asset onClick={openCreate} disabled={!canMutate || route.q.length > 200}>Thêm tài sản</button> : <AssetLink href={assetUrl(route)} navigate={onNavigate}>Quay lại danh sách</AssetLink>}
     </header>
     {notice && <div className={'asset-banner asset-banner--' + notice.kind} role={notice.kind === 'success' ? 'status' : 'alert'}>
@@ -56,13 +72,14 @@ export function AssetsPage({ route, onNavigate, onSessionExpired, onForbidden, o
         {list.data && <div aria-busy={list.status === 'loading'}>
           <div className="asset-results"><p>{list.data.totalElements.toLocaleString('vi-VN')} kết quả{list.stale ? ' — dữ liệu cũ' : ''}</p><button className="asset-button" onClick={list.refresh} disabled={pending || list.status === 'loading'}>Tải lại</button></div>
           {list.data.content.length ? <>
-            <div className="asset-table-wrap"><table className="asset-table"><caption className="visually-hidden">Danh sách tài sản</caption><thead><tr><th scope="col">Tài sản</th><th scope="col">Giá trị</th><th scope="col">Tình trạng</th><th scope="col">Ghi chú chung</th><th scope="col">Cập nhật gần nhất</th><th scope="col">Thao tác</th></tr></thead><tbody>
-              {list.data.content.map((item) => <tr key={item.assetId}><th scope="row"><span>{item.name}</span><span className="asset-id">{item.assetId}</span></th><td className="asset-money">{formatAssetMoney(item.purchaseValue)}</td><td><ConditionBadge condition={item.condition} /></td><td className="asset-note">{item.note ?? 'Chưa có ghi chú'}</td><td><AssetTime value={item.updatedAt} /></td><td><AssetActions asset={item} route={route} navigate={onNavigate} disabled={!canMutate} /></td></tr>)}
+            <div className="asset-table-wrap"><table className="asset-table"><caption className="visually-hidden">Danh sách tài sản</caption><thead><tr><th scope="col">Tài sản</th><th scope="col">Giá trị</th><th scope="col">Tình trạng</th><th scope="col">Ghi chú chung</th><th scope="col">Cập nhật gần nhất</th><th scope="col">Phòng hiện tại</th><th scope="col">Thao tác</th></tr></thead><tbody>
+              {list.data.content.map((item) => <tr key={item.assetId}><th scope="row"><span>{item.name}</span><span className="asset-id">{item.assetId}</span></th><td className="asset-money">{formatAssetMoney(item.purchaseValue)}</td><td><ConditionBadge condition={item.condition} /></td><td className="asset-note">{item.note ?? 'Chưa có ghi chú'}</td><td><AssetTime value={item.updatedAt} /></td><td><PlacementRoom asset={item} /></td><td><AssetActions asset={item} route={route} navigate={onNavigate} disabled={!canMutate} onPlacement={openPlacement} /></td></tr>)}
             </tbody></table></div>
             <ul className="asset-mobile-records" aria-label="Danh sách tài sản trên thiết bị nhỏ">{list.data.content.map((item) => <li key={item.assetId}><h2>{item.name}</h2><dl>
               <div><dt>Mã tài sản</dt><dd className="asset-id">{item.assetId}</dd></div><div><dt>Giá trị</dt><dd className="asset-money">{formatAssetMoney(item.purchaseValue)}</dd></div><div><dt>Tình trạng</dt><dd><ConditionBadge condition={item.condition} /></dd></div>
               <div><dt>Ghi chú chung</dt><dd className="asset-note">{item.note ?? 'Chưa có ghi chú'}</dd></div><div><dt>Cập nhật gần nhất</dt><dd><AssetTime value={item.updatedAt} /></dd></div>
-            </dl><AssetActions asset={item} route={route} navigate={onNavigate} disabled={!canMutate} /></li>)}</ul>
+              <div><dt>Phòng hiện tại</dt><dd><PlacementRoom asset={item} /></dd></div>
+            </dl><AssetActions asset={item} route={route} navigate={onNavigate} disabled={!canMutate} onPlacement={openPlacement} /></li>)}</ul>
           </> : list.status === 'ready' && (route.page === 0 || list.data.totalPages > route.page) && <div className="asset-empty"><h2>{route.q ? 'Không tìm thấy tài sản phù hợp' : 'Chưa có tài sản'}</h2><p>{route.q ? 'Thử từ khóa khác hoặc xóa tìm kiếm.' : 'Thêm tài sản đầu tiên để bắt đầu quản lý.'}</p><button className="asset-button" onClick={route.q ? () => changeQuery({ ...route, q: '', page: 0 }, true) : openCreate}>{route.q ? 'Xóa tìm kiếm' : 'Thêm tài sản'}</button></div>}
           {list.data.totalPages > 0 && <nav className="asset-pagination" aria-label="Phân trang tài sản"><button className="asset-button" disabled={list.data.first || list.status !== 'ready' || pending} onClick={() => changeQuery({ ...route, page: route.page - 1 }, false)}>Trang trước</button><p>Trang {route.page + 1} / {list.data.totalPages}</p><button className="asset-button" disabled={list.data.last || list.status !== 'ready' || pending} onClick={() => changeQuery({ ...route, page: route.page + 1 }, false)}>Trang sau</button></nav>}
         </div>}
@@ -71,8 +88,8 @@ export function AssetsPage({ route, onNavigate, onSessionExpired, onForbidden, o
     </> : <>
       {detail.status === 'loading' && <AssetSkeleton detail />}
       {detail.error && <AssetReadError message={detail.error} retry={detail.refresh} stale={detail.stale} />}
-      {asset && <div className="asset-panel" aria-busy={detail.status === 'loading'}>
-        {route.screen === 'detail' ? <><AssetData asset={asset} /><div className="asset-form-actions"><AssetLink href={assetUrl(route, asset.assetId, 'edit')} navigate={onNavigate} primary disabled={!canMutate}>Chỉnh sửa</AssetLink><AssetLink href={assetUrl(route, asset.assetId, 'condition')} navigate={onNavigate} disabled={!canMutate}>Ghi nhận tình trạng</AssetLink></div></> : <>
+      {route.screen === 'history' ? <><div className="asset-history-identity"><h2>{asset?.name || 'Tài sản'}</h2><p className="asset-id">{route.assetId}</p><AssetLink href={assetUrl(route, route.assetId)} navigate={onNavigate}>Quay lại chi tiết</AssetLink></div><AssetHistory resource={controller.history} /></> : asset && <div className="asset-panel" aria-busy={detail.status === 'loading'}>
+        {route.screen === 'detail' ? <><AssetData asset={asset} /><div className="asset-form-actions"><AssetLink href={assetUrl(route, asset.assetId, 'edit')} navigate={onNavigate} primary disabled={!canMutate}>Chỉnh sửa</AssetLink><AssetLink href={assetUrl(route, asset.assetId, 'condition')} navigate={onNavigate} disabled={!canMutate}>Ghi nhận tình trạng</AssetLink><PlacementActions asset={asset} route={route} navigate={onNavigate} disabled={!canMutate} onPlacement={openPlacement} /></div></> : <>
           <div className="asset-form-identity"><h2>{asset.name}</h2><p className="asset-id">{asset.assetId}</p>{route.screen === 'condition' && <p>Tình trạng hiện tại: <ConditionBadge condition={asset.condition} /></p>}</div>
           {detail.status === 'ready' && !detail.stale && (route.screen === 'edit' ? <>
             <AssetLink href={assetUrl(route, asset.assetId, 'condition')} navigate={onNavigate} disabled={pending}>Ghi nhận tình trạng</AssetLink>
@@ -82,5 +99,7 @@ export function AssetsPage({ route, onNavigate, onSessionExpired, onForbidden, o
       </div>}
       {!asset && detail.status === 'error' && <button className="asset-button" onClick={backToList}>Quay lại danh sách</button>}
     </>}
+    {route.placement && <AssetPlacementDialog key={assetRouteKey(route)} {...route.placement} opener={opener} onClose={closePlacement}
+      onFinished={controller.finishPlacement} onFailure={controller.handleFailure} />}
   </section>;
 }

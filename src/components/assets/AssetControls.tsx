@@ -14,7 +14,7 @@ export function AssetLink({ href, navigate, children, primary = false, disabled 
 export function ConditionBadge({ condition }: { condition: AssetState }) {
   return <span className={'asset-badge asset-badge--' + condition.toLowerCase()}>{assetStates[condition]}</span>;
 }
-export function AssetTime({ value }: { value: string }) { return <time dateTime={value}>{formatAssetTime(value)}</time>; }
+export function AssetTime({ value, precise = false }: { value: string; precise?: boolean }) { return <time dateTime={value}>{formatAssetTime(value, precise)}</time>; }
 export function AssetSkeleton({ detail = false }: { detail?: boolean }) {
   return <div role="status" aria-label={detail ? 'Đang tải thông tin tài sản' : 'Đang tải danh sách tài sản'} className="asset-skeleton">
     <span className="visually-hidden">{detail ? 'Đang tải thông tin tài sản' : 'Đang tải danh sách tài sản'}</span>

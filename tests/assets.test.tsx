@@ -28,7 +28,7 @@ function install(role = 'HOST') {
   }); vi.stubGlobal('fetch', fetch); return { me, csrf, list, detail, write, fetch };
 }
 const callbacks = () => ({ onNavigate: vi.fn(), onSessionExpired: vi.fn(), onForbidden: vi.fn() });
-const baseRoute: AssetRoute = { assetId: null, screen: 'list', q: '', page: 0, size: 20, create: false };
+const baseRoute: AssetRoute = { assetId: null, screen: 'list', q: '', page: 0, size: 20, create: false, placement: null, invalidPlacement: false };
 const goto = (path: string) => { window.history.pushState(null, '', path); window.dispatchEvent(new PopStateEvent('popstate')); };
 const ready = async () => waitFor(() => expect((screen.getByRole('button', { name: 'Thêm tài sản' }) as HTMLButtonElement).disabled).toBe(false));
 const inputValue = (element: HTMLElement) => (element as HTMLInputElement).value;

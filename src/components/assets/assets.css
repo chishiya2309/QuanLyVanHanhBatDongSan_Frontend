@@ -1,6 +1,3 @@
-/* Hallmark · shape: app screen · genre: modern-minimal · theme: RentOps coral inherited · signature: asset register · v2.0.0 */
-/* Critique · P4: readable register · H4: task-first heading · E4: explicit states · S4: restrained coral · R4: labeled mobile records · V4: exact money and separate notes. */
-/* finish-review: subagent · 3 findings · 3 resolved · gap: none; F4 answered: one coral primary recipe, neutral actions are secondary; hero-review: not applicable to app scope. */
 .assets-page { width: 100%; max-width: var(--container); margin-inline: auto; min-width: 0; font-family: var(--font-body); font-size: var(--text-sm); color: var(--color-ink); }
 .assets-page h1 { font-size: var(--text-2xl); line-height: 1.3; letter-spacing: normal; margin: 0; }
 .assets-page h1, .assets-page h2, .asset-dialog h2 { text-wrap: balance; }
@@ -35,7 +32,7 @@
 .asset-table { border-collapse: collapse; table-layout: fixed; width: 100%; text-align: left; }
 .asset-table th, .asset-table td { padding: var(--space-md) var(--space-sm); vertical-align: top; overflow-wrap: anywhere; border-bottom: 1px solid var(--color-rule); }
 .asset-table thead th { font-weight: 500; background: var(--color-surface-subtle); text-transform: none; letter-spacing: normal; }
-.asset-table th:nth-child(1) { width: 20%; }.asset-table th:nth-child(2) { width: 15rem; }.asset-table th:nth-child(3) { width: 12%; }.asset-table th:nth-child(4) { width: auto; }.asset-table th:nth-child(5) { width: 13%; }.asset-table th:nth-child(6) { width: 11rem; }
+.asset-table th:nth-child(1) { width: 16%; }.asset-table th:nth-child(2) { width: 15rem; }.asset-table th:nth-child(3) { width: 10%; }.asset-table th:nth-child(4) { width: auto; }.asset-table th:nth-child(5) { width: 11%; }.asset-table th:nth-child(6) { width: 12%; }.asset-table th:nth-child(7) { width: 11rem; }
 .asset-table tbody th { font-weight: 500; }.asset-table tbody tr:last-child > * { border-bottom: 0; }
 .asset-id { display: block; font-size: var(--text-xs); color: var(--color-muted); overflow-wrap: anywhere; font-weight: 400; margin-block: var(--space-xs) 0; }
 .asset-money { font-variant-numeric: tabular-nums; white-space: nowrap; overflow-wrap: normal; }
@@ -81,7 +78,7 @@
   .asset-mobile-records dl > div:first-child, .asset-mobile-records dl > div:nth-child(2), .asset-mobile-records dl > div:nth-child(4) { grid-column: 1 / -1; }
   .asset-row-actions { flex-direction: row; flex-wrap: wrap; gap: var(--space-sm); }
 }
-@media (max-width: 1023px) {
+@media (max-width: 1024px) {
   .asset-mobile-nav { display: flex; flex-wrap: wrap; gap: var(--space-xs); margin-bottom: var(--space-lg); }
   .asset-mobile-nav a { display: inline-flex; align-items: center; min-height: 44px; padding: var(--space-xs) var(--space-md); color: var(--color-ink); border-radius: var(--radius-input); text-decoration: none; }
   .asset-mobile-nav a[aria-current="page"] { color: var(--color-accent-primary); background: var(--color-accent-wash); }
@@ -93,3 +90,24 @@
   .asset-pagination { flex-wrap: wrap; }.asset-pagination p { order: -1; flex-basis: 100%; text-align: center; }
 }
 @media (prefers-reduced-motion: reduce) { .assets-page *, .asset-dialog * { animation: none; transition: none; scroll-behavior: auto; } }
+
+/* UC18 app extension: inherited RentOps tokens; data and native dialogs lead. */
+.asset-dialog select { min-height: 44px; width: 100%; max-width: 100%; border: 1px solid var(--color-muted); border-radius: var(--radius-input); padding: var(--space-sm); background: var(--color-surface); color: var(--color-ink); font: inherit; }
+.asset-dialog select[aria-invalid="true"] { border-color: var(--color-error); }
+.asset-placement-identity { padding-block: var(--space-md); border-bottom: 1px solid var(--color-rule); overflow-wrap: anywhere; }
+.asset-placement-identity h3 { margin-block: var(--space-xs); font-size: var(--text-lg); }
+.asset-placement-identity p { margin-block: var(--space-sm); }
+.asset-placement-summary { padding: var(--space-md); border-radius: var(--radius-subcard); background: var(--color-surface-subtle); overflow-wrap: anywhere; }
+.asset-placement-summary p { margin: 0; }.asset-placement-summary p + p { margin-top: var(--space-xs); }
+.asset-placement-empty { line-height: 1.6; }.asset-history-identity { margin-bottom: var(--space-lg); overflow-wrap: anywhere; }
+.asset-history-section { margin-top: var(--space-xl); min-width: 0; }.asset-history-section h2 { margin-bottom: var(--space-md); }
+.asset-history-table-wrap { border: 1px solid var(--color-rule); border-radius: var(--radius-subcard); overflow: hidden; }
+.asset-history-table { width: 100%; table-layout: fixed; border-collapse: collapse; background: var(--color-surface); text-align: left; }
+.asset-history-table th, .asset-history-table td { padding: var(--space-md); vertical-align: top; overflow-wrap: anywhere; border-bottom: 1px solid var(--color-rule); }
+.asset-history-table th { background: var(--color-surface-subtle); font-weight: 500; }.asset-history-table tr:last-child td { border-bottom: 0; }
+.asset-history-records { display: none; list-style: none; padding: 0; margin: 0; gap: var(--space-md); }
+.asset-history-records li { min-width: 0; padding: var(--space-md); background: var(--color-surface); border: 1px solid var(--color-rule); border-radius: var(--radius-subcard); }
+.asset-history-records dl { margin: 0; display: grid; gap: var(--space-md); }.asset-history-records dt { margin-bottom: var(--space-xs); color: var(--color-muted); }
+.asset-history-records dd { margin: 0; overflow-wrap: anywhere; }
+@media (max-width: 1199px) { .asset-history-table-wrap { display: none; }.asset-history-records { display: grid; } }
+@media (max-width: 639px) { .asset-placement-dialog .asset-form-actions { display: grid; grid-template-columns: minmax(0, 1fr); }.asset-placement-dialog .asset-button { width: 100%; white-space: normal; } }

@@ -1,5 +1,5 @@
 import { isLosslessNumber, LosslessNumber, parse, stringify } from 'lossless-json';
-import type { Asset, AssetConditionRecord, AssetPage } from '../types/assets';
+import type { Asset, AssetConditionRecord, AssetPage, AssetPlacement, AssetConditionHistoryItem, AssetHistory, AssetPlacementRoom } from '../types/assets';
 import { isAssetId } from '../utils/assetNavigation';
 import { isAssetState, normalizeMoney } from '../utils/assetValidation';
 
@@ -25,7 +25,54 @@ export function decodeAsset(value: unknown): Asset {
   const price = isLosslessNumber(value.purchaseValue) ? normalizeMoney(value.purchaseValue.toString()) : null;
   if (!isAssetId(value.assetId) || typeof value.name !== 'string' || !value.name.trim() || value.name.length > 255 || price === null ||
       !isAssetState(value.condition) || !note(value.note) || !timestamp(value.createdAt) || !timestamp(value.updatedAt)) throw new Error('Invalid asset');
-  return { assetId: value.assetId, name: value.name, purchaseValue: price, condition: value.condition, note: value.note, createdAt: value.createdAt, updatedAt: value.updatedAt };
+  const currentPlacement = value.currentPlacement === null ? null : decodeAssetPlacement(value.currentPlacement);
+  if (currentPlacement && currentPlacement.assetId !== value.assetId) throw new Error('Wrong placement asset');
+  return { assetId: value.assetId, name: value.name, purchaseValue: price, condition: value.condition, note: value.note, createdAt: value.createdAt, updatedAt: value.updatedAt, currentPlacement };
+}
+// Compare full Instant precision; Date alone truncates valid microsecond boundaries.
+function instant(value: string): bigint {
+  const fraction = /\.(\d+)/.exec(value)?.[1] || '';
+  if (fraction.length > 9) throw new Error('Invalid instant precision');
+  return BigInt(Date.parse(value.replace(/\.\d+/, ''))) * 1000000n + BigInt(fraction.padEnd(9, '0'));
+}
+export function decodeAssetPlacement(value: unknown): AssetPlacement {
+  if (!isRecord(value) || !isAssetId(value.placementId) || !isAssetId(value.assetId) || !isAssetId(value.roomId) ||
+      typeof value.roomCode !== 'string' || !value.roomCode.trim() || typeof value.roomName !== 'string' || !value.roomName.trim() ||
+      !timestamp(value.fromAt) || !(value.toAt === null || timestamp(value.toAt)) || !isAssetState(value.conditionAtStart)) throw new Error('Invalid placement');
+  if (value.toAt !== null && instant(value.toAt) <= instant(value.fromAt)) throw new Error('Invalid placement interval');
+  return { placementId: value.placementId, assetId: value.assetId, roomId: value.roomId, roomCode: value.roomCode,
+    roomName: value.roomName, fromAt: value.fromAt, toAt: value.toAt, conditionAtStart: value.conditionAtStart };
+}
+export function decodeAssetHistory(value: unknown): AssetHistory {
+  if (!isRecord(value) || !isAssetId(value.assetId) || !Array.isArray(value.locationHistory) || !Array.isArray(value.conditionHistory)) throw new Error('Invalid history');
+  const locationHistory = value.locationHistory.map(decodeAssetPlacement);
+  const placements = new Map(locationHistory.map((item) => [item.placementId, item]));
+  const conditionHistory = value.conditionHistory.map((item: unknown): AssetConditionHistoryItem => {
+    const record = decodeConditionRecord(item);
+    if (!isRecord(item)) throw new Error('Invalid history item');
+    if (item.placementId === null) {
+      if (item.roomId !== null || item.roomCode !== null || item.roomName !== null) throw new Error('Invalid unassigned context');
+      return { ...record, placementId: null, roomId: null, roomCode: null, roomName: null };
+    }
+    if (!isAssetId(item.placementId) || !isAssetId(item.roomId) || typeof item.roomCode !== 'string' || typeof item.roomName !== 'string') throw new Error('Invalid history context');
+    const placement = placements.get(item.placementId);
+    if (!placement || placement.roomId !== item.roomId) throw new Error('Wrong history context');
+    return { ...record, placementId: item.placementId, roomId: item.roomId, roomCode: item.roomCode, roomName: item.roomName };
+  });
+  if (placements.size !== locationHistory.length || new Set(conditionHistory.map((item) => item.recordId)).size !== conditionHistory.length ||
+      [...locationHistory, ...conditionHistory].some((item) => item.assetId !== value.assetId)) throw new Error('Wrong history asset');
+  return { assetId: value.assetId, locationHistory, conditionHistory };
+}
+export function decodeAssetPlacementRooms(value: unknown): AssetPlacementRoom[] {
+  if (!Array.isArray(value)) throw new Error('Invalid rooms');
+  const nullableText = (item: unknown): item is string | null => item === null || typeof item === 'string';
+  const rooms = value.map((item: unknown): AssetPlacementRoom => {
+    if (!isRecord(item) || !isAssetId(item.id) || typeof item.code !== 'string' || !item.code.trim() || typeof item.name !== 'string' || !item.name.trim() ||
+        !nullableText(item.areaName) || !nullableText(item.buildingName) || !nullableText(item.floorName)) throw new Error('Invalid room');
+    return { id: item.id, code: item.code, name: item.name, areaName: item.areaName, buildingName: item.buildingName, floorName: item.floorName };
+  });
+  if (new Set(rooms.map((item) => item.id)).size !== rooms.length) throw new Error('Duplicate room');
+  return rooms;
 }
 export function decodeAssetPage(value: unknown): AssetPage {
   if (!isRecord(value) || !Array.isArray(value.content)) throw new Error('Invalid page');
