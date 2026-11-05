@@ -10,11 +10,13 @@ import { deferred, failure, ok } from './apiMock';
 
 const success = () => new Response(JSON.stringify({ status: 200, message: m.success, data: null }));
 function install(role: AccountRole = 'ADMIN') {
+  const me = vi.fn(async (): Promise<Response> => ok({ accountId: 'uc05-user', loginName: 'uc05-login', role, hostId: null, customerId: null }));
   const post = vi.fn(async (): Promise<Response> => success());
   const csrf = vi.fn(async () => ok({ token: 'fresh', headerName: 'X-CSRF-TOKEN' }));
   const fetch = vi.fn(async (url: RequestInfo | URL, init?: RequestInit) => {
     const path = String(url);
-    if (path.endsWith('/auth/me')) return ok({ accountId: 'uc05-user', loginName: 'uc05-login', role, hostId: null, customerId: null });
+    if (path.endsWith('/auth/me')) return me();
+    if (path.endsWith('/auth/refresh')) return failure(401, 'expired');
     if (path.endsWith('/profile')) return ok(role === 'HOST' ? hostProfile : role === 'CUSTOMER' ? customerProfile : adminProfile);
     if (path.endsWith('/csrf')) return csrf();
     if (path.endsWith('/change-password')) return post();
@@ -23,7 +25,7 @@ function install(role: AccountRole = 'ADMIN') {
     throw new Error(`Unexpected fixture request ${path} ${init?.method}`);
   });
   vi.stubGlobal('fetch', fetch);
-  return { post, csrf, fetch };
+  return { post, csrf, fetch, me };
 }
 
 function fill() {
@@ -128,9 +130,9 @@ describe('UC05 App integration', () => {
     await user.click(screen.getByRole('button', { name: 'Chỉnh sửa hồ sơ' }));
     expect(screen.queryByRole('button', { name: 'Đổi mật khẩu' })).toBeNull();
   });
-  it.each(['success', '401'] as const)('returns to login with a typed %s notice without logout or refresh', async (scenario) => {
+  it.each(['success', '401'] as const)('returns to login with a typed %s notice after success or confirmed refresh expiry', async (scenario) => {
     const api = await openFromProfile();
-    if (scenario === '401') api.post.mockResolvedValueOnce(failure(401, 'ignored'));
+    if (scenario === '401') { api.post.mockResolvedValueOnce(failure(401, 'ignored')); api.me.mockImplementation(async () => failure(401, 'expired')); }
     fill();
     await api.user.click(screen.getByRole('button', { name: 'Đổi mật khẩu' }));
     const message = scenario === 'success' ? m.success : m.sessionInvalid;
@@ -139,7 +141,8 @@ describe('UC05 App integration', () => {
     expect(within(screen.getByRole(scenario === 'success' ? 'status' : 'alert')).getByText(message)).toBeTruthy();
     expect((screen.getByLabelText(/Tên đăng nhập/) as HTMLInputElement).value).toBe('uc05-login');
     expect((screen.getByLabelText(/^Mật khẩu/) as HTMLInputElement).value).toBe('');
-    expect(api.fetch.mock.calls.some(([url]) => /\/(logout|refresh)$/.test(String(url)))).toBe(false);
+    expect(api.fetch.mock.calls.some(([url]) => String(url).endsWith('/logout'))).toBe(false);
+    expect(api.fetch.mock.calls.some(([url]) => String(url).endsWith('/refresh'))).toBe(scenario === '401');
     await api.user.type(screen.getByLabelText(/^Mật khẩu/), 'a');
     expect(screen.queryByText(message)).toBeNull();
   });

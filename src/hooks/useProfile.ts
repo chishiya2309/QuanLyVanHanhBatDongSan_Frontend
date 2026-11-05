@@ -147,7 +147,7 @@ export function useProfile(onSessionExpired: () => void) {
     controller.current?.abort();
     setStatus('saving');
     try {
-      const result = admin ? await updateAdminProfile(admin) : await updateHostProfile(host!, logoFile);
+      const result = admin ? await updateAdminProfile(admin, () => alive.current && request === generation.current) : await updateHostProfile(host!, logoFile, () => alive.current && request === generation.current);
       if (!alive.current || request !== generation.current) return;
       setProfile(result);
       setFormData(toForm(result));

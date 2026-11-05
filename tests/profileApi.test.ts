@@ -28,23 +28,40 @@ describe('profile API', () => {
     await updateHostProfile({ businessName: ' Host ', phoneNumber: '+84987654321', officeAddress: ' ', removeLogo: true, accountId: 'other' } as Parameters<typeof updateHostProfile>[0]);
     expect(JSON.parse(String(api.patchProfile.mock.calls[0][0].body))).toEqual({ businessName: 'Host', phoneNumber: '+84987654321', officeAddress: null, removeLogo: true });
   });
+  it.each(['ADMIN', 'HOST'] as const)('normalizes domestic phones in %s JSON without mutating the payload', async (role) => {
+    const api = installApi(role === 'ADMIN' ? adminProfile : hostProfile);
+    const phoneNumber = '  0347983243  ';
+    const payload = role === 'ADMIN'
+      ? { fullName: adminProfile.fullName, phoneNumber }
+      : { businessName: hostProfile.businessName, phoneNumber, removeLogo: false };
+    if ('fullName' in payload) await updateAdminProfile(payload);
+    else await updateHostProfile(payload);
+    expect(JSON.parse(String(api.patchProfile.mock.calls[0][0].body)).phoneNumber).toBe('+84347983243');
+    expect(payload.phoneNumber).toBe(phoneNumber);
+  });
+  it('clears an optional Admin phone containing only whitespace', async () => {
+    const api = installApi(adminProfile);
+    await updateAdminProfile({ fullName: adminProfile.fullName, phoneNumber: '   ' });
+    expect(JSON.parse(String(api.patchProfile.mock.calls[0][0].body)).phoneNumber).toBeNull();
+  });
   it('uses a JSON Blob plus a binary logo without setting multipart Content-Type', async () => {
     const api = installApi(hostProfile);
     const file = new File(['image'], 'logo.png', { type: 'image/png' });
-    await updateHostProfile({ businessName: ' Host ', phoneNumber: hostProfile.phoneNumber, officeAddress: ' Office ', removeLogo: false }, file);
+    await updateHostProfile({ businessName: ' Host ', phoneNumber: '0989897676', officeAddress: ' Office ', removeLogo: false }, file);
     const init = api.patchProfile.mock.calls[0][0];
     const body = init.body as FormData;
     const json = body.get('profile') as Blob;
     expect(json.type).toBe('application/json');
-    expect(JSON.parse(await readBlob(json))).toEqual({ businessName: 'Host', phoneNumber: hostProfile.phoneNumber, officeAddress: 'Office', removeLogo: false });
+    expect(JSON.parse(await readBlob(json))).toEqual({ businessName: 'Host', phoneNumber: '+84989897676', officeAddress: 'Office', removeLogo: false });
     expect(body.get('logo')).toBe(file);
     expect(init.headers).not.toHaveProperty('Content-Type');
     expect(init.headers).toHaveProperty('X-CSRF-TOKEN', 'csrf-fixture');
   });
   it.each([[400, m.emailProtected], [401, m.sessionInvalid], [403, m.forbidden], [404, m.notFound], [409, m.phoneDuplicate], [500, m.saveFailure]] as const)('preserves status and messages for HTTP %i', async (status, message) => {
     const api = installApi(hostProfile);
+    if (status === 401) api.me.mockImplementation(async () => failure(401, 'expired'));
     api.patchProfile.mockResolvedValueOnce(failure(status, message, { phoneNumber: message }));
-    await expect(updateHostProfile({ ...hostProfile, removeLogo: false })).rejects.toMatchObject({ status, message, fieldErrors: { phoneNumber: message } });
+    await expect(updateHostProfile({ ...hostProfile, removeLogo: false })).rejects.toMatchObject({ status, message, fieldErrors: status === 401 ? {} : { phoneNumber: message } });
   });
   it('normalizes malformed responses, network errors and CSRF failures', async () => {
     const api = installApi(adminProfile);
@@ -53,6 +70,6 @@ describe('profile API', () => {
     api.patchProfile.mockRejectedValueOnce(new TypeError('offline'));
     await expect(updateAdminProfile(adminProfile)).rejects.toMatchObject({ status: 0, message: m.saveFailure });
     api.csrf.mockResolvedValueOnce(failure(401, 'expired'));
-    await expect(updateAdminProfile(adminProfile)).rejects.toMatchObject({ status: 401, message: m.sessionInvalid });
+    await expect(updateAdminProfile(adminProfile)).rejects.toMatchObject({ status: 503, message: m.saveFailure });
   });
 });

@@ -28,19 +28,26 @@ export interface LoginFormData {
   rememberMe: boolean;
 }
 
-export interface GoogleLinkFormData {
-  loginName: string;
-  password: string;
+export type GoogleOnboardingPurpose = 'REGISTER_HOST' | 'SET_PASSWORD';
+export interface GoogleOnboardingContext {
+  flowId: string;
+  purpose: GoogleOnboardingPurpose;
+  email: string;
+  suggestedName: string | null;
+  expiresAt: string;
 }
-
+export interface GoogleOnboardingForm {
+  fullName: string;
+  phoneNumber: string;
+  password: string;
+  confirmPassword: string;
+}
+export type GoogleOnboardingErrors = Partial<Record<keyof GoogleOnboardingForm, string>>;
+export type GoogleRegisterRequest = GoogleOnboardingForm & { flowId: string };
+export interface GooglePasswordRequest { flowId: string; password: string; confirmPassword: string }
+export type GoogleOAuthStatus = 'success' | 'onboarding_required' | 'link_required' | 'cancelled'
+  | 'account_locked' | 'email_not_supported' | 'conflict' | 'error';
 export type LoginFieldErrors = Partial<Record<'loginName' | 'password', string>>;
-
-export type GoogleOAuthStatus =
-  | 'success'
-  | 'link_required'
-  | 'cancelled'
-  | 'account_locked'
-  | 'error';
 
 export interface RegisterHostRequest {
   fullName: string;

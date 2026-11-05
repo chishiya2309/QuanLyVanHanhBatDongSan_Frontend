@@ -9,7 +9,7 @@ describe('profile validation', () => {
     expect(validateAdminProfile({ fullName: 'Admin', phoneNumber: '' })).toEqual({});
     expect(validateHostProfile({ businessName: ' ', phoneNumber: ' ', removeLogo: false })).toEqual({ businessName: m.hostNameRequired, phoneNumber: m.phoneRequired });
   });
-  it.each(['0901234567', '+0123', '+1', '+1234567890123456', ' +84901234567', '+84 901234567'])('rejects invalid phone %s without normalizing it', (phoneNumber) => {
+  it.each(['0247983243', '+0123', '+1', '+1234567890123456', '034798324', '+84 901234567'])('rejects invalid phone %s', (phoneNumber) => {
     expect(validateAdminProfile({ fullName: 'Admin', phoneNumber }).phoneNumber).toBe(m.phoneInvalid);
   });
   it.each(['+12', '+84901234567', '+123456789012345'])('accepts E.164 boundary %s', (phoneNumber) => {

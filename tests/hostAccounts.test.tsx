@@ -22,6 +22,7 @@ function install(role: AccountRole = 'ADMIN') {
   const fetch = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input);
     if (url.endsWith('/auth/me')) return me();
+    if (url.endsWith('/auth/refresh')) return failure(401, 'expired');
     if (url.endsWith('/auth/csrf')) return csrf();
     if (url.endsWith('/admin/host-accounts')) return list();
     if (init?.method === 'PATCH') return patch(url.endsWith('/unlock') ? 'unlock' : 'lock');
@@ -68,7 +69,9 @@ describe('UC07 API boundary', () => {
     expect(api.fetch).not.toHaveBeenCalled();
   });
   it.each([[401, 'secret', m.sessionInvalid], [403, 'secret', m.forbidden], [403, m.csrfInvalid, m.csrfInvalid], [404, 'secret', m.notFound], [400, m.wrongRole, m.wrongRole], [400, 'stack trace', m.invalidData], [409, m.profileMissing, m.profileMissing], [409, m.alreadyLocked, m.alreadyLocked], [409, m.alreadyActive, m.alreadyActive], [500, 'secret', m.lockFailure]])('maps %s %s to safe message', async (status, message, expected) => {
-    const api = install(); api.patch.mockResolvedValueOnce(failure(Number(status), String(message)));
+    const api = install();
+    if (status === 401) api.me.mockImplementation(async () => failure(401, 'expired'));
+    api.patch.mockResolvedValueOnce(failure(Number(status), String(message)));
     await expect(lockHostAccount(id)).rejects.toMatchObject({ message: expected });
     expect(api.patch).toHaveBeenCalledTimes(1);
   });
@@ -107,7 +110,9 @@ describe('UC07 concurrent controller', () => {
   it.each([[401, m.sessionInvalid], [403, m.forbidden]])('purges data on %s and invalidates late results', async (status, message) => {
     const api = install(); const cb = callbacks(); const { result } = renderHook(() => useHostAccounts(null, cb));
     await waitFor(() => expect(result.current.canMutate).toBe(true));
-    await act(() => result.current.prepare(id, 'lock', null)); api.patch.mockResolvedValueOnce(failure(Number(status), String(message)));
+    await act(() => result.current.prepare(id, 'lock', null));
+    if (status === 401) api.me.mockImplementation(async () => failure(401, 'expired'));
+    api.patch.mockResolvedValueOnce(failure(Number(status), String(message)));
     await act(() => result.current.confirm());
     expect(result.current.list.data).toBeNull(); expect(result.current.confirmation).toBeNull();
     expect(status === 401 ? cb.onSessionExpired : cb.onForbidden).toHaveBeenCalledOnce();
@@ -185,7 +190,9 @@ describe('UC07 screens and routing', () => {
     fireEvent.error(document.querySelector('.host-detail img')!); expect(document.querySelector('.host-detail img')).toBeNull();
   });
   it('401 returns to login with exact notice and never calls logout', async () => {
-    const api = install(); api.list.mockResolvedValueOnce(failure(401, 'guest')); window.history.replaceState(null, '', path); render(<App />);
+    const api = install();
+    api.me.mockResolvedValueOnce(reply({ accountId: 'admin', loginName: 'admin', role: 'ADMIN', hostId: null, customerId: null })).mockImplementation(async () => failure(401, 'expired'));
+    api.list.mockResolvedValueOnce(failure(401, 'guest')); window.history.replaceState(null, '', path); render(<App />);
     await screen.findByText(m.sessionInvalid); expect(window.location.pathname).toBe('/');
     expect(api.fetch.mock.calls.some(([url]) => String(url).includes('/logout'))).toBe(false);
   });

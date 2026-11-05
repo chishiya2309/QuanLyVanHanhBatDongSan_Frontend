@@ -1,4 +1,6 @@
-import { AuthApiError, clearCsrfCache, getCsrfToken } from './authApi';
+import { AuthApiError } from './authErrors';
+import { clearCsrfCache, getCsrfToken } from './csrfClient';
+import { authenticatedFetch, sessionGuard } from './sessionClient';
 import { decodeAsset, decodeAssetPage, decodeConditionRecord, encodeAssetBody, isRecord, parseAssetJson, safeInteger } from './assetCodec';
 import { assetMessages as m, type AssetQuery, type CreateAssetInput, type RecordConditionInput, type UpdateAssetInput, type AssetFieldErrors } from '../types/assets';
 import { isAssetId } from '../utils/assetNavigation';
@@ -31,13 +33,14 @@ function apiError(status: number, value: unknown, fallback: string, write: boole
   return new AssetApiError(status, message, fields, write ? 'write' : 'read');
 }
 async function request<T>(path: string, expectedStatus: number, expectedMessage: string, decode: (value: unknown) => T,
-  fallback: string, init: RequestInit = {}): Promise<T> {
+  fallback: string, init: RequestInit = {}, shouldSend = () => true): Promise<T> {
   const write = init.method === 'POST' || init.method === 'PUT';
   let response: Response;
   try {
-    response = await fetch(base + path, { ...init, credentials: 'include', cache: 'no-store', headers: { Accept: 'application/json', ...init.headers } });
+    response = await authenticatedFetch(base + path, { ...init, credentials: 'include', cache: 'no-store', headers: { Accept: 'application/json', ...init.headers } }, { shouldSend });
   } catch (error) {
     if (isAssetAbort(error)) throw error;
+    if (error instanceof AuthApiError) throw new AssetApiError(error.status, error.status === 401 ? m.sessionInvalid : error.message, {}, write ? 'write' : 'read');
     throw new AssetApiError(0, write ? m.uncertain : fallback, {}, write ? 'uncertain' : 'read');
   }
   let body: unknown;
@@ -53,6 +56,7 @@ async function request<T>(path: string, expectedStatus: number, expectedMessage:
   } catch { throw new AssetApiError(response.status, write ? m.uncertain : fallback, {}, write ? 'uncertain' : 'read'); }
 }
 async function mutation<T>(path: string, method: 'POST' | 'PUT', body: string, status: number, message: string, decode: (value: unknown) => T, shouldSend: () => boolean): Promise<T> {
+  shouldSend = sessionGuard(shouldSend);
   let headerName: string, token: string;
   try {
     const csrf = await getCsrfToken();
@@ -60,12 +64,11 @@ async function mutation<T>(path: string, method: 'POST' | 'PUT', body: string, s
     headerName = csrf.headerName; token = csrf.token;
   } catch (error) {
     if (!shouldSend()) throw abortError();
-    if (error instanceof AuthApiError && error.status === 401) throw new AssetApiError(401, m.sessionInvalid, {}, 'csrf');
     clearCsrfCache();
-    throw new AssetApiError(error instanceof AuthApiError ? error.status : 0, error instanceof AuthApiError && error.status === 403 ? m.csrfInvalid : m.csrfFailure, {}, 'csrf');
+    throw new AssetApiError(error instanceof AuthApiError ? error.status === 401 ? 503 : error.status : 0, error instanceof AuthApiError && error.status === 403 ? m.csrfInvalid : m.csrfFailure, {}, 'csrf');
   }
   if (!shouldSend()) throw abortError();
-  return request(path, status, message, decode, m.saveFailure, { method, headers: { 'Content-Type': 'application/json', [headerName]: token }, body });
+  return request(path, status, message, decode, m.saveFailure, { method, headers: { 'Content-Type': 'application/json', [headerName]: token }, body }, shouldSend);
 }
 function checkedAssetId(id: string): string {
   if (!isAssetId(id)) throw new AssetApiError(404, m.notFound);
