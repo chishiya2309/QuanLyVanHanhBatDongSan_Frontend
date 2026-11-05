@@ -1,8 +1,8 @@
 import { AuthApiError } from './authErrors';
 import { clearCsrfCache, getCsrfToken } from './csrfClient';
 import { authenticatedFetch, sessionGuard } from './sessionClient';
-import { decodeAsset, decodeAssetPage, decodeConditionRecord, encodeAssetBody, isRecord, parseAssetJson, safeInteger } from './assetCodec';
-import { assetMessages as m, type AssetQuery, type CreateAssetInput, type RecordConditionInput, type UpdateAssetInput, type AssetFieldErrors } from '../types/assets';
+import { decodeAsset, decodeAssetPage, decodeConditionRecord, decodeAssetPlacement, decodeAssetHistory, decodeAssetPlacementRooms, encodeAssetBody, isRecord, parseAssetJson, safeInteger } from './assetCodec';
+import { assetMessages as m, type AssetQuery, type CreateAssetInput, type RecordConditionInput, type UpdateAssetInput, type AssetFieldErrors, type AssignAssetPlacementInput, type TransferAssetInput } from '../types/assets';
 import { isAssetId } from '../utils/assetNavigation';
 
 const base = (import.meta.env.VITE_API_URL || '/api/v1').replace(/\/+$/, '');
@@ -21,10 +21,12 @@ export const isAssetAbort = (error: unknown) => error instanceof Error && error.
 function apiError(status: number, value: unknown, fallback: string, write: boolean): AssetApiError {
   const fields: AssetFieldErrors = {};
   const valid = isRecord(value) && safeInteger(value.status) === status && typeof value.message === 'string';
-  const message = status === 401 ? m.sessionInvalid : status === 403 ? valid && value.message === m.csrfInvalid ? m.csrfInvalid : m.forbidden : status === 404 ? m.notFound :
-    status === 400 && valid && allowedMessages.has(String(value.message)) && !String(value.message).endsWith('thành công') ? String(value.message) : status === 400 ? m.invalid : fallback;
+  const message = status === 401 ? m.sessionInvalid : status === 403 ? valid && value.message === m.csrfInvalid ? m.csrfInvalid : m.forbidden :
+    status === 404 ? valid && value.message === m.roomNotFound ? m.roomNotFound : m.notFound :
+    (status === 400 || status === 409) && valid && allowedMessages.has(String(value.message)) && !String(value.message).endsWith('thành công') ? String(value.message) :
+    status === 400 ? m.invalid : status === 409 ? m.sourceChanged : fallback;
   if (valid && isRecord(value.fieldErrors)) {
-    for (const field of ['name', 'purchaseValue', 'note', 'condition'] as const) {
+    for (const field of ['name', 'purchaseValue', 'note', 'condition', 'roomId', 'sourcePlacementId'] as const) {
       const text = value.fieldErrors[field];
       if (typeof text === 'string' && allowedMessages.has(text)) fields[field] = text;
     }
@@ -32,12 +34,12 @@ function apiError(status: number, value: unknown, fallback: string, write: boole
   if (status === 403 && message === m.csrfInvalid) clearCsrfCache();
   return new AssetApiError(status, message, fields, write ? 'write' : 'read');
 }
-async function request<T>(path: string, expectedStatus: number, expectedMessage: string, decode: (value: unknown) => T,
+async function request<T>(path: string, expectedStatus: number, expectedMessage: string | readonly string[], decode: (value: unknown) => T,
   fallback: string, init: RequestInit = {}, shouldSend = () => true): Promise<T> {
   const write = init.method === 'POST' || init.method === 'PUT';
   let response: Response;
   try {
-    response = await authenticatedFetch(base + path, { ...init, credentials: 'include', cache: 'no-store', headers: { Accept: 'application/json', ...init.headers } }, { shouldSend });
+    response = await authenticatedFetch(base + path, { ...init, credentials: 'include', cache: 'no-store', headers: { Accept: 'application/json', ...init.headers } }, { shouldSend, trackNavigation: write });
   } catch (error) {
     if (isAssetAbort(error)) throw error;
     if (error instanceof AuthApiError) throw new AssetApiError(error.status, error.status === 401 ? m.sessionInvalid : error.message, {}, write ? 'write' : 'read');
@@ -51,11 +53,12 @@ async function request<T>(path: string, expectedStatus: number, expectedMessage:
   }
   if (!response.ok) throw apiError(response.status, body, fallback, write);
   try {
-    if (response.status !== expectedStatus || !isRecord(body) || safeInteger(body.status) !== expectedStatus || body.message !== expectedMessage || !Object.hasOwn(body, 'data')) throw new Error('Invalid envelope');
+    if (response.status !== expectedStatus || !isRecord(body) || safeInteger(body.status) !== expectedStatus ||
+        !(typeof expectedMessage === 'string' ? body.message === expectedMessage : expectedMessage.some((message) => body.message === message)) || !Object.hasOwn(body, 'data')) throw new Error('Invalid envelope');
     return decode(body.data);
   } catch { throw new AssetApiError(response.status, write ? m.uncertain : fallback, {}, write ? 'uncertain' : 'read'); }
 }
-async function mutation<T>(path: string, method: 'POST' | 'PUT', body: string, status: number, message: string, decode: (value: unknown) => T, shouldSend: () => boolean): Promise<T> {
+async function mutation<T>(path: string, method: 'POST' | 'PUT', body: string, status: number, message: string, decode: (value: unknown) => T, shouldSend: () => boolean, fallback: string = m.saveFailure): Promise<T> {
   shouldSend = sessionGuard(shouldSend);
   let headerName: string, token: string;
   try {
@@ -68,7 +71,7 @@ async function mutation<T>(path: string, method: 'POST' | 'PUT', body: string, s
     throw new AssetApiError(error instanceof AuthApiError ? error.status === 401 ? 503 : error.status : 0, error instanceof AuthApiError && error.status === 403 ? m.csrfInvalid : m.csrfFailure, {}, 'csrf');
   }
   if (!shouldSend()) throw abortError();
-  return request(path, status, message, decode, m.saveFailure, { method, headers: { 'Content-Type': 'application/json', [headerName]: token }, body }, shouldSend);
+  return request(path, status, message, decode, fallback, { method, headers: { 'Content-Type': 'application/json', [headerName]: token }, body }, shouldSend);
 }
 function checkedAssetId(id: string): string {
   if (!isAssetId(id)) throw new AssetApiError(404, m.notFound);
@@ -103,4 +106,30 @@ export async function recordAssetCondition(id: string, input: RecordConditionInp
   return mutation('/assets/' + checkedAssetId(id) + '/condition-records', 'POST', JSON.stringify({ condition: input.condition, note: input.note }), 201, m.conditionSuccess, (value) => {
     const record = decodeConditionRecord(value); if (record.assetId !== id || record.condition !== input.condition) throw new Error('Wrong condition record'); return record;
   }, shouldSend);
+}
+
+export async function getAssetHistory(id: string, signal?: AbortSignal) {
+  return request('/assets/' + checkedAssetId(id) + '/history', 200, m.historySuccess, (value) => {
+    const history = decodeAssetHistory(value); if (history.assetId !== id) throw new Error('Wrong history'); return history;
+  }, m.historyFailure, { signal });
+}
+export async function listAssetPlacementRooms(signal?: AbortSignal) {
+  return request('/rooms/search', 200, [m.roomListSuccess, m.roomListEmpty], decodeAssetPlacementRooms, m.roomListFailure, { signal });
+}
+export async function assignAssetPlacement(id: string, input: AssignAssetPlacementInput, shouldSend = () => true) {
+  if (!isAssetId(input.roomId)) throw new AssetApiError(400, m.roomRequired, { roomId: m.roomRequired });
+  return mutation('/assets/' + checkedAssetId(id) + '/placements', 'POST', JSON.stringify({ roomId: input.roomId }), 201, m.assignSuccess, (value) => {
+    const placement = decodeAssetPlacement(value);
+    if (placement.assetId !== id || placement.roomId !== input.roomId || placement.toAt !== null) throw new Error('Wrong placement');
+    return placement;
+  }, shouldSend, m.assignFailure);
+}
+export async function transferAsset(id: string, input: TransferAssetInput, shouldSend = () => true) {
+  if (!isAssetId(input.roomId)) throw new AssetApiError(400, m.roomRequired, { roomId: m.roomRequired });
+  if (!isAssetId(input.sourcePlacementId)) throw new AssetApiError(400, m.sourceRequired, { sourcePlacementId: m.sourceRequired });
+  return mutation('/assets/' + checkedAssetId(id) + '/transfers', 'POST', JSON.stringify({ roomId: input.roomId, sourcePlacementId: input.sourcePlacementId }), 200, m.transferSuccess, (value) => {
+    const placement = decodeAssetPlacement(value);
+    if (placement.assetId !== id || placement.roomId !== input.roomId || placement.toAt !== null || placement.placementId === input.sourcePlacementId) throw new Error('Wrong transfer');
+    return placement;
+  }, shouldSend, m.transferFailure);
 }

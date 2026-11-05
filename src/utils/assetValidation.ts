@@ -20,6 +20,11 @@ export function isAssetState(value: unknown): value is AssetState {
 export function formatAssetMoney(value: string): string {
   return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 }).format(BigInt(value));
 }
-export function formatAssetTime(value: string): string {
+export function formatAssetTime(value: string, precise = false): string {
+  if (precise) {
+    const fraction = /\.(\d+)/.exec(value)?.[1];
+    const formatter = new Intl.DateTimeFormat('vi-VN', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23', timeZone: 'Asia/Ho_Chi_Minh' });
+    return formatter.formatToParts(new Date(value)).map((part) => part.type === 'second' && fraction ? part.value + '.' + fraction : part.value).join('');
+  }
   return new Intl.DateTimeFormat('vi-VN', { dateStyle: 'short', timeStyle: 'short', timeZone: 'Asia/Ho_Chi_Minh' }).format(new Date(value));
 }

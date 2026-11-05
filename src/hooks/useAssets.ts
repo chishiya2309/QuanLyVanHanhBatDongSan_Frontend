@@ -1,43 +1,12 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { AssetApiError, createAsset, getAsset, isAssetAbort, listAssets, recordAssetCondition, updateAsset } from '../services/assetsApi';
+import { AssetApiError, createAsset, getAsset, getAssetHistory, isAssetAbort, listAssets, recordAssetCondition, updateAsset } from '../services/assetsApi';
 import { assetMessages as m, type Asset, type AssetFieldErrors, type AssetRoute, type CreateAssetInput, type RecordConditionInput, type UpdateAssetInput } from '../types/assets';
 import { assetRouteKey, assetUrl } from '../utils/assetNavigation';
 
-interface Resource<T> { key: string; identity: string | null; data: T | null; status: 'loading' | 'ready' | 'error'; error: string | null; stale: boolean }
+import { useAssetResource } from './useAssetResource';
 interface Notice { kind: 'success' | 'error'; message: string; assetId?: string; uncertain?: boolean }
 type Mutation = { kind: 'create'; input: CreateAssetInput } | { kind: 'edit'; id: string; input: UpdateAssetInput } | { kind: 'condition'; id: string; input: RecordConditionInput };
 interface Options { onNavigate: (url: string, replace?: boolean) => void; onSessionExpired: () => void; onForbidden: () => void }
-
-function useAssetResource<T>(key: string | null, load: (signal: AbortSignal) => Promise<T>, fail: (error: unknown) => boolean, fallback: string, identity = key) {
-  const [version, setVersion] = useState(0);
-  const [state, setState] = useState<Resource<T>>({ key: '', identity: null, data: null, status: 'loading', error: null, stale: false });
-  const sequence = useRef(0);
-  useLayoutEffect(() => { sequence.current++; }, [key]);
-  useEffect(() => {
-    const request = ++sequence.current;
-    const controller = new AbortController();
-    let active = true;
-    if (key !== null) void (async () => {
-      await Promise.resolve();
-      if (!active) return;
-      setState((previous) => ({ key, identity, data: previous.identity === identity ? previous.data : null, status: 'loading', error: null, stale: previous.identity === identity && previous.data !== null }));
-      try {
-        const data = await load(controller.signal);
-        if (active && sequence.current === request) setState({ key, identity, data, status: 'ready', error: null, stale: false });
-      } catch (error) {
-        if (!active || sequence.current !== request || isAssetAbort(error)) return;
-        if (!fail(error)) setState((previous) => ({ ...previous, key, status: 'error', stale: previous.data !== null, error: error instanceof AssetApiError ? error.message : fallback }));
-      }
-    })();
-    return () => { active = false; controller.abort(); };
-  }, [key, identity, load, fail, fallback, version]);
-  const refresh = useCallback(() => {
-    setState((previous) => ({ ...previous, status: 'loading', error: null, stale: previous.data !== null }));
-    setVersion((value) => value + 1);
-  }, []);
-  const current: Resource<T> = state.key === key ? state : { key: key || '', identity, data: null, status: 'loading', error: null, stale: false };
-  return { ...current, refresh };
-}
 
 export function useAssets(route: AssetRoute, options: Options) {
   const callbacks = useRef(options);
@@ -74,8 +43,21 @@ export function useAssets(route: AssetRoute, options: Options) {
   }, []);
   const loadList = useCallback((signal: AbortSignal) => listAssets({ q, page, size }, signal), [q, page, size]);
   const loadDetail = useCallback((signal: AbortSignal) => getAsset(assetId || '', signal), [assetId]);
-  const list = useAssetResource(screen === 'list' && q.length <= 200 ? assetUrl({ q, page, size }) : null, loadList, fatal, m.listFailure);
+  const loadHistory = useCallback((signal: AbortSignal) => getAssetHistory(assetId || '', signal), [assetId]);
+  const listKey = assetUrl({ q, page, size });
+  const list = useAssetResource(screen === 'list' && q.length <= 200 ? listKey : null, loadList, fatal, m.listFailure, assetUrl({ q, page, size }));
   const detail = useAssetResource(assetId !== null ? assetId + '/' + screen : null, loadDetail, fatal, m.detailFailure, assetId);
+  const history = useAssetResource(screen === 'history' && assetId !== null ? key : null, loadHistory, fatal, m.historyFailure);
+  useEffect(() => {
+    if (!route.invalidPlacement) return;
+    let active = true;
+    void Promise.resolve().then(() => {
+      if (!active) return;
+      setNotice({ kind: 'error', message: m.placementSelectionInvalid });
+      callbacks.current.onNavigate(assetUrl(route, assetId, screen), true);
+    });
+    return () => { active = false; };
+  }, [route, assetId, screen]);
   useEffect(() => {
     const data = list.data;
     if (screen === 'list' && list.status === 'ready' && data && page > 0 && page >= data.totalPages) {
@@ -118,5 +100,18 @@ export function useAssets(route: AssetRoute, options: Options) {
       if (life.current.active) setPending(false);
     }
   };
-  return { list, detail, pending, canMutate, mutate, notice, dismissNotice: () => setNotice(null), mutationError: mutationError?.key === key ? mutationError : null };
+  const finishPlacement = (message: string, uncertain = false, toList = false) => {
+    setNotice({ kind: uncertain || message !== m.assignSuccess && message !== m.transferSuccess ? 'error' : 'success', message });
+    callbacks.current.onNavigate(assetUrl(route, toList ? null : assetId, toList ? 'list' : screen), true);
+    list.refresh(); detail.refresh(); history.refresh();
+  };
+  const handlePlacementFailure = (error: unknown) => {
+    const handled = fatal(error);
+    if (handled && error instanceof AssetApiError && error.status === 404) {
+      list.refresh(); detail.refresh(); history.refresh();
+    }
+    return handled;
+  };
+  return { list, detail, history, pending, canMutate, mutate, notice, finishPlacement, handleFailure: handlePlacementFailure,
+    dismissNotice: () => setNotice(null), mutationError: mutationError?.key === key ? mutationError : null };
 }

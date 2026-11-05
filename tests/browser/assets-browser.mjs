@@ -16,7 +16,7 @@ const initial = () => Array.from({ length: 23 }, (_, index) => ({ assetId: index
   name: index === 0 ? 'Máy lạnh Daikin 1.5 HP' : index === 1 ? 'Tủ lạnh Panasonic' : 'Tài sản kiểm thử ' + index,
   purchaseValue: new LosslessNumber(index === 0 ? '9007199254740993' : index === 1 ? '9999999999999999999' : '0'),
   condition: ['GOOD', 'DAMAGED', 'REPAIRING', 'RETIRED'][index % 4], note: index % 2 ? 'Ghi chú %_! có dấu tiếng Việt' : null,
-  createdAt: '2026-10-31T17:00:00Z', updatedAt: '2026-11-01T02:35:00Z' }));
+  createdAt: '2026-10-31T17:00:00Z', updatedAt: '2026-11-01T02:35:00Z', currentPlacement: null }));
 let rows = initial(), role = 'HOST', mode = 'full', calls = [], csrfGate = null, holdSearch = null, heldSearchDone = null;
 page.on('pageerror', (error) => errors.push(error.message));
 await page.setRequestInterception(true);
@@ -25,7 +25,8 @@ page.on('request', async (request) => {
   if (!url.pathname.startsWith('/api/')) { await request.continue(); return; }
   calls.push({ path: url.pathname, search: url.search, method: request.method(), body: request.postData(), csrf: request.headers()['x-csrf-token'] });
   const reply = (status, message, data = null) => request.respond({ status, contentType: 'application/json', body: stringify({ status, message, data }) }).catch(() => undefined);
-  if (url.pathname.endsWith('/auth/me')) return reply(200, 'OK', { accountId: 'browser-host', loginName: 'Chủ nhà kiểm thử', role, hostId: id, customerId: null });
+  if (url.pathname.endsWith('/auth/me')) return mode === 'session' ? reply(401, 'Phiên đăng nhập không hợp lệ. Vui lòng đăng nhập lại') : reply(200, 'OK', { accountId: 'browser-host', loginName: 'Chủ nhà kiểm thử', role, hostId: id, customerId: null });
+  if (url.pathname.endsWith('/auth/refresh')) return reply(401, 'Phiên đăng nhập không hợp lệ. Vui lòng đăng nhập lại');
   if (url.pathname.endsWith('/auth/csrf')) { if (csrfGate) await csrfGate; return reply(200, 'OK', { token: 'browser-token', headerName: 'X-CSRF-TOKEN' }); }
   if (!url.pathname.includes('/assets')) return reply(404, 'Unexpected endpoint in test');
   if (mode === 'session') return reply(401, 'Phiên đăng nhập không hợp lệ. Vui lòng đăng nhập lại');
