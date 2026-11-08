@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import type { UserProfile, OverviewMetrics } from '../../types/dashboard';
 import {
   mockMetrics,
@@ -16,6 +16,7 @@ import { PropertyStatusTable } from './PropertyStatusTable';
 import './dashboard.css';
 
 interface DashboardShellProps {
+  showServices?: boolean; servicesActive?: boolean; onNavigateServices?: () => void;
   user: UserProfile;
   onLogout: () => void;
   onOpenProfile: () => void;
@@ -36,6 +37,7 @@ interface DashboardShellProps {
 }
 
 export const DashboardShell: React.FC<DashboardShellProps> = ({
+  showServices = false, servicesActive = false, onNavigateServices,
   user,
   onLogout,
   onOpenProfile,
@@ -55,6 +57,15 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
   onNavigateHostAccounts,
 }) => {
   const [selectedPropertyId, setSelectedPropertyId] = useState<string>('prop_all');
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [smallScreen, setSmallScreen] = useState(() => typeof window.matchMedia === 'function' && window.matchMedia('(max-width: 1024px)').matches);
+  useEffect(() => {
+    const query = window.matchMedia?.('(max-width: 1024px)');
+    const changed = (event: MediaQueryListEvent) => setSmallScreen(event.matches);
+    query?.addEventListener('change', changed);
+    return () => query?.removeEventListener('change', changed);
+  }, []);
+  const mobileNavigate = (action?: () => void) => () => { setMobileOpen(false); action?.(); };
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   // Formatted Vietnamese Date
@@ -159,7 +170,7 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
     setTimeout(() => setToastMessage(null), 3000);
   };
 
-  const isCustomView = hostAccountsActive || assetsActive || propertiesActive || roomsActive;
+  const isCustomView = hostAccountsActive || assetsActive || propertiesActive || roomsActive || servicesActive;
 
   return (
     <div className={`dashboard-root${hostAccountsActive ? ' dashboard-root--admin' : ''}${assetsActive ? ' dashboard-root--assets' : ''}`}>
@@ -176,21 +187,37 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
       />
 
       {/* Main Layout: Sidebar + Canvas */}
+      <button type="button" className="dash-mobile-menu-toggle" aria-expanded={mobileOpen} aria-controls="rentops-navigation" onClick={() => setMobileOpen((open) => !open)}>Điều hướng</button>
+      {!mobileOpen && <nav className="dash-mobile-shortcuts asset-mobile-nav" aria-label="Điều hướng nhanh trên thiết bị nhỏ">
+        {[
+          { label: 'Tổng quan', path: '/', active: !isCustomView, action: onNavigateOverview, show: true },
+          { label: 'Tài sản', path: '/assets', active: assetsActive, action: onNavigateAssets, show: showAssets },
+          { label: 'Danh mục dịch vụ', path: '/services', active: servicesActive, action: onNavigateServices, show: showServices },
+          { label: 'Cơ sở & Tòa nhà', path: '/properties', active: propertiesActive, action: onNavigateProperties, show: propertiesActive },
+          { label: 'Mặt bằng & Phòng', path: '/rooms', active: roomsActive, action: onNavigateRooms, show: roomsActive },
+          { label: 'Tài khoản Host', path: '/admin/host-accounts', active: hostAccountsActive, action: onNavigateHostAccounts, show: hostAccountsActive },
+        ].filter((item) => item.show).map((item) => <a key={item.path} href={item.path} aria-current={smallScreen && item.active ? 'page' : undefined} onClick={(event) => { event.preventDefault(); item.action?.(); }}>{item.label}</a>)}
+      </nav>}
       <div className="dashboard-layout">
         <Sidebar
+          markCurrent={!smallScreen || mobileOpen}
+          mobileOpen={mobileOpen}
+          showServices={showServices}
+          servicesActive={servicesActive}
+          onNavigateServices={mobileNavigate(onNavigateServices)}
           showHostAccounts={showHostAccounts}
           hostAccountsActive={hostAccountsActive}
           showAssets={showAssets}
           assetsActive={assetsActive}
-          onNavigateAssets={onNavigateAssets}
+          onNavigateAssets={mobileNavigate(onNavigateAssets)}
           showProperties={showProperties}
           propertiesActive={propertiesActive}
-          onNavigateProperties={onNavigateProperties}
+          onNavigateProperties={mobileNavigate(onNavigateProperties)}
           showRooms={showRooms}
           roomsActive={roomsActive}
-          onNavigateRooms={onNavigateRooms}
-          onNavigateOverview={onNavigateOverview}
-          onNavigateHostAccounts={onNavigateHostAccounts}
+          onNavigateRooms={mobileNavigate(onNavigateRooms)}
+          onNavigateOverview={mobileNavigate(onNavigateOverview)}
+          onNavigateHostAccounts={mobileNavigate(onNavigateHostAccounts)}
         />
 
         <main className="dash-canvas" id="main-content">

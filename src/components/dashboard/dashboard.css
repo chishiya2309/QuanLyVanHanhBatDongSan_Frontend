@@ -873,6 +873,19 @@
 }
 
 /* UC04 account entry, preserving the existing dashboard system. */
+.dash-mobile-menu-toggle { display: none; }
+.dash-mobile-shortcuts { display: none; }
+@media (max-width: 1024px) {
+  .dash-mobile-shortcuts { display: flex; flex-wrap: wrap; gap: var(--space-xs); margin: var(--space-xs) var(--space-md); }
+  .dash-mobile-shortcuts a { display: inline-flex; align-items: center; min-height: 44px; padding: var(--space-xs) var(--space-sm); color: var(--color-ink); border-radius: var(--radius-input); text-decoration: none; }
+  .dash-mobile-shortcuts a[aria-current="page"] { color: var(--color-accent-primary); background: var(--color-accent-wash); }
+  .dash-mobile-shortcuts a:focus-visible { outline: 2px solid var(--color-focus); outline-offset: 2px; }
+  .dash-mobile-menu-toggle { display: block; margin: var(--space-sm) var(--space-md); min-height: 44px; padding: var(--space-xs) var(--space-md); border: 1px solid var(--color-muted); border-radius: var(--radius-input); color: var(--color-ink); background: var(--color-surface); font: inherit; cursor: pointer; }
+  .dash-mobile-menu-toggle:focus-visible { outline: 2px solid var(--color-focus); outline-offset: 2px; }
+  .dash-mobile-menu-toggle:hover { background: var(--color-surface-hover); }
+  .dash-mobile-menu-toggle:active { background: var(--color-paper-3); }
+  .dash-sidebar.is-mobile-open { display: block; width: 100%; min-width: 0; box-sizing: border-box; }
+}
 .user-profile-badge { min-height: 44px; min-width: 0; max-width: 280px; font: inherit; text-align: left; cursor: pointer; }
 .user-profile-badge .user-info { min-width: 0; }
 .user-profile-badge .user-name { overflow: clip; text-overflow: ellipsis; white-space: nowrap; }

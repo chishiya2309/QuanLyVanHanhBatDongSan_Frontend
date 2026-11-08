@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useLayoutEffect, useCallback, useRef } from 'react';
 import { LoginPage } from './components/auth/LoginPage';
 import { RegisterHostPage } from './components/auth/RegisterHostPage';
 import { DashboardShell } from './components/dashboard/DashboardShell';
@@ -25,6 +25,10 @@ import { PropertiesPage } from './components/properties/PropertiesPage';
 import { RoomsPage } from './components/properties/RoomsPage';
 import type { PropertiesRoute, RoomsRoute } from './types/properties';
 import { parsePropertiesRoute, parseRoomsRoute } from './utils/propertyNavigation';
+import { CatalogForbidden, ServiceCatalogPage } from './components/services/ServiceCatalogPage';
+import { catalogMessages, type CatalogRoute } from './types/serviceCatalog';
+import { catalogUrl, parseCatalogRoute } from './utils/serviceCatalogNavigation';
+import type { NavigationGuardRegistration } from './hooks/useServiceCatalog';
 
 function isGoogleEntry(): boolean {
   return window.location.pathname === '/auth/onboarding' || window.location.pathname === '/auth/callback'
@@ -37,10 +41,11 @@ function isProtectedPath(pathname: string, search: string): boolean {
     || parseAssetRoute(pathname, search)
     || parsePropertiesRoute(pathname, search)
     || parseRoomsRoute(pathname, search)
+    || parseCatalogRoute(pathname, search)
   );
 }
 
-function AuthenticatedDashboard({ user, onLogout, onSessionExpired, onAuthenticationEnded, hostRoute, onNavigateHost, assetRoute, onNavigateAssets, propertiesRoute, onNavigateProperties, roomsRoute, onNavigateRooms, onCreatePendingChange, onOverview }: {
+function AuthenticatedDashboard({ user, onLogout, onSessionExpired, onAuthenticationEnded, hostRoute, onNavigateHost, assetRoute, onNavigateAssets, propertiesRoute, onNavigateProperties, roomsRoute, onNavigateRooms, onCreatePendingChange, onOverview, catalogRoute, onNavigateCatalog, registerGuard }: {
   user: AuthenticatedUserResponse; onLogout: () => void; onSessionExpired: () => void;
   onAuthenticationEnded: (notice: AuthNotice) => void;
   hostRoute: HostAccountRoute | null;
@@ -53,12 +58,17 @@ function AuthenticatedDashboard({ user, onLogout, onSessionExpired, onAuthentica
   roomsRoute: RoomsRoute | null;
   onNavigateRooms: (url: string) => void;
   onCreatePendingChange: (pending: boolean) => void;
+  catalogRoute: CatalogRoute | null;
+  onNavigateCatalog: (url: string, replace?: boolean) => void;
+  registerGuard: NavigationGuardRegistration;
 }) {
   const profileController = useProfile(onSessionExpired);
   const [accountModal, setAccountModal] = useState<'profile' | 'password' | null>(null);
   const [focusChangePassword, setFocusChangePassword] = useState(false);
   const [adminDenied, setAdminDenied] = useState(false);
   const [assetsDenied, setAssetsDenied] = useState(false);
+  const [catalogDenied, setCatalogDenied] = useState(false);
+  const denyCatalog = useCallback(() => { setAccountModal(null); setCatalogDenied(true); }, []);
   const denyAdmin = useCallback(() => { setAccountModal(null); setAdminDenied(true); }, []);
   const denyAssets = useCallback(() => { setAccountModal(null); setAssetsDenied(true); }, []);
   const profile = profileController.profile;
@@ -93,10 +103,17 @@ function AuthenticatedDashboard({ user, onLogout, onSessionExpired, onAuthentica
         showRooms={user.role === 'HOST'}
         roomsActive={roomsRoute !== null}
         onNavigateRooms={() => onNavigateRooms('/rooms')}
+        showServices={user.role === 'HOST' && !catalogDenied}
+        servicesActive={catalogRoute !== null}
+        onNavigateServices={() => onNavigateCatalog('/services')}
         onNavigateOverview={onOverview}
         onNavigateHostAccounts={() => onNavigateHost(null)}
       >
-        {propertiesRoute ? (
+        {catalogRoute ? (
+          user.role !== 'HOST' || catalogDenied ? <CatalogForbidden onOverview={onOverview} /> :
+            <ServiceCatalogPage route={catalogRoute} onNavigate={onNavigateCatalog} registerGuard={registerGuard}
+              onSessionExpired={() => onAuthenticationEnded({ kind: 'error', message: catalogMessages.sessionInvalid })} onForbidden={denyCatalog} />
+        ) : propertiesRoute ? (
           <PropertiesPage
             route={propertiesRoute}
             onNavigate={onNavigateProperties}
@@ -177,6 +194,12 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
   const [assetRoute, setAssetRoute] = useState<AssetRoute | null>(() => parseAssetRoute(window.location.pathname, window.location.search));
   const [propertiesRoute, setPropertiesRoute] = useState<PropertiesRoute | null>(() => parsePropertiesRoute(window.location.pathname, window.location.search));
   const [roomsRoute, setRoomsRoute] = useState<RoomsRoute | null>(() => parseRoomsRoute(window.location.pathname, window.location.search));
+  const [catalogRoute, setCatalogRoute] = useState<CatalogRoute | null>(() => parseCatalogRoute(window.location.pathname, window.location.search));
+  const navigationGuard = useRef<(() => boolean) | null>(null);
+  const registerGuard = useCallback<NavigationGuardRegistration>((guard) => { navigationGuard.current = guard; }, []);
+  const permitNavigation = useCallback(() => navigationGuard.current?.() !== false, []);
+  const lastUrl = useRef(window.location.pathname + window.location.search);
+  useLayoutEffect(() => { lastUrl.current = window.location.pathname + window.location.search; }, [hostRoute, assetRoute, propertiesRoute, roomsRoute, catalogRoute]);
   const googleEntry = useRef(isGoogleEntry());
   const [authCheck, setAuthCheck] = useState<'checking' | 'ready' | 'error'>(() => isGoogleEntry() ? 'ready' : 'checking');
   const [authRetry, setAuthRetry] = useState(0);
@@ -208,6 +231,7 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
       .catch((error: unknown) => {
         if (cancelled || generation !== authGeneration.current) return;
         const assets = parseAssetRoute(window.location.pathname, window.location.search);
+        const services = parseCatalogRoute(window.location.pathname, window.location.search);
         if (!(error instanceof AuthApiError) || error.status !== 401) {
           setAuthCheck('error'); return;
         }
@@ -218,9 +242,10 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
           setAssetRoute(null);
           setPropertiesRoute(null);
           setRoomsRoute(null);
+          setCatalogRoute(null);
           setAuthNotice({
             kind: 'error',
-            message: assets ? assetMessages.sessionInvalid : hostAccountMessages.sessionInvalid,
+            message: services ? catalogMessages.sessionInvalid : assets ? assetMessages.sessionInvalid : hostAccountMessages.sessionInvalid,
           });
         }
       });
@@ -231,6 +256,7 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
     initialRecovery?.release();
     const onPopState = () => {
       if (pendingCreateUrl.current) { window.history.pushState(null, '', pendingCreateUrl.current); return; }
+      if (!permitNavigation()) { window.history.pushState(null, '', lastUrl.current); return; }
       const next = captureRecoveryEntry();
       const wasRecovery = recoveryRoute.current !== null;
       recoveryRoute.current = next.path;
@@ -238,6 +264,7 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
       setAssetRoute(parseAssetRoute(window.location.pathname, window.location.search));
       setPropertiesRoute(parsePropertiesRoute(window.location.pathname, window.location.search));
       setRoomsRoute(parseRoomsRoute(window.location.pathname, window.location.search));
+      setCatalogRoute(parseCatalogRoute(window.location.pathname, window.location.search));
 
       // Private navigation preserves the authenticated user and pending session check.
       if (!next.path && !wasRecovery) return;
@@ -250,7 +277,7 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
     };
     window.addEventListener('popstate', onPopState);
     return () => window.removeEventListener('popstate', onPopState);
-  }, [initialRecovery]);
+  }, [initialRecovery, permitNavigation]);
 
   useEffect(() => {
     let cancelled = false;
@@ -274,6 +301,8 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
     setAssetRoute(null);
     setPropertiesRoute(null);
     setRoomsRoute(null);
+    setCatalogRoute(null);
+    navigationGuard.current = null;
   }, []);
 
   useEffect(() => onSessionChange((event) => {
@@ -287,7 +316,7 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
   }, [resetAuthentication]);
 
   const handleSessionExpired = useCallback(() => {
-    resetAuthentication({ kind: 'error', message: parseAssetRoute(window.location.pathname, window.location.search) ? assetMessages.sessionInvalid : profileMessages.sessionInvalid });
+    resetAuthentication({ kind: 'error', message: parseCatalogRoute(window.location.pathname, window.location.search) ? catalogMessages.sessionInvalid : parseAssetRoute(window.location.pathname, window.location.search) ? assetMessages.sessionInvalid : profileMessages.sessionInvalid });
   }, [resetAuthentication]);
 
   const handleAuthenticationEnded = useCallback((notice: AuthNotice) => {
@@ -303,7 +332,7 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
     window.history.pushState(null, '', path || '/');
     setRecovery({ path, token: null }); setRecoveryVisit((n) => n + 1);
     setCurrentUser(null); setView('login'); setAuthNotice(null);
-    setHostRoute(null); setAssetRoute(null); setPropertiesRoute(null); setRoomsRoute(null); setAuthCheck('ready');
+    setHostRoute(null); setAssetRoute(null); setPropertiesRoute(null); setRoomsRoute(null); setCatalogRoute(null); setAuthCheck('ready');
   };
 
   const finishRecovery = (notice: AuthNotice) => {
@@ -314,23 +343,28 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
   };
 
   const navigateHost = useCallback((id: string | null) => {
+    if (!permitNavigation()) return;
     const path = HOST_ACCOUNTS_PATH + (id === null ? '' : '/' + encodeURIComponent(id));
     if (window.location.pathname !== path) window.history.pushState(null, '', path);
     setHostRoute({ accountId: id });
     setAssetRoute(null);
     setPropertiesRoute(null);
     setRoomsRoute(null);
-  }, []);
+    setCatalogRoute(null);
+  }, [permitNavigation]);
 
   const navigateOverview = useCallback(() => {
+    if (!permitNavigation()) return;
     if (window.location.pathname !== '/') window.history.pushState(null, '', '/');
     setHostRoute(null);
     setAssetRoute(null);
     setPropertiesRoute(null);
     setRoomsRoute(null);
-  }, []);
+    setCatalogRoute(null);
+  }, [permitNavigation]);
 
   const navigateAssets = useCallback((url: string, replace = false) => {
+    if (!permitNavigation()) return;
     const target = new URL(url, window.location.origin);
     const next = parseAssetRoute(target.pathname, target.search);
     if (!next || target.origin !== window.location.origin) return;
@@ -342,23 +376,46 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
     setPropertiesRoute(null);
     setRoomsRoute(null);
     setAssetRoute(next);
-  }, []);
+    setCatalogRoute(null);
+  }, [permitNavigation]);
 
   const navigateProperties = useCallback((url: string) => {
+    if (!permitNavigation()) return;
     window.history.pushState(null, '', url);
     setHostRoute(null);
     setAssetRoute(null);
     setRoomsRoute(null);
     setPropertiesRoute(parsePropertiesRoute(window.location.pathname, window.location.search));
-  }, []);
+    setCatalogRoute(null);
+  }, [permitNavigation]);
 
   const navigateRooms = useCallback((url: string) => {
+    if (!permitNavigation()) return;
     window.history.pushState(null, '', url);
     setHostRoute(null);
     setAssetRoute(null);
     setPropertiesRoute(null);
     setRoomsRoute(parseRoomsRoute(window.location.pathname, window.location.search));
-  }, []);
+    setCatalogRoute(null);
+  }, [permitNavigation]);
+
+  const navigateCatalog = useCallback((url: string, replace = false) => {
+    const target = new URL(url, window.location.origin);
+    const next = parseCatalogRoute(target.pathname, target.search);
+    if (!next || target.origin !== window.location.origin || !permitNavigation()) return;
+    const canonical = catalogUrl(next, next.action, next.serviceId);
+    if (window.location.pathname + window.location.search !== canonical) {
+      if (replace) window.history.replaceState(null, '', canonical); else window.history.pushState(null, '', canonical);
+    }
+    setHostRoute(null); setAssetRoute(null); setPropertiesRoute(null); setRoomsRoute(null);
+    setCatalogRoute(next);
+  }, [permitNavigation]);
+
+  useEffect(() => {
+    if (!catalogRoute || catalogRoute.invalid) return;
+    const canonical = catalogUrl(catalogRoute, catalogRoute.action, catalogRoute.serviceId);
+    if (window.location.pathname + window.location.search !== canonical) window.history.replaceState(null, '', canonical);
+  }, [catalogRoute]);
 
   useEffect(() => {
     if (!assetRoute) return;
@@ -371,8 +428,8 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
     onLogin={() => navigateRecovery(null)} onNewRequest={() => navigateRecovery('/forgot-password')} onSuccess={finishRecovery} />;
 
   if (authCheck !== 'ready') return <main className="host-boot">
-    <h1>{assetRoute ? 'Quản lý tài sản' : hostRoute ? 'Quản lý tài khoản Host' : 'RentOps'}</h1>
-    {authCheck === 'checking' ? <p role="status">Đang kiểm tra phiên đăng nhập</p> : <><p role="alert">{assetRoute ? assetMessages.listFailure : hostRoute ? hostAccountMessages.listFailure : 'Chưa thể khôi phục phiên đăng nhập. Vui lòng kiểm tra kết nối rồi thử lại.'}</p>
+    <h1>{catalogRoute ? 'Danh mục dịch vụ' : assetRoute ? 'Quản lý tài sản' : hostRoute ? 'Quản lý tài khoản Host' : 'RentOps'}</h1>
+    {authCheck === 'checking' ? <p role="status">Đang kiểm tra phiên đăng nhập</p> : <><p role="alert">{catalogRoute ? catalogMessages.listFailure : assetRoute ? assetMessages.listFailure : hostRoute ? hostAccountMessages.listFailure : 'Chưa thể khôi phục phiên đăng nhập. Vui lòng kiểm tra kết nối rồi thử lại.'}</p>
       <button type="button" className="host-button" onClick={() => { setAuthCheck('checking'); setAuthRetry((n) => n + 1); }}>Thử lại</button>
       <button type="button" className="host-button" onClick={() => resetAuthentication()}>Đăng nhập lại</button></>}
   </main>;
@@ -396,6 +453,9 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
         onCreatePendingChange={handleCreatePendingChange}
         onNavigateHost={navigateHost}
         onOverview={navigateOverview}
+        catalogRoute={catalogRoute}
+        onNavigateCatalog={navigateCatalog}
+        registerGuard={registerGuard}
       />
     );
   }
