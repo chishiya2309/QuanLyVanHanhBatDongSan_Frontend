@@ -4,7 +4,7 @@ import { resolve } from 'node:path';
 import puppeteer from 'puppeteer-core';
 import { LosslessNumber, parse, stringify } from 'lossless-json';
 
-const base = process.env.CATALOG_PREVIEW_URL || 'http://127.0.0.1:5173';
+const base = process.env.CATALOG_PREVIEW_URL || 'http://localhost:5173';
 const executablePath = [process.env.CHROME_PATH, 'C:/Program Files/Google/Chrome/Application/chrome.exe', 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe'].find((path) => path && existsSync(path));
 assert.ok(executablePath, 'Set CHROME_PATH to Chrome or Edge');
 const output = resolve('.hallmark/shots/service-catalog'); mkdirSync(output, { recursive: true });

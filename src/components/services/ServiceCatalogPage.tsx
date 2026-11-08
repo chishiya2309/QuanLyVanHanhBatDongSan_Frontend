@@ -3,6 +3,7 @@ import { useServiceCatalog, type CatalogNavigate, type NavigationGuardRegistrati
 import { catalogFilters, catalogMessages as m, chargeMethods, type CatalogAction, type CatalogRoute, type CatalogService } from '../../types/serviceCatalog';
 import { catalogSearchText, catalogState, formatCatalogMoney } from '../../utils/serviceCatalogValidation';
 import { catalogUrl } from '../../utils/serviceCatalogNavigation';
+import { servicePolicyUrl } from '../../utils/servicePolicyNavigation';
 import { CatalogDialog } from './CatalogDialog';
 import './serviceCatalog.css';
 
@@ -30,7 +31,8 @@ export function ServiceCatalogPage({ route, onNavigate, onSessionExpired, onForb
   const enabled = list.status === 'ready' && !list.stale;
   const filtered = (list.data || []).filter((item) => (route.state === 'all' || catalogState(item) === route.state) && catalogSearchText(item.name + ' ' + item.unit).includes(catalogSearchText(route.q)));
   const actions = (item: CatalogService) => <div className="catalog-row-actions"><button type="button" className="catalog-button" disabled={!enabled} onClick={() => open('edit', item)}>{item.pricingStatus === 'UNCONFIGURED' ? 'Thiết lập giá' : 'Chỉnh sửa'}</button>
-    {item.pricingStatus === 'CONFIGURED' && <button type="button" className="catalog-button" disabled={!enabled} onClick={() => open(item.active ? 'deactivate' : 'activate', item)}>{item.active ? 'Tắt dịch vụ' : 'Bật lại'}</button>}</div>;
+    {item.pricingStatus === 'CONFIGURED' && <button type="button" className="catalog-button" disabled={!enabled} onClick={() => open(item.active ? 'deactivate' : 'activate', item)}>{item.active ? 'Tắt dịch vụ' : 'Bật lại'}</button>}
+    <button type="button" className="catalog-button" disabled={!enabled} onClick={() => onNavigate(servicePolicyUrl({ serviceId: item.id, q: route.q, state: route.state }))}>Thiết lập chính sách</button></div>;
   return <section className="catalog-page" aria-labelledby="catalog-title">
     <header className="catalog-heading"><div><h1 id="catalog-title" tabIndex={-1}>Danh mục dịch vụ</h1><p>Quản lý dịch vụ, đơn giá danh mục và khả năng sử dụng cho cấu hình mới.</p></div>
       <button type="button" className="catalog-button catalog-button--primary" onClick={() => open('create')} disabled={!enabled}>Thêm dịch vụ</button></header>
