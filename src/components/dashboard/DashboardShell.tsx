@@ -32,6 +32,9 @@ interface DashboardShellProps {
   showRooms?: boolean;
   roomsActive?: boolean;
   onNavigateRooms?: () => void;
+  showCustomers?: boolean;
+  customersActive?: boolean;
+  onNavigateCustomers?: () => void;
   onNavigateOverview?: () => void;
   onNavigateHostAccounts?: () => void;
 }
@@ -53,6 +56,9 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
   showRooms = false,
   roomsActive = false,
   onNavigateRooms,
+  showCustomers = false,
+  customersActive = false,
+  onNavigateCustomers,
   onNavigateOverview,
   onNavigateHostAccounts,
 }) => {
@@ -192,6 +198,7 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
         {[
           { label: 'Tổng quan', path: '/', active: !isCustomView, action: onNavigateOverview, show: true },
           { label: 'Tài sản', path: '/assets', active: assetsActive, action: onNavigateAssets, show: showAssets },
+          { label: 'Khách thuê', path: '/customers', active: customersActive, action: onNavigateCustomers, show: showCustomers },
           { label: 'Danh mục dịch vụ', path: '/services', active: servicesActive, action: onNavigateServices, show: showServices },
           { label: 'Cơ sở & Tòa nhà', path: '/properties', active: propertiesActive, action: onNavigateProperties, show: propertiesActive },
           { label: 'Mặt bằng & Phòng', path: '/rooms', active: roomsActive, action: onNavigateRooms, show: roomsActive },
@@ -216,6 +223,9 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
           showRooms={showRooms}
           roomsActive={roomsActive}
           onNavigateRooms={mobileNavigate(onNavigateRooms)}
+          showCustomers={showCustomers}
+          customersActive={customersActive}
+          onNavigateCustomers={mobileNavigate(onNavigateCustomers)}
           onNavigateOverview={mobileNavigate(onNavigateOverview)}
           onNavigateHostAccounts={mobileNavigate(onNavigateHostAccounts)}
         />
