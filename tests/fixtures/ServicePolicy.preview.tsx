@@ -24,7 +24,7 @@ const params = new URLSearchParams(location.search);
 const screen = params.get('screen') || 'detail';
 const state = params.get('viewState') || 'full';
 
-let currentPolicy = screen === 'locked' ? { ...lockedMethodPolicy } : screen === 'electricity' ? { ...electricityPolicy } : { ...internetPolicy };
+const currentPolicy = screen === 'locked' ? { ...lockedMethodPolicy } : screen === 'electricity' ? { ...electricityPolicy } : { ...internetPolicy };
 
 window.fetch = async (input, init = {}) => {
   const url = new URL(String(input), location.origin);

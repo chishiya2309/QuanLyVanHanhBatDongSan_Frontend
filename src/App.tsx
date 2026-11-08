@@ -32,6 +32,9 @@ import { ServicePolicyPage } from './components/services/ServicePolicyPage';
 import type { ServicePolicyRoute } from './types/servicePolicy';
 import { parseServicePolicyRoute, servicePolicyUrl } from './utils/servicePolicyNavigation';
 import type { NavigationGuardRegistration } from './hooks/useServiceCatalog';
+import { CustomerForbidden, CustomersPage } from './components/customers/CustomersPage';
+import { parseCustomerRoute } from './utils/customerNavigation';
+import { customerMessages, type CustomerRoute } from './types/customer';
 
 function isGoogleEntry(): boolean {
   return window.location.pathname === '/auth/onboarding' || window.location.pathname === '/auth/callback'
@@ -46,6 +49,7 @@ function isProtectedPath(pathname: string, search: string): boolean {
     || parseRoomsRoute(pathname, search)
     || parseCatalogRoute(pathname, search)
     || parseServicePolicyRoute(pathname, search)
+    || parseCustomerRoute(pathname, search)
   );
 }
 
@@ -68,6 +72,8 @@ function AuthenticatedDashboard({
   onNavigateCatalog,
   policyRoute,
   onNavigatePolicy,
+  customerRoute,
+  onNavigateCustomers,
   registerGuard,
 }: {
   user: AuthenticatedUserResponse;
@@ -88,6 +94,8 @@ function AuthenticatedDashboard({
   onNavigateCatalog: (url: string, replace?: boolean) => void;
   policyRoute: ServicePolicyRoute | null;
   onNavigatePolicy: (url: string, replace?: boolean) => void;
+  customerRoute: CustomerRoute | null;
+  onNavigateCustomers: (url: string, replace?: boolean) => void;
   registerGuard: NavigationGuardRegistration;
 }) {
   const profileController = useProfile(onSessionExpired);
@@ -96,6 +104,8 @@ function AuthenticatedDashboard({
   const [adminDenied, setAdminDenied] = useState(false);
   const [assetsDenied, setAssetsDenied] = useState(false);
   const [catalogDenied, setCatalogDenied] = useState(false);
+  const [customersDenied, setCustomersDenied] = useState(false);
+  const denyCustomers = useCallback(() => { setAccountModal(null); setCustomersDenied(true); }, []);
   const denyCatalog = useCallback(() => { setAccountModal(null); setCatalogDenied(true); }, []);
   const denyAdmin = useCallback(() => { setAccountModal(null); setAdminDenied(true); }, []);
   const denyAssets = useCallback(() => { setAccountModal(null); setAssetsDenied(true); }, []);
@@ -133,13 +143,27 @@ function AuthenticatedDashboard({
         showRooms={user.role === 'HOST'}
         roomsActive={roomsRoute !== null}
         onNavigateRooms={() => onNavigateRooms('/rooms')}
+        showCustomers={user.role === 'HOST' && !customersDenied}
+        customersActive={customerRoute !== null}
+        onNavigateCustomers={() => onNavigateCustomers('/customers')}
         showServices={user.role === 'HOST' && !catalogDenied}
         servicesActive={servicesActive}
         onNavigateServices={() => onNavigateCatalog('/services')}
         onNavigateOverview={onOverview}
         onNavigateHostAccounts={() => onNavigateHost(null)}
       >
-        {policyRoute ? (
+        {customerRoute ? (
+          user.role !== 'HOST' || customersDenied ? (
+            <CustomerForbidden onOverview={onOverview} />
+          ) : (
+            <CustomersPage
+              route={customerRoute}
+              onNavigate={onNavigateCustomers}
+              onSessionExpired={() => onAuthenticationEnded({ kind: 'error', message: customerMessages.sessionInvalid })}
+              onForbidden={denyCustomers}
+            />
+          )
+        ) : policyRoute ? (
           user.role !== 'HOST' || catalogDenied ? (
             <CatalogForbidden onOverview={onOverview} />
           ) : (
@@ -246,13 +270,14 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
   const [roomsRoute, setRoomsRoute] = useState<RoomsRoute | null>(() => parseRoomsRoute(window.location.pathname, window.location.search));
   const [catalogRoute, setCatalogRoute] = useState<CatalogRoute | null>(() => parseCatalogRoute(window.location.pathname, window.location.search));
   const [policyRoute, setPolicyRoute] = useState<ServicePolicyRoute | null>(() => parseServicePolicyRoute(window.location.pathname, window.location.search));
+  const [customerRoute, setCustomerRoute] = useState<CustomerRoute | null>(() => parseCustomerRoute(window.location.pathname, window.location.search));
   const navigationGuard = useRef<(() => boolean) | null>(null);
   const registerGuard = useCallback<NavigationGuardRegistration>((guard) => { navigationGuard.current = guard; }, []);
   const permitNavigation = useCallback(() => navigationGuard.current?.() !== false, []);
   const lastUrl = useRef(window.location.pathname + window.location.search);
   useLayoutEffect(() => {
     lastUrl.current = window.location.pathname + window.location.search;
-  }, [hostRoute, assetRoute, propertiesRoute, roomsRoute, catalogRoute, policyRoute]);
+  }, [hostRoute, assetRoute, propertiesRoute, roomsRoute, catalogRoute, policyRoute, customerRoute]);
   const googleEntry = useRef(isGoogleEntry());
   const [authCheck, setAuthCheck] = useState<'checking' | 'ready' | 'error'>(() => isGoogleEntry() ? 'ready' : 'checking');
   const [authRetry, setAuthRetry] = useState(0);
@@ -286,6 +311,7 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
         const assets = parseAssetRoute(window.location.pathname, window.location.search);
         const services = parseCatalogRoute(window.location.pathname, window.location.search);
         const policy = parseServicePolicyRoute(window.location.pathname, window.location.search);
+        const customers = parseCustomerRoute(window.location.pathname, window.location.search);
         if (!(error instanceof AuthApiError) || error.status !== 401) {
           setAuthCheck('error'); return;
         }
@@ -298,9 +324,10 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
           setRoomsRoute(null);
           setCatalogRoute(null);
           setPolicyRoute(null);
+          setCustomerRoute(null);
           setAuthNotice({
             kind: 'error',
-            message: services || policy ? catalogMessages.sessionInvalid : assets ? assetMessages.sessionInvalid : hostAccountMessages.sessionInvalid,
+            message: customers ? customerMessages.sessionInvalid : services || policy ? catalogMessages.sessionInvalid : assets ? assetMessages.sessionInvalid : hostAccountMessages.sessionInvalid,
           });
         }
       });
@@ -321,6 +348,7 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
       setRoomsRoute(parseRoomsRoute(window.location.pathname, window.location.search));
       setCatalogRoute(parseCatalogRoute(window.location.pathname, window.location.search));
       setPolicyRoute(parseServicePolicyRoute(window.location.pathname, window.location.search));
+      setCustomerRoute(parseCustomerRoute(window.location.pathname, window.location.search));
 
       // Private navigation preserves the authenticated user and pending session check.
       if (!next.path && !wasRecovery) return;
@@ -359,6 +387,7 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
     setRoomsRoute(null);
     setCatalogRoute(null);
     setPolicyRoute(null);
+    setCustomerRoute(null);
     navigationGuard.current = null;
   }, []);
 
@@ -376,12 +405,14 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
     resetAuthentication({
       kind: 'error',
       message:
-        parseCatalogRoute(window.location.pathname, window.location.search) ||
-        parseServicePolicyRoute(window.location.pathname, window.location.search)
-          ? catalogMessages.sessionInvalid
-          : parseAssetRoute(window.location.pathname, window.location.search)
-            ? assetMessages.sessionInvalid
-            : profileMessages.sessionInvalid,
+        parseCustomerRoute(window.location.pathname, window.location.search)
+          ? customerMessages.sessionInvalid
+          : parseCatalogRoute(window.location.pathname, window.location.search) ||
+            parseServicePolicyRoute(window.location.pathname, window.location.search)
+            ? catalogMessages.sessionInvalid
+            : parseAssetRoute(window.location.pathname, window.location.search)
+              ? assetMessages.sessionInvalid
+              : profileMessages.sessionInvalid,
     });
   }, [resetAuthentication]);
 
@@ -398,7 +429,7 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
     window.history.pushState(null, '', path || '/');
     setRecovery({ path, token: null }); setRecoveryVisit((n) => n + 1);
     setCurrentUser(null); setView('login'); setAuthNotice(null);
-    setHostRoute(null); setAssetRoute(null); setPropertiesRoute(null); setRoomsRoute(null); setCatalogRoute(null); setPolicyRoute(null); setAuthCheck('ready');
+    setHostRoute(null); setAssetRoute(null); setPropertiesRoute(null); setRoomsRoute(null); setCatalogRoute(null); setPolicyRoute(null); setCustomerRoute(null); setAuthCheck('ready');
   };
 
   const finishRecovery = (notice: AuthNotice) => {
@@ -418,6 +449,7 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
     setRoomsRoute(null);
     setCatalogRoute(null);
     setPolicyRoute(null);
+    setCustomerRoute(null);
   }, [permitNavigation]);
 
   const navigateOverview = useCallback(() => {
@@ -429,6 +461,7 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
     setRoomsRoute(null);
     setCatalogRoute(null);
     setPolicyRoute(null);
+    setCustomerRoute(null);
   }, [permitNavigation]);
 
   const navigateAssets = useCallback((url: string, replace = false) => {
@@ -446,6 +479,7 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
     setAssetRoute(next);
     setCatalogRoute(null);
     setPolicyRoute(null);
+    setCustomerRoute(null);
   }, [permitNavigation]);
 
   const navigateProperties = useCallback((url: string) => {
@@ -457,6 +491,7 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
     setPropertiesRoute(parsePropertiesRoute(window.location.pathname, window.location.search));
     setCatalogRoute(null);
     setPolicyRoute(null);
+    setCustomerRoute(null);
   }, [permitNavigation]);
 
   const navigateRooms = useCallback((url: string) => {
@@ -468,6 +503,7 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
     setRoomsRoute(parseRoomsRoute(window.location.pathname, window.location.search));
     setCatalogRoute(null);
     setPolicyRoute(null);
+    setCustomerRoute(null);
   }, [permitNavigation]);
 
   const navigateCatalog = useCallback((url: string, replace = false) => {
@@ -479,7 +515,7 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
       if (window.location.pathname + window.location.search !== canonical) {
         if (replace) window.history.replaceState(null, '', canonical); else window.history.pushState(null, '', canonical);
       }
-      setHostRoute(null); setAssetRoute(null); setPropertiesRoute(null); setRoomsRoute(null); setCatalogRoute(null);
+      setHostRoute(null); setAssetRoute(null); setPropertiesRoute(null); setRoomsRoute(null); setCatalogRoute(null); setCustomerRoute(null);
       setPolicyRoute(policy);
       return;
     }
@@ -489,7 +525,7 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
     if (window.location.pathname + window.location.search !== canonical) {
       if (replace) window.history.replaceState(null, '', canonical); else window.history.pushState(null, '', canonical);
     }
-    setHostRoute(null); setAssetRoute(null); setPropertiesRoute(null); setRoomsRoute(null); setPolicyRoute(null);
+    setHostRoute(null); setAssetRoute(null); setPropertiesRoute(null); setRoomsRoute(null); setPolicyRoute(null); setCustomerRoute(null);
     setCatalogRoute(next);
   }, [permitNavigation]);
 
@@ -502,7 +538,7 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
       if (window.location.pathname + window.location.search !== canonical) {
         if (replace) window.history.replaceState(null, '', canonical); else window.history.pushState(null, '', canonical);
       }
-      setHostRoute(null); setAssetRoute(null); setPropertiesRoute(null); setRoomsRoute(null); setPolicyRoute(null);
+      setHostRoute(null); setAssetRoute(null); setPropertiesRoute(null); setRoomsRoute(null); setPolicyRoute(null); setCustomerRoute(null);
       setCatalogRoute(catalog);
       return;
     }
@@ -512,8 +548,25 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
     if (window.location.pathname + window.location.search !== canonical) {
       if (replace) window.history.replaceState(null, '', canonical); else window.history.pushState(null, '', canonical);
     }
-    setHostRoute(null); setAssetRoute(null); setPropertiesRoute(null); setRoomsRoute(null); setCatalogRoute(null);
+    setHostRoute(null); setAssetRoute(null); setPropertiesRoute(null); setRoomsRoute(null); setCatalogRoute(null); setCustomerRoute(null);
     setPolicyRoute(next);
+  }, [permitNavigation]);
+
+  const navigateCustomers = useCallback((url: string, replace = false) => {
+    if (!permitNavigation()) return;
+    const target = new URL(url, window.location.origin);
+    const next = parseCustomerRoute(target.pathname, target.search);
+    if (!next || target.origin !== window.location.origin) return;
+    if (window.location.pathname + window.location.search !== url) {
+      if (replace) window.history.replaceState(null, '', url); else window.history.pushState(null, '', url);
+    }
+    setHostRoute(null);
+    setAssetRoute(null);
+    setPropertiesRoute(null);
+    setRoomsRoute(null);
+    setCatalogRoute(null);
+    setPolicyRoute(null);
+    setCustomerRoute(next);
   }, [permitNavigation]);
 
   useEffect(() => {
@@ -539,8 +592,8 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
     onLogin={() => navigateRecovery(null)} onNewRequest={() => navigateRecovery('/forgot-password')} onSuccess={finishRecovery} />;
 
   if (authCheck !== 'ready') return <main className="host-boot">
-    <h1>{catalogRoute || policyRoute ? 'Danh mục dịch vụ' : assetRoute ? 'Quản lý tài sản' : hostRoute ? 'Quản lý tài khoản Host' : 'RentOps'}</h1>
-    {authCheck === 'checking' ? <p role="status">Đang kiểm tra phiên đăng nhập</p> : <><p role="alert">{catalogRoute || policyRoute ? catalogMessages.listFailure : assetRoute ? assetMessages.listFailure : hostRoute ? hostAccountMessages.listFailure : 'Chưa thể khôi phục phiên đăng nhập. Vui lòng kiểm tra kết nối rồi thử lại.'}</p>
+    <h1>{customerRoute ? 'Quản lý khách thuê' : catalogRoute || policyRoute ? 'Danh mục dịch vụ' : assetRoute ? 'Quản lý tài sản' : hostRoute ? 'Quản lý tài khoản Host' : 'RentOps'}</h1>
+    {authCheck === 'checking' ? <p role="status">Đang kiểm tra phiên đăng nhập</p> : <><p role="alert">{customerRoute ? customerMessages.listFailure : catalogRoute || policyRoute ? catalogMessages.listFailure : assetRoute ? assetMessages.listFailure : hostRoute ? hostAccountMessages.listFailure : 'Chưa thể khôi phục phiên đăng nhập. Vui lòng kiểm tra kết nối rồi thử lại.'}</p>
       <button type="button" className="host-button" onClick={() => { setAuthCheck('checking'); setAuthRetry((n) => n + 1); }}>Thử lại</button>
       <button type="button" className="host-button" onClick={() => resetAuthentication()}>Đăng nhập lại</button></>}
   </main>;
@@ -568,6 +621,8 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
         onNavigateCatalog={navigateCatalog}
         policyRoute={policyRoute}
         onNavigatePolicy={navigatePolicy}
+        customerRoute={customerRoute}
+        onNavigateCustomers={navigateCustomers}
         registerGuard={registerGuard}
       />
     );
