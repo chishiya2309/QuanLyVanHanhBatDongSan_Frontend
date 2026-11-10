@@ -176,7 +176,7 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
     setTimeout(() => setToastMessage(null), 3000);
   };
 
-  const isCustomView = hostAccountsActive || assetsActive || propertiesActive || roomsActive || servicesActive;
+  const isCustomView = hostAccountsActive || assetsActive || propertiesActive || roomsActive || servicesActive || customersActive;
 
   return (
     <div className={`dashboard-root${hostAccountsActive ? ' dashboard-root--admin' : ''}${assetsActive ? ' dashboard-root--assets' : ''}`}>

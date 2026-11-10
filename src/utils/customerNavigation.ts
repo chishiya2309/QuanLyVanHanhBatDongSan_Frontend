@@ -1,4 +1,5 @@
 import type { CustomerRoute } from '../types/customer';
+import type { CustomerAccountAction } from '../types/customerAccount';
 
 export const isUuid = (value: unknown): value is string =>
   typeof value === 'string' && /^[\da-f]{8}-[\da-f]{4}-[\da-f]{4}-[\da-f]{4}-[\da-f]{12}$/i.test(value);
@@ -39,6 +40,10 @@ export function parseCustomerRoute(pathname: string, search: string): CustomerRo
     vehicleId = rawVehicleId;
   }
 
+  const rawAccountAction = params.get('accountAction');
+  const accountAction: CustomerAccountAction = hasCustomerId &&
+    (rawAccountAction === 'provision' || rawAccountAction === 'lock' || rawAccountAction === 'unlock') ? rawAccountAction : null;
+  const modalCount = [params.has('action'), params.has('vehicleAction'), params.has('accountAction')].filter(Boolean).length;
   const invalid =
     !validCustomerId ||
     (params.has('action') && !action) ||
@@ -47,13 +52,19 @@ export function parseCustomerRoute(pathname: string, search: string): CustomerRo
     q.length > 200 ||
     params.getAll('q').length > 1 ||
     params.getAll('page').length > 1 ||
-    params.getAll('size').length > 1;
+    params.getAll('size').length > 1 ||
+    params.getAll('action').length > 1 ||
+    params.getAll('vehicleAction').length > 1 ||
+    params.getAll('vehicleId').length > 1 ||
+    params.getAll('accountAction').length > 1 ||
+    (params.has('accountAction') && !accountAction) || modalCount > 1;
 
   return {
     view: hasCustomerId && validCustomerId ? 'detail' : 'list',
     customerId: hasCustomerId && validCustomerId ? rawCustomerId : null,
     action,
     vehicleAction,
+    accountAction,
     vehicleId,
     page,
     size,
@@ -69,6 +80,7 @@ export function customerUrl(
     action?: 'create' | 'edit' | null;
     vehicleAction?: 'create' | 'edit' | null;
     vehicleId?: string | null;
+    accountAction?: CustomerAccountAction;
   }
 ): string {
   const customerId = options?.customerId;
@@ -97,6 +109,8 @@ export function customerUrl(
       params.set('vehicleId', options.vehicleId);
     }
   }
+
+  if (customerId && options?.accountAction) params.set('accountAction', options.accountAction);
 
   const qs = params.toString();
   return pathname + (qs ? '?' + qs : '');

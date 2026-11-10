@@ -166,6 +166,16 @@ page.on('request', async (request) => {
     return reply(403, m.forbidden);
   }
 
+  const accountMatch = url.pathname.match(/\/customers\/([0-9a-fA-F-]+)\/account$/);
+  if (accountMatch && request.method() === 'GET') {
+    const customer = customers.find((item) => item.id === accountMatch[1]);
+    if (!customer) return reply(404, m.notFound);
+    return reply(200, 'Lấy thông tin tài khoản Customer thành công', {
+      customerId: customer.id, hasAccount: false, accountId: null, loginName: null,
+      role: null, status: null, createdAt: null, customerVersion: customer.version,
+    });
+  }
+
   // Vehicles collection endpoints: /api/v1/customers/{customerId}/vehicles
   const vehicleCollectionMatch = url.pathname.match(/\/customers\/([0-9a-fA-F-]+)\/vehicles$/);
   if (vehicleCollectionMatch) {

@@ -38,7 +38,7 @@ export function useCustomers(route: CustomerRoute, options: UseCustomersOptions)
   }, []);
 
   const load = useCallback(() => {
-    if (view !== 'list') return;
+    if (view !== 'list' || route.invalid) return;
     const reqId = ++sequence.current;
     const controller = new AbortController();
     let active = true;
@@ -68,7 +68,7 @@ export function useCustomers(route: CustomerRoute, options: UseCustomersOptions)
       active = false;
       controller.abort();
     };
-  }, [view, page, size, q, fail]);
+  }, [view, page, size, q, fail, route.invalid]);
 
   useEffect(() => {
     return load();
@@ -80,13 +80,13 @@ export function useCustomers(route: CustomerRoute, options: UseCustomersOptions)
     let active = true;
     void Promise.resolve().then(() => {
       if (!active) return;
-      callbacks.current.onNavigate(customerUrl({ q: '', page: 0, size: 20 }), true);
-      setNotice({ kind: 'error', message: m.notFound });
+      callbacks.current.onNavigate(customerUrl({ q: route.q.length <= 200 ? route.q : '', page: route.page, size: route.size }, { customerId: route.customerId }), true);
+      setNotice({ kind: 'error', message: 'Đường dẫn khách thuê không hợp lệ. Vui lòng chọn lại thao tác.' });
     });
     return () => {
       active = false;
     };
-  }, [route.invalid]);
+  }, [route.invalid, route.customerId, route.q, route.page, route.size]);
 
   // Adjust out-of-bounds page
   useEffect(() => {

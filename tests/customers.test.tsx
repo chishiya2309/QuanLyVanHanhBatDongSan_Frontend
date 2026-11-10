@@ -116,6 +116,7 @@ describe('CustomersPage & CustomerDetailView Components', () => {
       customerId: null,
       action: null,
       vehicleAction: null,
+      accountAction: null,
       vehicleId: null,
       page: 0,
       size: 20,

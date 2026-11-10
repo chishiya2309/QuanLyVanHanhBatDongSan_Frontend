@@ -19,7 +19,8 @@
     "test:browser:service-catalog": "node tests/browser/service-catalog-browser.mjs",
     "test:browser:service-policies": "node tests/browser/service-policies-browser.mjs",
     "test:browser:polish": "node tests/browser/frontend-polish-browser.mjs",
-    "test:browser:customers": "node tests/browser/customers-browser.mjs"
+    "test:browser:customers": "node tests/browser/customers-browser.mjs",
+    "test:browser:customer-accounts": "node tests/browser/customer-accounts-browser.mjs"
   },
   "dependencies": {
     "lossless-json": "^4.3.3",
