@@ -12,6 +12,8 @@ interface CustomerDetailViewProps {
   onAddVehicle: () => void;
   onEditVehicle: (vehicle: VehicleResponse) => void;
   onRetryVehicles: () => void;
+  accountSection?: React.ReactNode;
+  actionsDisabled?: boolean;
 }
 
 export const CustomerDetailView: React.FC<CustomerDetailViewProps> = ({
@@ -24,6 +26,8 @@ export const CustomerDetailView: React.FC<CustomerDetailViewProps> = ({
   onAddVehicle,
   onEditVehicle,
   onRetryVehicles,
+  accountSection,
+  actionsDisabled = false,
 }) => {
   return (
     <div className="customer-detail">
@@ -32,12 +36,12 @@ export const CustomerDetailView: React.FC<CustomerDetailViewProps> = ({
           <button type="button" className="customer-button" onClick={onBack} aria-label="Quay lại danh sách khách thuê">
             ← Quay lại danh sách
           </button>
-          <h1 style={{ marginTop: 'var(--space-sm)' }}>{customer.fullName}</h1>
+          <h1 id="customers-page-title" style={{ marginTop: 'var(--space-sm)' }}>{customer.fullName}</h1>
           <p style={{ color: 'var(--color-muted)', margin: 'var(--space-2xs) 0 0' }}>
             Mã định danh: <code>{customer.id}</code> · Version hồ sơ: <code>{customer.version}</code>
           </p>
         </div>
-        <button type="button" className="customer-button customer-button--primary" onClick={onEditCustomer}>
+        <button type="button" className="customer-button customer-button--primary" disabled={actionsDisabled} onClick={onEditCustomer}>
           Chỉnh sửa hồ sơ
         </button>
       </div>
@@ -54,7 +58,7 @@ export const CustomerDetailView: React.FC<CustomerDetailViewProps> = ({
             <dd>{customer.phone || '—'}</dd>
           </div>
           <div className="customer-fact">
-            <dt>Email</dt>
+            <dt>Email liên hệ</dt>
             <dd>{customer.email || '—'}</dd>
           </div>
           <div className="customer-fact">
@@ -87,6 +91,8 @@ export const CustomerDetailView: React.FC<CustomerDetailViewProps> = ({
         </dl>
       </div>
 
+      {accountSection}
+
       <div className="customer-vehicles-section">
         <div className="customer-vehicles-header">
           <div>
@@ -95,7 +101,7 @@ export const CustomerDetailView: React.FC<CustomerDetailViewProps> = ({
               Quản lý xe máy, ô tô, xe đạp hoặc phương tiện khác đã đăng ký của khách thuê này.
             </p>
           </div>
-          <button type="button" className="customer-button" onClick={onAddVehicle}>
+          <button type="button" className="customer-button" disabled={actionsDisabled} onClick={onAddVehicle}>
             + Thêm phương tiện
           </button>
         </div>
@@ -119,7 +125,7 @@ export const CustomerDetailView: React.FC<CustomerDetailViewProps> = ({
           <div className="customer-empty">
             <h2>Khách thuê chưa đăng ký phương tiện nào</h2>
             <p>Customer này chưa có xe được quản lý trong hệ thống.</p>
-            <button type="button" className="customer-button customer-button--primary" onClick={onAddVehicle}>
+            <button type="button" className="customer-button customer-button--primary" disabled={actionsDisabled} onClick={onAddVehicle}>
               Thêm phương tiện ngay
             </button>
           </div>
@@ -151,7 +157,7 @@ export const CustomerDetailView: React.FC<CustomerDetailViewProps> = ({
                     <code>{v.version}</code>
                   </td>
                   <td>
-                    <button type="button" className="customer-button" onClick={() => onEditVehicle(v)}>
+                    <button type="button" className="customer-button" disabled={actionsDisabled} onClick={() => onEditVehicle(v)}>
                       Chỉnh sửa
                     </button>
                   </td>

@@ -26,6 +26,7 @@ export interface UseCustomerDetailOptions {
   onNavigate: (url: string, replace?: boolean) => void;
   onSessionExpired: () => void;
   onForbidden: () => void;
+  onUnavailable?: (message: string) => void;
 }
 
 export function useCustomerDetail(route: CustomerRoute, options: UseCustomerDetailOptions) {
@@ -46,6 +47,12 @@ export function useCustomerDetail(route: CustomerRoute, options: UseCustomerDeta
   const [customerFieldErrors, setCustomerFieldErrors] = useState<CustomerFieldErrors>({});
   const [vehicleFieldErrors, setVehicleFieldErrors] = useState<VehicleFieldErrors>({});
   const sequence = useRef(0);
+  const [customerRevision, setCustomerRevision] = useState(0);
+  const [vehicleRevision, setVehicleRevision] = useState(0);
+  const [snapshotRefreshing, setSnapshotRefreshing] = useState(false);
+  const refreshCustomer = useCallback(() => { setSnapshotRefreshing(true); setCustomerRevision((value) => value + 1); }, []);
+  const refreshVehicles = useCallback(() => setVehicleRevision((value) => value + 1), []);
+  const refreshAfterAccount = useCallback(() => { refreshCustomer(); refreshVehicles(); }, [refreshCustomer, refreshVehicles]);
 
   const fail = useCallback(
     (err: unknown): boolean => {
@@ -60,6 +67,7 @@ export function useCustomerDetail(route: CustomerRoute, options: UseCustomerDeta
       }
       if (err.status === 404) {
         setNotice({ kind: 'error', message: m.notFound });
+        callbacks.current.onUnavailable?.(m.notFound);
         callbacks.current.onNavigate(customerUrl({ q: route.q, page: route.page, size: route.size }), true);
         return true;
       }
@@ -84,6 +92,7 @@ export function useCustomerDetail(route: CustomerRoute, options: UseCustomerDeta
           if (active && sequence.current === reqId) {
             setCustomer(res);
             setLoadingCustomer(false);
+            setSnapshotRefreshing(false);
           }
         })
         .catch((err) => {
@@ -133,14 +142,8 @@ export function useCustomerDetail(route: CustomerRoute, options: UseCustomerDeta
     };
   }, [customerId, view, fail]);
 
-  useEffect(() => {
-    const unsubC = loadCustomer();
-    const unsubV = loadVehicles();
-    return () => {
-      unsubC?.();
-      unsubV?.();
-    };
-  }, [loadCustomer, loadVehicles]);
+  useEffect(loadCustomer, [loadCustomer, customerRevision]);
+  useEffect(loadVehicles, [loadVehicles, vehicleRevision]);
 
   const submitUpdateCustomer = async (input: UpdateCustomerInput): Promise<boolean> => {
     if (!customerId || pending) return false;
@@ -153,7 +156,7 @@ export function useCustomerDetail(route: CustomerRoute, options: UseCustomerDeta
       setPending(false);
       setNotice({ kind: 'success', message: m.updateSuccess });
       callbacks.current.onNavigate(customerUrl(route, { customerId, action: null }), true);
-      loadVehicles(); // refresh vehicles because customerVersion may have updated
+      refreshVehicles();
       return true;
     } catch (err) {
       setPending(false);
@@ -178,7 +181,7 @@ export function useCustomerDetail(route: CustomerRoute, options: UseCustomerDeta
       setPending(false);
       setNotice({ kind: 'success', message: m.vehicleCreateSuccess });
       callbacks.current.onNavigate(customerUrl(route, { customerId, vehicleAction: null, vehicleId: null }), true);
-      loadVehicles();
+      refreshVehicles();
       return true;
     } catch (err) {
       setPending(false);
@@ -203,7 +206,7 @@ export function useCustomerDetail(route: CustomerRoute, options: UseCustomerDeta
       setPending(false);
       setNotice({ kind: 'success', message: m.vehicleUpdateSuccess });
       callbacks.current.onNavigate(customerUrl(route, { customerId, vehicleAction: null, vehicleId: null }), true);
-      loadVehicles();
+      refreshVehicles();
       return true;
     } catch (err) {
       setPending(false);
@@ -230,8 +233,10 @@ export function useCustomerDetail(route: CustomerRoute, options: UseCustomerDeta
     pending,
     customerFieldErrors,
     vehicleFieldErrors,
-    refreshCustomer: loadCustomer,
-    refreshVehicles: loadVehicles,
+    snapshotRefreshing,
+    refreshCustomer,
+    refreshVehicles,
+    refreshAfterAccount,
     dismissNotice: () => setNotice(null),
     submitUpdateCustomer,
     submitAddVehicle,

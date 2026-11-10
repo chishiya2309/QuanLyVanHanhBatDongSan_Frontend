@@ -159,7 +159,8 @@ function AuthenticatedDashboard({
             <CustomersPage
               route={customerRoute}
               onNavigate={onNavigateCustomers}
-              onSessionExpired={() => onAuthenticationEnded({ kind: 'error', message: customerMessages.sessionInvalid })}
+              registerGuard={registerGuard}
+              onSessionExpired={(message) => onAuthenticationEnded({ kind: 'error', message: message || customerMessages.sessionInvalid })}
               onForbidden={denyCustomers}
             />
           )

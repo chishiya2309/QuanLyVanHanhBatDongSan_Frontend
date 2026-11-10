@@ -1,3 +1,5 @@
+import type { CustomerAccountAction } from './customerAccount';
+
 export type IdentityType = 'CCCD' | 'PASSPORT';
 export type VehicleType = 'MOTORBIKE' | 'CAR' | 'BICYCLE' | 'OTHER';
 
@@ -98,6 +100,7 @@ export interface CustomerRoute {
   customerId: string | null;
   action: 'create' | 'edit' | null;
   vehicleAction: 'create' | 'edit' | null;
+  accountAction: CustomerAccountAction;
   vehicleId: string | null;
   page: number;
   size: number;
@@ -124,10 +127,10 @@ export const identityTypeLabels: Record<IdentityType, string> = {
 };
 
 export const customerMessages = {
-  sessionInvalid: 'Phiên đăng nhập không hợp lệ. Vui lòng đăng nhập lại',
+  sessionInvalid: 'Phiên đăng nhập không hợp lệ hoặc đã hết hạn. Vui lòng đăng nhập lại',
   forbidden: 'Bạn không có quyền thực hiện chức năng này',
   invalidData: 'Dữ liệu không hợp lệ',
-  notFound: 'Không thể truy cập Customer được yêu cầu',
+  notFound: 'Không tìm thấy Customer phù hợp hoặc bạn không có quyền quản lý',
   vehicleNotFound: 'Không thể truy cập phương tiện được yêu cầu',
   identityDuplicate: 'Giấy tờ đã được sử dụng bởi Customer khác trong phạm vi quản lý',
   stale: 'Hồ sơ Customer đã thay đổi. Vui lòng tải lại dữ liệu',
@@ -141,7 +144,7 @@ export const customerMessages = {
   vehicleCreateSuccess: 'Thêm phương tiện thành công',
   vehicleUpdateSuccess: 'Cập nhật phương tiện thành công',
   listFailure: 'Không thể tải danh sách Customer',
-  detailFailure: 'Không thể tải thông tin Customer',
+  detailFailure: 'Không thể tải thông tin Customer. Vui lòng thử lại sau',
   createFailure: 'Thêm Customer không thành công',
   updateFailure: 'Cập nhật Customer không thành công',
   vehiclesFailure: 'Không thể tải danh sách phương tiện',

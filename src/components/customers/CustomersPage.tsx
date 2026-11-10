@@ -1,3 +1,4 @@
+import './customers.css';
 import { useId, useState } from 'react';
 import { useCustomerDetail } from '../../hooks/useCustomerDetail';
 import { useCustomers } from '../../hooks/useCustomers';
@@ -13,7 +14,8 @@ import { formatDateDisplay } from '../../utils/customerValidation';
 import { CustomerDetailView } from './CustomerDetailView';
 import { CustomerFormDialog } from './CustomerFormDialog';
 import { VehicleFormDialog } from './VehicleFormDialog';
-import './customers.css';
+import { CustomerAccountSection } from './CustomerAccountSection';
+import type { NavigationGuardRegistration } from '../../hooks/useServiceCatalog';
 
 export function CustomerForbidden({ onOverview }: { onOverview: () => void }) {
   return (
@@ -69,13 +71,16 @@ export function CustomersPage({
   onNavigate,
   onSessionExpired,
   onForbidden,
+  registerGuard,
 }: {
   route: CustomerRoute;
   onNavigate: (url: string, replace?: boolean) => void;
-  onSessionExpired: () => void;
+  onSessionExpired: (message?: string) => void;
   onForbidden: () => void;
+  registerGuard?: NavigationGuardRegistration;
 }) {
   const isDetail = route.view === 'detail' && Boolean(route.customerId);
+  const [boundaryNotice, setBoundaryNotice] = useState<string | null>(null);
 
   const listHook = useCustomers(route, {
     onNavigate,
@@ -87,10 +92,11 @@ export function CustomersPage({
     onNavigate,
     onSessionExpired,
     onForbidden,
+    onUnavailable: (message) => { registerGuard?.(null); setBoundaryNotice(message); },
   });
 
-  const activeNotice = isDetail ? detailHook.notice : listHook.notice;
-  const dismissNotice = isDetail ? detailHook.dismissNotice : listHook.dismissNotice;
+  const activeNotice = boundaryNotice ? { kind: 'error', message: boundaryNotice } : isDetail ? detailHook.notice || listHook.notice : listHook.notice;
+  const dismissNotice = () => { setBoundaryNotice(null); detailHook.dismissNotice(); listHook.dismissNotice(); };
 
   const editingVehicle =
     isDetail && route.vehicleAction === 'edit' && route.vehicleId
@@ -111,7 +117,11 @@ export function CustomersPage({
         </div>
       )}
 
-      {isDetail && detailHook.customer ? (
+      {isDetail && detailHook.customer?.id === route.customerId ? (
+        <>
+        {detailHook.customerError && <div role="alert" className="customer-error"><p>{detailHook.customerError}</p>
+          <button type="button" className="customer-button" onClick={detailHook.refreshCustomer}>Thử lại</button></div>}
+        {detailHook.snapshotRefreshing && <p role="status">Đang đồng bộ hồ sơ khách thuê…</p>}
         <CustomerDetailView
           customer={detailHook.customer}
           vehicles={detailHook.vehicles}
@@ -130,7 +140,18 @@ export function CustomersPage({
             )
           }
           onRetryVehicles={detailHook.refreshVehicles}
+          actionsDisabled={detailHook.snapshotRefreshing}
+          accountSection={<CustomerAccountSection key={detailHook.customer.id} customer={detailHook.customer} route={route}
+            registerGuard={registerGuard} onNavigate={onNavigate} onSessionExpired={onSessionExpired} onForbidden={onForbidden}
+            onProfileRefresh={detailHook.refreshAfterAccount} onUnavailable={setBoundaryNotice} />}
         />
+        </>
+      ) : isDetail ? (
+        <div className="customer-results">
+          {detailHook.customerError ? <div role="alert"><p>{detailHook.customerError}</p>
+            <button type="button" className="customer-button" onClick={detailHook.refreshCustomer}>Thử lại</button></div>
+            : <p role="status">Đang tải thông tin khách thuê…</p>}
+        </div>
       ) : (
         <>
           <header className="customer-heading">
@@ -312,7 +333,7 @@ export function CustomersPage({
       )}
 
       {/* Customer Create Form Dialog */}
-      {!isDetail && route.action === 'create' && (
+      {!route.invalid && !isDetail && route.action === 'create' && (
         <CustomerFormDialog
           action="create"
           pending={listHook.pending}
@@ -323,7 +344,7 @@ export function CustomersPage({
       )}
 
       {/* Customer Edit Form Dialog */}
-      {isDetail && route.action === 'edit' && detailHook.customer && (
+      {!route.invalid && !detailHook.snapshotRefreshing && isDetail && route.action === 'edit' && detailHook.customer?.id === route.customerId && (
         <CustomerFormDialog
           action="edit"
           customer={detailHook.customer}
@@ -335,7 +356,7 @@ export function CustomersPage({
       )}
 
       {/* Vehicle Add Form Dialog */}
-      {isDetail && route.vehicleAction === 'create' && detailHook.customer && (
+      {!route.invalid && !detailHook.snapshotRefreshing && isDetail && route.vehicleAction === 'create' && detailHook.customer?.id === route.customerId && (
         <VehicleFormDialog
           action="create"
           customerVersion={detailHook.customer.version}
@@ -356,7 +377,7 @@ export function CustomersPage({
       )}
 
       {/* Vehicle Edit Form Dialog */}
-      {isDetail && route.vehicleAction === 'edit' && editingVehicle && detailHook.customer && (
+      {!route.invalid && !detailHook.snapshotRefreshing && isDetail && route.vehicleAction === 'edit' && editingVehicle && detailHook.customer?.id === route.customerId && (
         <VehicleFormDialog
           action="edit"
           vehicle={editingVehicle}
