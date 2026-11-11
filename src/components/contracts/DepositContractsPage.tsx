@@ -4,6 +4,7 @@ import { getDepositContracts, getDepositContractDetail, DepositContractApiError 
 import { buildDepositContractUrl } from '../../utils/depositContractNavigation';
 import { DepositContractModal } from './DepositContractModal';
 import { DepositContractDetailDrawer } from './DepositContractDetailDrawer';
+import { CancelDepositModal } from './CancelDepositModal';
 import './contracts.css';
 
 interface DepositContractsPageProps {
@@ -46,6 +47,9 @@ export const DepositContractsPage: React.FC<DepositContractsPageProps> = ({
 
   const [drawerOpen, setDrawerOpen] = useState(Boolean(route.detailId));
   const [detailContract, setDetailContract] = useState<DepositContract | null>(null);
+
+  const [cancelModalOpen, setCancelModalOpen] = useState(false);
+  const [contractToCancel, setContractToCancel] = useState<DepositContract | null>(null);
 
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -160,6 +164,28 @@ export const DepositContractsPage: React.FC<DepositContractsPageProps> = ({
 
   const handleOpenEdit = (c: DepositContract) => {
     onNavigate(buildDepositContractUrl({ ...route, editId: c.id, create: undefined, detailId: undefined }));
+  };
+
+  const handleOpenCancel = (c: DepositContract) => {
+    setContractToCancel(c);
+    setCancelModalOpen(true);
+  };
+
+  const handleCloseCancel = () => {
+    setCancelModalOpen(false);
+    setContractToCancel(null);
+  };
+
+  const handleCancelSuccess = (cancelled: DepositContract) => {
+    setSuccessMessage(
+      cancelled.roomId
+        ? `Hủy hợp đồng đặt cọc ${cancelled.contractNumber} thành công, phòng đã chuyển về trạng thái Đang trống!`
+        : `Hủy hợp đồng đặt cọc ${cancelled.contractNumber} thành công!`
+    );
+    loadContracts();
+    setTimeout(() => {
+      setSuccessMessage(null);
+    }, 4000);
   };
 
   const handleSaveSuccess = (saved: DepositContract) => {
@@ -321,13 +347,24 @@ export const DepositContractsPage: React.FC<DepositContractsPageProps> = ({
                           Chi tiết
                         </button>
                         {canEdit && (
-                          <button
-                            type="button"
-                            className="contract-action-btn"
-                            onClick={() => handleOpenEdit(c)}
-                          >
-                            Chỉnh sửa
-                          </button>
+                          <>
+                            <button
+                              type="button"
+                              className="contract-action-btn"
+                              style={{ marginRight: '6px' }}
+                              onClick={() => handleOpenEdit(c)}
+                            >
+                              Chỉnh sửa
+                            </button>
+                            <button
+                              type="button"
+                              className="contract-action-btn"
+                              style={{ color: '#dc2626', borderColor: '#fca5a5' }}
+                              onClick={() => handleOpenCancel(c)}
+                            >
+                              Hủy cọc
+                            </button>
+                          </>
                         )}
                       </td>
                     </tr>
@@ -387,6 +424,19 @@ export const DepositContractsPage: React.FC<DepositContractsPageProps> = ({
           handleCloseDetail();
           handleOpenEdit(c);
         }}
+        onCancel={(c) => {
+          handleCloseDetail();
+          handleOpenCancel(c);
+        }}
+      />
+
+      {/* Modal xác nhận hủy cọc (UC25) */}
+      <CancelDepositModal
+        isOpen={cancelModalOpen}
+        contract={contractToCancel}
+        onClose={handleCloseCancel}
+        onSuccess={handleCancelSuccess}
+        onSessionExpired={onSessionExpired}
       />
     </div>
   );

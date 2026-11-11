@@ -6,6 +6,7 @@ interface DepositContractDetailDrawerProps {
   isOpen: boolean;
   onClose: () => void;
   onEdit: (contract: DepositContract) => void;
+  onCancel?: (contract: DepositContract) => void;
 }
 
 const renderStatusBadge = (status: DepositStatus) => {
@@ -28,6 +29,7 @@ export const DepositContractDetailDrawer: React.FC<DepositContractDetailDrawerPr
   isOpen,
   onClose,
   onEdit,
+  onCancel,
 }) => {
   if (!isOpen || !contract) return null;
 
@@ -54,6 +56,24 @@ export const DepositContractDetailDrawer: React.FC<DepositContractDetailDrawerPr
             <span style={{ fontSize: '13px', color: 'var(--color-muted)' }}>Trạng thái hiện tại:</span>
             {renderStatusBadge(contract.status)}
           </div>
+
+          {/* Khối thông tin hủy cọc nếu hợp đồng CANCELLED */}
+          {contract.status === 'CANCELLED' && (
+            <div className="drawer-section" style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '6px', padding: '12px 14px' }}>
+              <h3 style={{ color: '#991b1b', marginBottom: '8px' }}>Thông tin hủy đặt cọc</h3>
+              <div className="info-grid">
+                <span className="info-label" style={{ color: '#b91c1c' }}>Thời điểm hủy:</span>
+                <span className="info-value" style={{ fontWeight: 600 }}>
+                  {contract.cancelledAt ? new Date(contract.cancelledAt).toLocaleString('vi-VN') : 'Không rõ'}
+                </span>
+
+                <span className="info-label" style={{ color: '#b91c1c' }}>Lý do hủy:</span>
+                <span className="info-value" style={{ color: '#7f1d1d' }}>
+                  {contract.cancelReason || 'Không có lý do'}
+                </span>
+              </div>
+            </div>
+          )}
 
           {/* Thông tin phòng đặt cọc */}
           <div className="drawer-section">
@@ -133,6 +153,19 @@ export const DepositContractDetailDrawer: React.FC<DepositContractDetailDrawerPr
           <button type="button" className="contract-action-btn" onClick={onClose}>
             Đóng
           </button>
+          {canEdit && onCancel && (
+            <button
+              type="button"
+              className="contract-action-btn"
+              style={{ color: '#dc2626', borderColor: '#fca5a5' }}
+              onClick={() => {
+                onClose();
+                onCancel(contract);
+              }}
+            >
+              Hủy đặt cọc
+            </button>
+          )}
           {canEdit && (
             <button
               type="button"

@@ -25,8 +25,14 @@ export interface DepositContract {
   moveInDate: string;
   note?: string;
   partySnapshot?: ContractParties;
+  cancelledAt?: string;
+  cancelReason?: string;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface CancelDepositContractInput {
+  reason: string;
 }
 
 export interface AvailableRoomForDeposit {

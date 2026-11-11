@@ -142,3 +142,7 @@ export async function quickCreateCustomer(input: QuickCreateCustomerInput): Prom
   return mutate<AvailableCustomerForDeposit>('/deposit-contracts/quick-customer', 'POST', input);
 }
 
+export async function cancelDepositContract(id: string, reason: string): Promise<DepositContract> {
+  return mutate<DepositContract>(`/deposit-contracts/${id}/cancel`, 'POST', { reason });
+}
+
