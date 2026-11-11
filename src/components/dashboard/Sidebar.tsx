@@ -1,14 +1,17 @@
 import React from 'react';
 
 interface SidebarProps {
+  showServices?: boolean; servicesActive?: boolean; onNavigateServices?: () => void; mobileOpen?: boolean; markCurrent?: boolean;
   showHostAccounts?: boolean; hostAccountsActive?: boolean;
   showAssets?: boolean; assetsActive?: boolean; onNavigateAssets?: () => void;
   showProperties?: boolean; propertiesActive?: boolean; onNavigateProperties?: () => void;
   showRooms?: boolean; roomsActive?: boolean; onNavigateRooms?: () => void;
+  showCustomers?: boolean; customersActive?: boolean; onNavigateCustomers?: () => void;
   showContracts?: boolean; contractsActive?: boolean; onNavigateContracts?: () => void;
   onNavigateOverview?: () => void; onNavigateHostAccounts?: () => void;
 }
 export const Sidebar: React.FC<SidebarProps> = ({
+  showServices = false, servicesActive = false, onNavigateServices, mobileOpen = false, markCurrent = true,
   showHostAccounts = false,
   hostAccountsActive = false,
   showAssets = false,
@@ -17,6 +20,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
   propertiesActive = false,
   showRooms = false,
   roomsActive = false,
+  showCustomers = false,
+  customersActive = false,
+  onNavigateCustomers,
   showContracts = false,
   contractsActive = false,
   onNavigateAssets,
@@ -26,14 +32,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onNavigateOverview,
   onNavigateHostAccounts,
 }) => {
-  const isOverviewActive = !hostAccountsActive && !assetsActive && !propertiesActive && !roomsActive && !contractsActive;
-
+  const isOverviewActive = !hostAccountsActive && !assetsActive && !propertiesActive && !roomsActive && !servicesActive && !customersActive && !contractsActive;
   return (
-    <aside className="dash-sidebar" aria-label="Thanh điều hướng chính">
+    <aside id="rentops-navigation" className={`dash-sidebar${mobileOpen ? ' is-mobile-open' : ''}`} aria-label="Thanh điều hướng chính">
       <div className="dash-nav-group">
         <span className="dash-nav-header">Vận hành</span>
 
-        <button type="button" className={`dash-nav-item${isOverviewActive ? ' is-active' : ''}`} aria-current={isOverviewActive ? 'page' : undefined} onClick={onNavigateOverview}>
+        <button type="button" className={`dash-nav-item${isOverviewActive ? ' is-active' : ''}`} aria-current={isOverviewActive && markCurrent ? 'page' : undefined} onClick={onNavigateOverview}>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <rect x="3" y="3" width="7" height="7"></rect>
             <rect x="14" y="3" width="7" height="7"></rect>
@@ -47,7 +52,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <button
             type="button"
             className={`dash-nav-item${propertiesActive ? ' is-active' : ''}`}
-            aria-current={propertiesActive ? 'page' : undefined}
+            aria-current={propertiesActive && markCurrent ? 'page' : undefined}
             onClick={onNavigateProperties}
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -61,7 +66,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <button
             type="button"
             className={`dash-nav-item${roomsActive ? ' is-active' : ''}`}
-            aria-current={roomsActive ? 'page' : undefined}
+            aria-current={roomsActive && markCurrent ? 'page' : undefined}
             onClick={onNavigateRooms}
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -80,20 +85,37 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </button>
         )}
 
-        {showAssets && <button type="button" className={`dash-nav-item${assetsActive ? ' is-active' : ''}`} aria-current={assetsActive ? 'page' : undefined} onClick={onNavigateAssets}>
+        {showAssets && <button type="button" className={`dash-nav-item${assetsActive ? ' is-active' : ''}`} aria-current={assetsActive && markCurrent ? 'page' : undefined} onClick={onNavigateAssets}>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M8 5V3h8v2M3 11h18M10 11v4h4v-4" /></svg>
           <span>Tài sản</span>
         </button>}
 
-        <button type="button" className="dash-nav-item">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-            <circle cx="9" cy="7" r="4"></circle>
-            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-          </svg>
-          <span>Khách thuê</span>
-        </button>
+        {showCustomers ? (
+          <button
+            type="button"
+            className={`dash-nav-item${customersActive ? ' is-active' : ''}`}
+            aria-current={customersActive && markCurrent ? 'page' : undefined}
+            onClick={onNavigateCustomers}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+              <circle cx="9" cy="7" r="4"></circle>
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+              <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+            </svg>
+            <span>Khách thuê</span>
+          </button>
+        ) : (
+          <button type="button" className="dash-nav-item">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+              <circle cx="9" cy="7" r="4"></circle>
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+              <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+            </svg>
+            <span>Khách thuê</span>
+          </button>
+        )}
 
         {showContracts ? (
           <button
@@ -125,6 +147,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
         )}
 
         <span className="dash-nav-header" style={{ marginTop: '12px' }}>Dịch vụ &amp; Tài chính</span>
+        {showServices && <button type="button" className={`dash-nav-item${servicesActive ? ' is-active' : ''}`} aria-current={servicesActive && markCurrent ? 'page' : undefined} onClick={onNavigateServices}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="M4 4h16v16H4zM4 10h16M10 4v16" /></svg><span>Danh mục dịch vụ</span>
+        </button>}
 
         <button type="button" className="dash-nav-item">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -150,14 +175,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </button>
         {showHostAccounts && <>
           <span className="dash-nav-header">Tài khoản</span>
-          <button type="button" className={`dash-nav-item${hostAccountsActive ? ' is-active' : ''}`} aria-current={hostAccountsActive ? 'page' : undefined} onClick={onNavigateHostAccounts}>
+          <button type="button" className={`dash-nav-item${hostAccountsActive ? ' is-active' : ''}`} aria-current={hostAccountsActive && markCurrent ? 'page' : undefined} onClick={onNavigateHostAccounts}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2" /><circle cx="8" cy="10" r="2" /><path d="M5 17v-1a3 3 0 0 1 6 0v1m3-7h4m-4 4h4" /></svg>
             <span>Tài khoản Host</span>
           </button>
         </>}
       </div>
-
-      {!hostAccountsActive && !assetsActive && !propertiesActive && !roomsActive && !contractsActive && (
+      {!hostAccountsActive && !assetsActive && !propertiesActive && !roomsActive && !servicesActive && !customersActive && !contractsActive && (
         <div className="dash-sidebar-footer">
           <div className="system-status-box">
             <div>
