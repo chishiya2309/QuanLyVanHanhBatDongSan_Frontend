@@ -35,6 +35,9 @@ import type { NavigationGuardRegistration } from './hooks/useServiceCatalog';
 import { CustomerForbidden, CustomersPage } from './components/customers/CustomersPage';
 import { parseCustomerRoute } from './utils/customerNavigation';
 import { customerMessages, type CustomerRoute } from './types/customer';
+import { DepositContractsPage } from './components/contracts/DepositContractsPage';
+import type { DepositContractRoute } from './types/depositContract';
+import { parseDepositContractRoute } from './utils/depositContractNavigation';
 
 function isGoogleEntry(): boolean {
   return window.location.pathname === '/auth/onboarding' || window.location.pathname === '/auth/callback'
@@ -79,6 +82,12 @@ function AuthenticatedDashboard({
   user: AuthenticatedUserResponse;
   onLogout: () => void;
   onSessionExpired: () => void;
+    || parseDepositContractRoute(pathname, search)
+  );
+}
+
+function AuthenticatedDashboard({ user, onLogout, onSessionExpired, onAuthenticationEnded, hostRoute, onNavigateHost, assetRoute, onNavigateAssets, propertiesRoute, onNavigateProperties, roomsRoute, onNavigateRooms, contractRoute, onNavigateContracts, onCreatePendingChange, onOverview }: {
+  user: AuthenticatedUserResponse; onLogout: () => void; onSessionExpired: () => void;
   onAuthenticationEnded: (notice: AuthNotice) => void;
   hostRoute: HostAccountRoute | null;
   onNavigateHost: (id: string | null) => void;
@@ -89,6 +98,8 @@ function AuthenticatedDashboard({
   onNavigateProperties: (url: string) => void;
   roomsRoute: RoomsRoute | null;
   onNavigateRooms: (url: string) => void;
+  contractRoute: DepositContractRoute | null;
+  onNavigateContracts: (url: string) => void;
   onCreatePendingChange: (pending: boolean) => void;
   catalogRoute: CatalogRoute | null;
   onNavigateCatalog: (url: string, replace?: boolean) => void;
@@ -188,6 +199,23 @@ function AuthenticatedDashboard({
               onForbidden={denyCatalog}
             />
           )
+        showContracts={user.role === 'HOST'}
+        contractsActive={contractRoute !== null}
+        onNavigateContracts={() => onNavigateContracts('/deposit-contracts')}
+        onNavigateOverview={onOverview}
+        onNavigateHostAccounts={() => onNavigateHost(null)}
+      >
+        {contractRoute ? (
+          <DepositContractsPage
+            route={contractRoute}
+            onNavigate={onNavigateContracts}
+            onSessionExpired={() =>
+              onAuthenticationEnded({
+                kind: 'error',
+                message: 'Phiên đăng nhập không hợp lệ hoặc đã hết hạn. Vui lòng đăng nhập lại',
+              })
+            }
+          />
         ) : propertiesRoute ? (
           <PropertiesPage
             route={propertiesRoute}
@@ -279,6 +307,7 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
   useLayoutEffect(() => {
     lastUrl.current = window.location.pathname + window.location.search;
   }, [hostRoute, assetRoute, propertiesRoute, roomsRoute, catalogRoute, policyRoute, customerRoute]);
+  const [contractRoute, setContractRoute] = useState<DepositContractRoute | null>(() => parseDepositContractRoute(window.location.pathname, window.location.search));
   const googleEntry = useRef(isGoogleEntry());
   const [authCheck, setAuthCheck] = useState<'checking' | 'ready' | 'error'>(() => isGoogleEntry() ? 'ready' : 'checking');
   const [authRetry, setAuthRetry] = useState(0);
@@ -326,6 +355,7 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
           setCatalogRoute(null);
           setPolicyRoute(null);
           setCustomerRoute(null);
+          setContractRoute(null);
           setAuthNotice({
             kind: 'error',
             message: customers ? customerMessages.sessionInvalid : services || policy ? catalogMessages.sessionInvalid : assets ? assetMessages.sessionInvalid : hostAccountMessages.sessionInvalid,
@@ -350,6 +380,7 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
       setCatalogRoute(parseCatalogRoute(window.location.pathname, window.location.search));
       setPolicyRoute(parseServicePolicyRoute(window.location.pathname, window.location.search));
       setCustomerRoute(parseCustomerRoute(window.location.pathname, window.location.search));
+      setContractRoute(parseDepositContractRoute(window.location.pathname, window.location.search));
 
       // Private navigation preserves the authenticated user and pending session check.
       if (!next.path && !wasRecovery) return;
@@ -390,6 +421,7 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
     setPolicyRoute(null);
     setCustomerRoute(null);
     navigationGuard.current = null;
+    setContractRoute(null);
   }, []);
 
   useEffect(() => onSessionChange((event) => {
@@ -431,6 +463,7 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
     setRecovery({ path, token: null }); setRecoveryVisit((n) => n + 1);
     setCurrentUser(null); setView('login'); setAuthNotice(null);
     setHostRoute(null); setAssetRoute(null); setPropertiesRoute(null); setRoomsRoute(null); setCatalogRoute(null); setPolicyRoute(null); setCustomerRoute(null); setAuthCheck('ready');
+    setHostRoute(null); setAssetRoute(null); setPropertiesRoute(null); setRoomsRoute(null); setContractRoute(null); setAuthCheck('ready');
   };
 
   const finishRecovery = (notice: AuthNotice) => {
@@ -452,6 +485,8 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
     setPolicyRoute(null);
     setCustomerRoute(null);
   }, [permitNavigation]);
+    setContractRoute(null);
+  }, []);
 
   const navigateOverview = useCallback(() => {
     if (!permitNavigation()) return;
@@ -464,6 +499,8 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
     setPolicyRoute(null);
     setCustomerRoute(null);
   }, [permitNavigation]);
+    setContractRoute(null);
+  }, []);
 
   const navigateAssets = useCallback((url: string, replace = false) => {
     if (!permitNavigation()) return;
@@ -477,6 +514,7 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
     setHostRoute(null);
     setPropertiesRoute(null);
     setRoomsRoute(null);
+    setContractRoute(null);
     setAssetRoute(next);
     setCatalogRoute(null);
     setPolicyRoute(null);
@@ -489,6 +527,7 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
     setHostRoute(null);
     setAssetRoute(null);
     setRoomsRoute(null);
+    setContractRoute(null);
     setPropertiesRoute(parsePropertiesRoute(window.location.pathname, window.location.search));
     setCatalogRoute(null);
     setPolicyRoute(null);
@@ -501,6 +540,7 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
     setHostRoute(null);
     setAssetRoute(null);
     setPropertiesRoute(null);
+    setContractRoute(null);
     setRoomsRoute(parseRoomsRoute(window.location.pathname, window.location.search));
     setCatalogRoute(null);
     setPolicyRoute(null);
@@ -582,6 +622,15 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
     if (window.location.pathname + window.location.search !== canonical) window.history.replaceState(null, '', canonical);
   }, [policyRoute]);
 
+  const navigateContracts = useCallback((url: string) => {
+    window.history.pushState(null, '', url);
+    setHostRoute(null);
+    setAssetRoute(null);
+    setPropertiesRoute(null);
+    setRoomsRoute(null);
+    setContractRoute(parseDepositContractRoute(window.location.pathname, window.location.search));
+  }, []);
+
   useEffect(() => {
     if (!assetRoute) return;
     const canonical = assetRouteKey(assetRoute);
@@ -615,6 +664,8 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
         onNavigateProperties={navigateProperties}
         roomsRoute={roomsRoute}
         onNavigateRooms={navigateRooms}
+        contractRoute={contractRoute}
+        onNavigateContracts={navigateContracts}
         onCreatePendingChange={handleCreatePendingChange}
         onNavigateHost={navigateHost}
         onOverview={navigateOverview}
