@@ -1,0 +1,39 @@
+/* Hallmark · built: rentops-customer-accounts · theme: coral (project) · genre: modern-minimal · scope: app · shape: app screen · v2.0.0 */
+/* Critique: one account state and its action; independent contact and login email; all server-backed states visible. */
+/* Sweep: static and render Floor 0 FAIL, Reflex 0, WARN 0; finish-review: subagent, ship, 0 findings. */
+.customer-account-section { padding-block: var(--space-lg); border-block: 1px solid var(--color-rule); margin-block: var(--space-xl); min-width: 0; }
+.customer-account-header { display: flex; align-items: center; justify-content: space-between; gap: var(--space-md); }
+.customer-account-header h2 { margin-block-end: var(--space-xs); text-wrap: balance; }
+.customer-account-section .customer-banner { display: flex; align-items: center; justify-content: space-between; gap: var(--space-md); }
+.customer-account-hint { color: var(--color-muted); }
+.customer-account-facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-lg); margin-block: var(--space-lg) 0; }
+.customer-account-facts dt { font-size: var(--text-sm); color: var(--color-muted); margin-block-end: var(--space-xs); }
+.customer-account-facts dd { margin: 0; overflow-wrap: anywhere; font-size: var(--text-md); }
+.customer-account-status { display: inline-block; border-radius: var(--radius-input); padding: var(--space-2xs) var(--space-xs); }
+.customer-account-status.is-active { color: var(--color-success); background: var(--color-status-success-wash); }
+.customer-account-status.is-locked { color: var(--color-error); background: var(--color-error-wash); }
+.customer-account-skeleton { display: grid; gap: var(--space-xs); margin-block-start: var(--space-md); color: var(--color-muted); }
+.customer-account-skeleton span { display: block; width: min(24rem, 100%); height: var(--space-lg); background: var(--color-paper-2); border-radius: var(--radius-input); }
+.customer-dialog.customer-account-dialog { font-size: var(--text-md); }
+.customer-account-dialog form, .customer-account-dialog fieldset { min-width: 0; }
+.customer-account-dialog strong { font-weight: 600; }
+.customer-account-dialog :disabled { cursor: not-allowed; opacity: .55; }
+.customer-account-dialog :focus-visible { outline: 2px solid var(--color-focus); outline-offset: 3px; }
+.customer-account-dialog input { min-width: 0; }
+.customer-account-password { display: flex; gap: var(--space-xs); align-items: stretch; }
+.customer-account-password input { flex: 1; width: 0; }
+.customer-account-password button { flex: 0 0 auto; }
+.customer-account-confirmation { display: grid; gap: var(--space-md); padding-block: var(--space-lg); }
+.customer-account-dialog .customer-account-danger { color: var(--color-cotton); background: var(--color-error); border-color: var(--color-error); }
+.customer-account-dialog .customer-account-danger:active { background: var(--color-ink); }
+@media (hover: hover) {
+  .customer-account-dialog .customer-account-danger:hover { background: var(--color-ink); }
+  .customer-account-dialog input:hover { background: var(--color-paper-2); }
+}
+@media (max-width: 40rem) {
+  .customer-account-header { flex-direction: column; align-items: flex-start; }
+  .customer-account-facts { grid-template-columns: minmax(0, 1fr); }
+  .customer-account-dialog { padding: var(--space-md); }
+  .customer-account-dialog .customer-dialog-actions { flex-wrap: wrap; }
+  .customer-account-dialog .customer-dialog-actions button { flex: 1 1 auto; white-space: normal; }
+}
