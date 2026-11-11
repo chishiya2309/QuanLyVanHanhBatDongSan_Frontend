@@ -35,6 +35,9 @@ interface DashboardShellProps {
   showCustomers?: boolean;
   customersActive?: boolean;
   onNavigateCustomers?: () => void;
+  showContracts?: boolean;
+  contractsActive?: boolean;
+  onNavigateContracts?: () => void;
   onNavigateOverview?: () => void;
   onNavigateHostAccounts?: () => void;
 }
@@ -59,6 +62,9 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
   showCustomers = false,
   customersActive = false,
   onNavigateCustomers,
+  showContracts = false,
+  contractsActive = false,
+  onNavigateContracts,
   onNavigateOverview,
   onNavigateHostAccounts,
 }) => {
@@ -228,6 +234,12 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
           onNavigateCustomers={mobileNavigate(onNavigateCustomers)}
           onNavigateOverview={mobileNavigate(onNavigateOverview)}
           onNavigateHostAccounts={mobileNavigate(onNavigateHostAccounts)}
+          onNavigateRooms={onNavigateRooms}
+          showContracts={showContracts}
+          contractsActive={contractsActive}
+          onNavigateContracts={onNavigateContracts}
+          onNavigateOverview={onNavigateOverview}
+          onNavigateHostAccounts={onNavigateHostAccounts}
         />
 
         <main className="dash-canvas" id="main-content">

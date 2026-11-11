@@ -7,6 +7,7 @@ interface SidebarProps {
   showProperties?: boolean; propertiesActive?: boolean; onNavigateProperties?: () => void;
   showRooms?: boolean; roomsActive?: boolean; onNavigateRooms?: () => void;
   showCustomers?: boolean; customersActive?: boolean; onNavigateCustomers?: () => void;
+  showContracts?: boolean; contractsActive?: boolean; onNavigateContracts?: () => void;
   onNavigateOverview?: () => void; onNavigateHostAccounts?: () => void;
 }
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -22,14 +23,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
   showCustomers = false,
   customersActive = false,
   onNavigateCustomers,
+  showContracts = false,
+  contractsActive = false,
   onNavigateAssets,
   onNavigateProperties,
   onNavigateRooms,
+  onNavigateContracts,
   onNavigateOverview,
   onNavigateHostAccounts,
 }) => {
-  const isOverviewActive = !hostAccountsActive && !assetsActive && !propertiesActive && !roomsActive && !servicesActive && !customersActive;
-
+  const isOverviewActive = !hostAccountsActive && !assetsActive && !propertiesActive && !roomsActive && !servicesActive && !customersActive && !contractsActive;
   return (
     <aside id="rentops-navigation" className={`dash-sidebar${mobileOpen ? ' is-mobile-open' : ''}`} aria-label="Thanh điều hướng chính">
       <div className="dash-nav-group">
@@ -114,16 +117,34 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </button>
         )}
 
-        <button type="button" className="dash-nav-item">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-            <polyline points="14 2 14 8 20 8"></polyline>
-            <line x1="16" y1="13" x2="8" y2="13"></line>
-            <line x1="16" y1="17" x2="8" y2="17"></line>
-            <polyline points="10 9 9 9 8 9"></polyline>
-          </svg>
-          <span>Hợp đồng thuê</span>
-        </button>
+        {showContracts ? (
+          <button
+            type="button"
+            className={`dash-nav-item${contractsActive ? ' is-active' : ''}`}
+            aria-current={contractsActive ? 'page' : undefined}
+            onClick={onNavigateContracts}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+              <line x1="16" y1="13" x2="8" y2="13"></line>
+              <line x1="16" y1="17" x2="8" y2="17"></line>
+              <polyline points="10 9 9 9 8 9"></polyline>
+            </svg>
+            <span>Hợp đồng đặt cọc</span>
+          </button>
+        ) : (
+          <button type="button" className="dash-nav-item">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+              <line x1="16" y1="13" x2="8" y2="13"></line>
+              <line x1="16" y1="17" x2="8" y2="17"></line>
+              <polyline points="10 9 9 9 8 9"></polyline>
+            </svg>
+            <span>Hợp đồng đặt cọc</span>
+          </button>
+        )}
 
         <span className="dash-nav-header" style={{ marginTop: '12px' }}>Dịch vụ &amp; Tài chính</span>
         {showServices && <button type="button" className={`dash-nav-item${servicesActive ? ' is-active' : ''}`} aria-current={servicesActive && markCurrent ? 'page' : undefined} onClick={onNavigateServices}>
@@ -160,8 +181,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </button>
         </>}
       </div>
-
-      {!hostAccountsActive && !assetsActive && !propertiesActive && !roomsActive && !servicesActive && !customersActive && (
+      {!hostAccountsActive && !assetsActive && !propertiesActive && !roomsActive && !servicesActive && !customersActive && !contractsActive && (
         <div className="dash-sidebar-footer">
           <div className="system-status-box">
             <div>
