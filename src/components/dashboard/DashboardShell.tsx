@@ -31,6 +31,9 @@ interface DashboardShellProps {
   showRooms?: boolean;
   roomsActive?: boolean;
   onNavigateRooms?: () => void;
+  showContracts?: boolean;
+  contractsActive?: boolean;
+  onNavigateContracts?: () => void;
   onNavigateOverview?: () => void;
   onNavigateHostAccounts?: () => void;
 }
@@ -51,6 +54,9 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
   showRooms = false,
   roomsActive = false,
   onNavigateRooms,
+  showContracts = false,
+  contractsActive = false,
+  onNavigateContracts,
   onNavigateOverview,
   onNavigateHostAccounts,
 }) => {
@@ -189,6 +195,9 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
           showRooms={showRooms}
           roomsActive={roomsActive}
           onNavigateRooms={onNavigateRooms}
+          showContracts={showContracts}
+          contractsActive={contractsActive}
+          onNavigateContracts={onNavigateContracts}
           onNavigateOverview={onNavigateOverview}
           onNavigateHostAccounts={onNavigateHostAccounts}
         />

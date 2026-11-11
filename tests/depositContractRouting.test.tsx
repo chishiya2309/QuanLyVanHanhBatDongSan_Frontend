@@ -1,0 +1,110 @@
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import App from '../src/App';
+import { deferred, failure, ok } from './apiMock';
+
+const user = { accountId: 'deposit-host', loginName: 'host', role: 'HOST', hostId: 'host', customerId: null };
+
+function install() {
+  const me = vi.fn(async (): Promise<Response> => ok(user));
+  const refresh = vi.fn(async (): Promise<Response> => failure(401, 'Expired'));
+  const contractsData = vi.fn(async (): Promise<Response> => ok({
+    content: [],
+    pageNumber: 0,
+    pageSize: 10,
+    totalElements: 0,
+    totalPages: 0,
+    last: true,
+  }));
+  const availableRooms = vi.fn(async (): Promise<Response> => ok([]));
+  const availableCustomers = vi.fn(async (): Promise<Response> => ok([]));
+
+  const fetch = vi.fn(async (input: RequestInfo | URL): Promise<Response> => {
+    const url = new URL(String(input), window.location.origin);
+    if (url.pathname.endsWith('/auth/me')) return me();
+    if (url.pathname.endsWith('/auth/refresh')) return refresh();
+    if (url.pathname.endsWith('/auth/csrf')) return ok({ token: 'csrf-token', headerName: 'X-CSRF-TOKEN' });
+    if (url.pathname === '/api/v1/deposit-contracts') return contractsData();
+    if (url.pathname === '/api/v1/deposit-contracts/available-rooms') return availableRooms();
+    if (url.pathname === '/api/v1/deposit-contracts/available-customers') return availableCustomers();
+    throw new Error('Unexpected test request ' + url.pathname);
+  });
+  vi.stubGlobal('fetch', fetch);
+  return { me, refresh, contractsData, availableRooms, availableCustomers };
+}
+
+beforeEach(() => window.history.replaceState(null, '', '/'));
+
+describe('deposit contract routing and interaction in the application', () => {
+  it('restores /deposit-contracts only after authentication', async () => {
+    const api = install();
+    const gate = deferred<Response>();
+    api.me.mockReturnValueOnce(gate.promise);
+    window.history.replaceState(null, '', '/deposit-contracts');
+    render(<App />);
+
+    expect(screen.getByText('Đang kiểm tra phiên đăng nhập')).toBeTruthy();
+    expect(api.contractsData).not.toHaveBeenCalled();
+
+    await act(async () => gate.resolve(ok(user)));
+    await screen.findByRole('heading', { name: 'Hợp đồng đặt cọc' });
+    expect(screen.getByRole('button', { name: 'Hợp đồng đặt cọc' }).getAttribute('aria-current')).toBe('page');
+    expect(window.location.pathname).toBe('/deposit-contracts');
+    await waitFor(() => expect(api.contractsData).toHaveBeenCalled());
+  });
+
+  it('switches to deposit contracts page via sidebar click', async () => {
+    const api = install();
+    render(<App />);
+
+    const sidebarBtn = await screen.findByRole('button', { name: 'Hợp đồng đặt cọc' });
+    fireEvent.click(sidebarBtn);
+
+    await screen.findByRole('heading', { name: 'Hợp đồng đặt cọc' });
+    expect(window.location.pathname).toBe('/deposit-contracts');
+    expect(sidebarBtn.getAttribute('aria-current')).toBe('page');
+  });
+
+  it('opens and closes the create deposit contract modal', async () => {
+    const api = install();
+    render(<App />);
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Hợp đồng đặt cọc' }));
+    await screen.findByRole('heading', { name: 'Hợp đồng đặt cọc' });
+
+    const createBtn = screen.getByRole('button', { name: /Tạo hợp đồng đặt cọc/i });
+    fireEvent.click(createBtn);
+
+    await screen.findByRole('heading', { name: 'Tạo hợp đồng đặt cọc mới' });
+    expect(screen.getByLabelText(/Khách thuê đại diện/i)).toBeTruthy();
+    expect(screen.getByLabelText(/Phòng đặt cọc/i)).toBeTruthy();
+
+    const closeBtn = screen.getByRole('button', { name: 'Đóng' });
+    fireEvent.click(closeBtn);
+
+    expect(screen.queryByRole('heading', { name: 'Tạo hợp đồng đặt cọc mới' })).toBeNull();
+  });
+
+  it('toggles quick customer creation inside the modal', async () => {
+    const api = install();
+    render(<App />);
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Hợp đồng đặt cọc' }));
+    await screen.findByRole('heading', { name: 'Hợp đồng đặt cọc' });
+
+    fireEvent.click(screen.getByRole('button', { name: /Tạo hợp đồng đặt cọc/i }));
+    await screen.findByRole('heading', { name: 'Tạo hợp đồng đặt cọc mới' });
+
+    const addCustBtn = screen.getByRole('button', { name: /\+ Thêm khách mới/i });
+    fireEvent.click(addCustBtn);
+
+    expect(screen.getByText('Thêm nhanh khách thuê mới')).toBeTruthy();
+    expect(screen.getByLabelText(/Họ và tên \(\*\)/i)).toBeTruthy();
+    expect(screen.getByLabelText(/Số điện thoại/i)).toBeTruthy();
+    expect(screen.getByLabelText(/Số CCCD \/ CMND/i)).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Hủy thêm khách' }));
+    expect(screen.queryByText('Thêm nhanh khách thuê mới')).toBeNull();
+  });
+});
+
