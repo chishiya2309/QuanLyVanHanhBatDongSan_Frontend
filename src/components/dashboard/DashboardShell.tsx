@@ -208,6 +208,7 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
           { label: 'Danh mục dịch vụ', path: '/services', active: servicesActive, action: onNavigateServices, show: showServices },
           { label: 'Cơ sở & Tòa nhà', path: '/properties', active: propertiesActive, action: onNavigateProperties, show: propertiesActive },
           { label: 'Mặt bằng & Phòng', path: '/rooms', active: roomsActive, action: onNavigateRooms, show: roomsActive },
+          { label: 'Hợp đồng cọc', path: '/deposit-contracts', active: contractsActive, action: onNavigateContracts, show: showContracts },
           { label: 'Tài khoản Host', path: '/admin/host-accounts', active: hostAccountsActive, action: onNavigateHostAccounts, show: hostAccountsActive },
         ].filter((item) => item.show).map((item) => <a key={item.path} href={item.path} aria-current={smallScreen && item.active ? 'page' : undefined} onClick={(event) => { event.preventDefault(); item.action?.(); }}>{item.label}</a>)}
       </nav>}
@@ -232,14 +233,11 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
           showCustomers={showCustomers}
           customersActive={customersActive}
           onNavigateCustomers={mobileNavigate(onNavigateCustomers)}
-          onNavigateOverview={mobileNavigate(onNavigateOverview)}
-          onNavigateHostAccounts={mobileNavigate(onNavigateHostAccounts)}
-          onNavigateRooms={onNavigateRooms}
           showContracts={showContracts}
           contractsActive={contractsActive}
-          onNavigateContracts={onNavigateContracts}
-          onNavigateOverview={onNavigateOverview}
-          onNavigateHostAccounts={onNavigateHostAccounts}
+          onNavigateContracts={mobileNavigate(onNavigateContracts)}
+          onNavigateOverview={mobileNavigate(onNavigateOverview)}
+          onNavigateHostAccounts={mobileNavigate(onNavigateHostAccounts)}
         />
 
         <main className="dash-canvas" id="main-content">
