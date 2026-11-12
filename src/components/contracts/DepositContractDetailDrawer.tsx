@@ -7,6 +7,7 @@ interface DepositContractDetailDrawerProps {
   onClose: () => void;
   onEdit: (contract: DepositContract) => void;
   onCancel?: (contract: DepositContract) => void;
+  onConvert?: (contract: DepositContract) => void;
 }
 
 const renderStatusBadge = (status: DepositStatus) => {
@@ -30,6 +31,7 @@ export const DepositContractDetailDrawer: React.FC<DepositContractDetailDrawerPr
   onClose,
   onEdit,
   onCancel,
+  onConvert,
 }) => {
   if (!isOpen || !contract) return null;
 
@@ -71,6 +73,28 @@ export const DepositContractDetailDrawer: React.FC<DepositContractDetailDrawerPr
                 <span className="info-value" style={{ color: '#7f1d1d' }}>
                   {contract.cancelReason || 'Không có lý do'}
                 </span>
+              </div>
+            </div>
+          )}
+
+          {/* Khối thông tin nếu hợp đồng CONVERTED sang HĐ thuê */}
+          {contract.status === 'CONVERTED' && (
+            <div className="drawer-section" style={{ background: '#eef2ff', border: '1px solid #c7d2fe', borderRadius: '6px', padding: '12px 14px' }}>
+              <h3 style={{ color: '#3730a3', marginBottom: '8px' }}>Đã chuyển thành Hợp đồng thuê</h3>
+              <div className="info-grid">
+                <span className="info-label" style={{ color: '#4338ca' }}>Trạng thái:</span>
+                <span className="info-value" style={{ fontWeight: 600, color: '#3730a3' }}>
+                  Đã hoàn tất chuyển đổi
+                </span>
+
+                {contract.convertedToRentalNumber && (
+                  <>
+                    <span className="info-label" style={{ color: '#4338ca' }}>Mã HĐ thuê:</span>
+                    <span className="info-value" style={{ fontWeight: 700, color: '#1e1b4b' }}>
+                      {contract.convertedToRentalNumber}
+                    </span>
+                  </>
+                )}
               </div>
             </div>
           )}
@@ -176,6 +200,19 @@ export const DepositContractDetailDrawer: React.FC<DepositContractDetailDrawerPr
               }}
             >
               Chỉnh sửa hợp đồng
+            </button>
+          )}
+          {contract.status === 'RESERVED' && onConvert && (
+            <button
+              type="button"
+              className="contract-action-btn"
+              style={{ color: '#ffffff', background: '#4f46e5', borderColor: '#4f46e5', fontWeight: 600 }}
+              onClick={() => {
+                onClose();
+                onConvert(contract);
+              }}
+            >
+              Chuyển thành HĐ thuê
             </button>
           )}
         </div>

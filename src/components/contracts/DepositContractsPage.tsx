@@ -5,6 +5,8 @@ import { buildDepositContractUrl } from '../../utils/depositContractNavigation';
 import { DepositContractModal } from './DepositContractModal';
 import { DepositContractDetailDrawer } from './DepositContractDetailDrawer';
 import { CancelDepositModal } from './CancelDepositModal';
+import { ConvertDepositToRentalModal } from './ConvertDepositToRentalModal';
+import type { RentalContract } from '../../types/rentalContract';
 import './contracts.css';
 
 interface DepositContractsPageProps {
@@ -50,6 +52,9 @@ export const DepositContractsPage: React.FC<DepositContractsPageProps> = ({
 
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
   const [contractToCancel, setContractToCancel] = useState<DepositContract | null>(null);
+
+  const [convertModalOpen, setConvertModalOpen] = useState(false);
+  const [contractToConvert, setContractToConvert] = useState<DepositContract | null>(null);
 
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -174,6 +179,26 @@ export const DepositContractsPage: React.FC<DepositContractsPageProps> = ({
   const handleCloseCancel = () => {
     setCancelModalOpen(false);
     setContractToCancel(null);
+  };
+
+  const handleOpenConvert = (c: DepositContract) => {
+    setContractToConvert(c);
+    setConvertModalOpen(true);
+  };
+
+  const handleCloseConvert = () => {
+    setConvertModalOpen(false);
+    setContractToConvert(null);
+  };
+
+  const handleConvertSuccess = (rental: RentalContract) => {
+    setSuccessMessage(
+      `Chuyển hợp đồng đặt cọc sang hợp đồng thuê ${rental.contractNumber} thành công! Phòng đã chuyển sang trạng thái Đang thuê (OCCUPIED).`
+    );
+    loadContracts();
+    setTimeout(() => {
+      setSuccessMessage(null);
+    }, 5000);
   };
 
   const handleCancelSuccess = (cancelled: DepositContract) => {
@@ -346,6 +371,17 @@ export const DepositContractsPage: React.FC<DepositContractsPageProps> = ({
                         >
                           Chi tiết
                         </button>
+                        {c.status === 'RESERVED' && (
+                          <button
+                            type="button"
+                            className="contract-action-btn"
+                            style={{ color: '#4f46e5', borderColor: '#c7d2fe', fontWeight: 600, marginRight: '6px' }}
+                            onClick={() => handleOpenConvert(c)}
+                            title="Chuyển đặt cọc này thành hợp đồng thuê chính thức"
+                          >
+                            Chuyển HĐ thuê
+                          </button>
+                        )}
                         {canEdit && (
                           <>
                             <button
@@ -428,6 +464,10 @@ export const DepositContractsPage: React.FC<DepositContractsPageProps> = ({
           handleCloseDetail();
           handleOpenCancel(c);
         }}
+        onConvert={(c) => {
+          handleCloseDetail();
+          handleOpenConvert(c);
+        }}
       />
 
       {/* Modal xác nhận hủy cọc (UC25) */}
@@ -436,6 +476,15 @@ export const DepositContractsPage: React.FC<DepositContractsPageProps> = ({
         contract={contractToCancel}
         onClose={handleCloseCancel}
         onSuccess={handleCancelSuccess}
+        onSessionExpired={onSessionExpired}
+      />
+
+      {/* Modal chuyển đặt cọc thành hợp đồng thuê (UC26) */}
+      <ConvertDepositToRentalModal
+        isOpen={convertModalOpen}
+        contract={contractToConvert}
+        onClose={handleCloseConvert}
+        onSuccess={handleConvertSuccess}
         onSessionExpired={onSessionExpired}
       />
     </div>
