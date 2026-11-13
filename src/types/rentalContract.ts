@@ -69,8 +69,34 @@ export interface RentalContractFilterInput {
   areaId?: string;
   buildingId?: string;
   roomId?: string;
+  startDateFrom?: string;
+  startDateTo?: string;
+  endDateFrom?: string;
+  endDateTo?: string;
   page?: number;
   size?: number;
+}
+
+export interface ExpiringRentalContract {
+  id: string;
+  contractNumber: string;
+  status: RentalStatus;
+  customerId: string;
+  customerName: string;
+  customerPhone?: string;
+  roomId?: string;
+  roomCode?: string;
+  roomName?: string;
+  buildingName?: string;
+  startDate: string;
+  endDate: string;
+  currentRent?: number;
+  depositRequired: number;
+  cycleMonths: number;
+  billingAnchor: number;
+  daysRemaining: number;
+  urgencyLevel: 'CRITICAL' | 'WARNING' | 'INFO';
+  createdAt: string;
 }
 
 export interface AvailableRoomForRental {

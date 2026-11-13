@@ -7,6 +7,7 @@ import type {
   RentalContract,
   AvailableRoomForRental,
   AvailableCustomerForRental,
+  ExpiringRentalContract,
   PageResponse,
 } from '../types/rentalContract';
 
@@ -142,11 +143,49 @@ export const rentalContractApi = {
     if (params.areaId) query.set('areaId', params.areaId);
     if (params.buildingId) query.set('buildingId', params.buildingId);
     if (params.roomId) query.set('roomId', params.roomId);
+    if (params.startDateFrom) query.set('startDateFrom', params.startDateFrom);
+    if (params.startDateTo) query.set('startDateTo', params.startDateTo);
+    if (params.endDateFrom) query.set('endDateFrom', params.endDateFrom);
+    if (params.endDateTo) query.set('endDateTo', params.endDateTo);
     if (params.page !== undefined) query.set('page', String(params.page));
     if (params.size !== undefined) query.set('size', String(params.size));
 
     const qs = query.toString();
     return request<PageResponse<RentalContract>>(`/rental-contracts${qs ? `?${qs}` : ''}`, {
+      method: 'GET',
+    });
+  },
+
+  // Theo dõi hợp đồng thuê sắp hết hạn (UC28)
+  getExpiringRentalContracts: (
+    days = 30,
+    page = 0,
+    size = 20
+  ): Promise<PageResponse<ExpiringRentalContract>> => {
+    const query = new URLSearchParams({
+      days: String(days),
+      page: String(page),
+      size: String(size),
+    });
+    return request<PageResponse<ExpiringRentalContract>>(`/rental-contracts/expiring?${query.toString()}`, {
+      method: 'GET',
+    });
+  },
+
+  // Đếm số lượng hợp đồng sắp hết hạn (UC28)
+  countExpiringRentalContracts: (days = 30): Promise<number> => {
+    return request<number>(`/rental-contracts/expiring-count?days=${days}`, {
+      method: 'GET',
+    });
+  },
+
+  // Customer xem hợp đồng thuê của chính mình (UC28)
+  getMyRentalContracts: (page = 0, size = 10): Promise<PageResponse<RentalContract>> => {
+    const query = new URLSearchParams({
+      page: String(page),
+      size: String(size),
+    });
+    return request<PageResponse<RentalContract>>(`/rental-contracts/my-contracts?${query.toString()}`, {
       method: 'GET',
     });
   },

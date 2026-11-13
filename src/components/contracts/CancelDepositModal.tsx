@@ -95,7 +95,7 @@ export const CancelDepositModal: React.FC<CancelDepositModalProps> = ({
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column' }}>
+        <form onSubmit={handleSubmit} noValidate style={{ display: 'flex', flexDirection: 'column' }}>
           <div className="contract-modal-body" style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
             {generalError && (
               <div style={{ background: 'var(--color-error-wash)', border: '1px solid var(--color-error)', color: 'var(--color-error)', padding: '10px 14px', borderRadius: '6px', fontSize: '13px' }}>
