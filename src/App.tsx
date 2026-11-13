@@ -24,6 +24,7 @@ import { invalidateSession, onSessionChange, rememberSession } from './services/
 import { assetRouteKey, parseAssetRoute } from './utils/assetNavigation';
 import { PropertiesPage } from './components/properties/PropertiesPage';
 import { RoomsPage } from './components/properties/RoomsPage';
+import { RoomServicesPage, RoomServicesForbidden } from './components/services/RoomServicesPage';
 import type { PropertiesRoute, RoomsRoute } from './types/properties';
 import { parsePropertiesRoute, parseRoomsRoute } from './utils/propertyNavigation';
 import { CatalogForbidden, ServiceCatalogPage } from './components/services/ServiceCatalogPage';
@@ -245,6 +246,15 @@ function AuthenticatedDashboard({
                 message: 'Phiên đăng nhập không hợp lệ hoặc đã hết hạn. Vui lòng đăng nhập lại',
               })
             }
+          />
+        ) : roomsRoute?.services ? (
+          user.role !== 'HOST' ? <RoomServicesForbidden onBack={onOverview} /> :
+          <RoomServicesPage
+            key={`${user.accountId}:${roomsRoute.roomId}`}
+            route={{ roomId: roomsRoute.roomId || '', returnTo: roomsRoute.returnTo || '/rooms' }}
+            onNavigate={onNavigateRooms}
+            registerGuard={registerGuard}
+            onSessionExpired={onSessionExpired}
           />
         ) : roomsRoute ? (
           <RoomsPage

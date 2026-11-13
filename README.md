@@ -4,6 +4,8 @@ RentOps UC04: xem [hướng dẫn hồ sơ cá nhân](docs/uc04-profile.md) đ�
 
 RentOps UC18: xem [bố trí và theo dõi tài sản](docs/UC18.md) cho modal gán/chuyển phòng, hai loại lịch sử và kiểm thử.
 
+RentOps UC36: xem [cấu hình dịch vụ của phòng](docs/UC36.md) cho trang dịch vụ riêng, API, phục hồi lỗi, preview và kết quả kiểm thử.
+
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
 Currently, two official plugins are available:
