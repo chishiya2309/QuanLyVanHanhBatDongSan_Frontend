@@ -13,6 +13,7 @@
     "test:browser": "node tests/browser/profile-browser.mjs",
     "test:browser:password": "node tests/browser/change-password-browser.mjs",
     "test:browser:recovery": "node tests/browser/recovery-browser.mjs",
+    "test:browser:session-splash": "node tests/browser/session-splash-browser.mjs",
     "test:browser:hosts": "node tests/browser/host-accounts-browser.mjs",
     "test:browser:assets": "node tests/browser/assets-browser.mjs",
     "test:browser:asset-placements": "node tests/browser/asset-placements-browser.mjs",
