@@ -520,7 +520,6 @@
   .contract-modal-body, .contract-modal-header, .contract-modal-footer { padding: var(--space-md); }
   .contract-modal-footer { flex-direction: column-reverse; gap: var(--space-xs); }
   .contract-modal-footer button { width: 100%; }
-  color: #111827;
 }
 
 /* Sub-tabs for Rental Contracts (UC28) */
