@@ -53,6 +53,7 @@ function isProtectedPath(pathname: string, search: string): boolean {
     || parseCatalogRoute(pathname, search)
     || parseServicePolicyRoute(pathname, search)
     || parseCustomerRoute(pathname, search)
+    || parseDepositContractRoute(pathname, search)
   );
 }
 
@@ -69,6 +70,8 @@ function AuthenticatedDashboard({
   onNavigateProperties,
   roomsRoute,
   onNavigateRooms,
+  contractRoute,
+  onNavigateContracts,
   onCreatePendingChange,
   onOverview,
   catalogRoute,
@@ -82,12 +85,6 @@ function AuthenticatedDashboard({
   user: AuthenticatedUserResponse;
   onLogout: () => void;
   onSessionExpired: () => void;
-    || parseDepositContractRoute(pathname, search)
-  );
-}
-
-function AuthenticatedDashboard({ user, onLogout, onSessionExpired, onAuthenticationEnded, hostRoute, onNavigateHost, assetRoute, onNavigateAssets, propertiesRoute, onNavigateProperties, roomsRoute, onNavigateRooms, contractRoute, onNavigateContracts, onCreatePendingChange, onOverview }: {
-  user: AuthenticatedUserResponse; onLogout: () => void; onSessionExpired: () => void;
   onAuthenticationEnded: (notice: AuthNotice) => void;
   hostRoute: HostAccountRoute | null;
   onNavigateHost: (id: string | null) => void;
@@ -154,6 +151,9 @@ function AuthenticatedDashboard({ user, onLogout, onSessionExpired, onAuthentica
         showRooms={user.role === 'HOST'}
         roomsActive={roomsRoute !== null}
         onNavigateRooms={() => onNavigateRooms('/rooms')}
+        showContracts={user.role === 'HOST'}
+        contractsActive={contractRoute !== null}
+        onNavigateContracts={() => onNavigateContracts('/deposit-contracts')}
         showCustomers={user.role === 'HOST' && !customersDenied}
         customersActive={customerRoute !== null}
         onNavigateCustomers={() => onNavigateCustomers('/customers')}
@@ -199,13 +199,7 @@ function AuthenticatedDashboard({ user, onLogout, onSessionExpired, onAuthentica
               onForbidden={denyCatalog}
             />
           )
-        showContracts={user.role === 'HOST'}
-        contractsActive={contractRoute !== null}
-        onNavigateContracts={() => onNavigateContracts('/deposit-contracts')}
-        onNavigateOverview={onOverview}
-        onNavigateHostAccounts={() => onNavigateHost(null)}
-      >
-        {contractRoute ? (
+        ) : contractRoute ? (
           <DepositContractsPage
             route={contractRoute}
             onNavigate={onNavigateContracts}
@@ -484,9 +478,8 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
     setCatalogRoute(null);
     setPolicyRoute(null);
     setCustomerRoute(null);
-  }, [permitNavigation]);
     setContractRoute(null);
-  }, []);
+  }, [permitNavigation]);
 
   const navigateOverview = useCallback(() => {
     if (!permitNavigation()) return;
@@ -498,9 +491,8 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
     setCatalogRoute(null);
     setPolicyRoute(null);
     setCustomerRoute(null);
-  }, [permitNavigation]);
     setContractRoute(null);
-  }, []);
+  }, [permitNavigation]);
 
   const navigateAssets = useCallback((url: string, replace = false) => {
     if (!permitNavigation()) return;

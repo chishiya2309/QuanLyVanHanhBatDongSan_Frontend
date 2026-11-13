@@ -27,6 +27,8 @@ export interface DepositContract {
   partySnapshot?: ContractParties;
   cancelledAt?: string;
   cancelReason?: string;
+  convertedToRentalId?: string;
+  convertedToRentalNumber?: string;
   createdAt: string;
   updatedAt: string;
 }
