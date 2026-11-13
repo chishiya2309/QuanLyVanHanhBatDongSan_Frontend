@@ -1,0 +1,47 @@
+/* Hallmark · component: session splash · scope: component · genre: modern-minimal · theme: coral (inherited RentOps) · signature: existing building mark and wordmark · v2.0.0 */
+/* Hallmark · pre-emit critique: P4 H4 E4 S4 R5 V3 · weakest: V, a quiet brand screen deliberately reuses the existing identity while the real session request runs */
+/* Hallmark · finish-review: subagent · ship · findings: 0 · gap: none */
+
+.session-splash {
+  display: grid;
+  place-items: center;
+  min-height: 100dvh;
+  width: 100%;
+  padding: var(--space-lg);
+  background: var(--color-paper);
+}
+
+.session-splash-brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-md);
+  max-width: 100%;
+}
+
+.session-splash-icon {
+  width: 128px;
+  height: 128px;
+  flex-shrink: 0;
+  color: var(--color-accent-primary);
+}
+
+.session-splash-wordmark {
+  font-family: var(--font-display);
+  font-size: var(--text-3xl);
+  font-weight: var(--display-weight);
+  line-height: 1.2;
+  letter-spacing: var(--tracking-display);
+  color: var(--color-ink);
+}
+
+@media (max-width: 40rem) {
+  .session-splash-icon {
+    width: 104px;
+    height: 104px;
+  }
+
+  .session-splash-wordmark {
+    font-size: var(--text-2xl);
+  }
+}

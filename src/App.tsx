@@ -1,5 +1,6 @@
 import { useState, useEffect, useLayoutEffect, useCallback, useRef } from 'react';
 import { LoginPage } from './components/auth/LoginPage';
+import { SessionSplash } from './components/auth/SessionSplash';
 import { RegisterHostPage } from './components/auth/RegisterHostPage';
 import { DashboardShell } from './components/dashboard/DashboardShell';
 import { ProfileModal } from './components/profile/ProfileModal';
@@ -41,6 +42,8 @@ import { parseDepositContractRoute } from './utils/depositContractNavigation';
 import { RentalContractsPage } from './components/contracts/RentalContractsPage';
 import type { RentalContractRoute } from './types/rentalContract';
 import { parseRentalContractRoute } from './utils/rentalContractNavigation';
+
+const SESSION_SPLASH_MIN_MS = 800;
 
 function isGoogleEntry(): boolean {
   return window.location.pathname === '/auth/onboarding' || window.location.pathname === '/auth/callback'
@@ -344,13 +347,24 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
 
   // Tự động kiểm tra phiên đăng nhập hiện tại từ cookie HttpOnly khi mở ứng dụng
   useEffect(() => {
-    if (recoveryRoute.current || googleEntry.current) return;
+    if (authCheck !== 'checking' || recovery.path || googleEntry.current) return;
     const controller = new AbortController();
     let cancelled = false;
+    let splashTimer: ReturnType<typeof setTimeout> | undefined;
+    const startedAt = performance.now();
     const generation = authGeneration.current;
+    const finishAfterSplash = (finish: () => void) => {
+      if (cancelled || generation !== authGeneration.current) return;
+      const complete = () => {
+        if (!cancelled && generation === authGeneration.current) finish();
+      };
+      const remaining = Math.ceil(SESSION_SPLASH_MIN_MS - (performance.now() - startedAt));
+      if (remaining > 0) splashTimer = setTimeout(complete, remaining);
+      else complete();
+    };
     getCurrentUser({ signal: controller.signal })
       .then((user) => {
-        if (!cancelled && generation === authGeneration.current) handleAuthSuccess(user);
+        finishAfterSplash(() => handleAuthSuccess(user));
       })
       .catch((error: unknown) => {
         if (cancelled || generation !== authGeneration.current) return;
@@ -361,26 +375,28 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
         if (!(error instanceof AuthApiError) || error.status !== 401) {
           setAuthCheck('error'); return;
         }
-        setAuthCheck('ready');
-        if (isProtectedPath(window.location.pathname, window.location.search)) {
-          window.history.replaceState(null, '', '/');
-          setHostRoute(null);
-          setAssetRoute(null);
-          setPropertiesRoute(null);
-          setRoomsRoute(null);
-          setCatalogRoute(null);
-          setPolicyRoute(null);
-          setCustomerRoute(null);
-          setContractRoute(null);
-          setRentalContractRoute(null);
-          setAuthNotice({
-            kind: 'error',
-            message: customers ? customerMessages.sessionInvalid : services || policy ? catalogMessages.sessionInvalid : assets ? assetMessages.sessionInvalid : hostAccountMessages.sessionInvalid,
-          });
-        }
+        finishAfterSplash(() => {
+          setAuthCheck('ready');
+          if (isProtectedPath(window.location.pathname, window.location.search)) {
+            window.history.replaceState(null, '', '/');
+            setHostRoute(null);
+            setAssetRoute(null);
+            setPropertiesRoute(null);
+            setRoomsRoute(null);
+            setCatalogRoute(null);
+            setPolicyRoute(null);
+            setCustomerRoute(null);
+            setContractRoute(null);
+            setRentalContractRoute(null);
+            setAuthNotice({
+              kind: 'error',
+              message: customers ? customerMessages.sessionInvalid : services || policy ? catalogMessages.sessionInvalid : assets ? assetMessages.sessionInvalid : hostAccountMessages.sessionInvalid,
+            });
+          }
+        });
       });
-    return () => { cancelled = true; controller.abort(); };
-  }, [handleAuthSuccess, authRetry]);
+    return () => { cancelled = true; controller.abort(); clearTimeout(splashTimer); };
+  }, [handleAuthSuccess, authRetry, authCheck, recovery.path]);
 
   useEffect(() => {
     initialRecovery?.release();
@@ -673,11 +689,13 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
   if (recovery.path === '/reset-password') return <ResetPasswordPage key={recoveryVisit} token={recovery.token}
     onLogin={() => navigateRecovery(null)} onNewRequest={() => navigateRecovery('/forgot-password')} onSuccess={finishRecovery} />;
 
-  if (authCheck !== 'ready') return <main className="host-boot">
+  if (authCheck === 'checking') return <SessionSplash />;
+
+  if (authCheck === 'error') return <main className="host-boot">
     <h1>{customerRoute ? 'Quản lý khách thuê' : catalogRoute || policyRoute ? 'Danh mục dịch vụ' : assetRoute ? 'Quản lý tài sản' : hostRoute ? 'Quản lý tài khoản Host' : 'RentOps'}</h1>
-    {authCheck === 'checking' ? <p role="status">Đang kiểm tra phiên đăng nhập</p> : <><p role="alert">{customerRoute ? customerMessages.listFailure : catalogRoute || policyRoute ? catalogMessages.listFailure : assetRoute ? assetMessages.listFailure : hostRoute ? hostAccountMessages.listFailure : 'Chưa thể khôi phục phiên đăng nhập. Vui lòng kiểm tra kết nối rồi thử lại.'}</p>
-      <button type="button" className="host-button" onClick={() => { setAuthCheck('checking'); setAuthRetry((n) => n + 1); }}>Thử lại</button>
-      <button type="button" className="host-button" onClick={() => resetAuthentication()}>Đăng nhập lại</button></>}
+    <p role="alert">{customerRoute ? customerMessages.listFailure : catalogRoute || policyRoute ? catalogMessages.listFailure : assetRoute ? assetMessages.listFailure : hostRoute ? hostAccountMessages.listFailure : 'Chưa thể khôi phục phiên đăng nhập. Vui lòng kiểm tra kết nối rồi thử lại.'}</p>
+    <button type="button" className="host-button" onClick={() => { setAuthCheck('checking'); setAuthRetry((n) => n + 1); }}>Thử lại</button>
+    <button type="button" className="host-button" onClick={() => resetAuthentication()}>Đăng nhập lại</button>
   </main>;
 
   // 1. Màn hình Dashboard hiện có
