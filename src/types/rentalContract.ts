@@ -12,6 +12,16 @@ export interface RoomTenancy {
   rent: number;
 }
 
+export interface Amendment {
+  id: string;
+  rentalContractId: string;
+  oldEndDate: string;
+  newEndDate: string;
+  reason: string;
+  recordedAt: string;
+  createdByName?: string;
+}
+
 export interface RentalContract {
   id: string;
   contractNumber: string;
@@ -28,6 +38,7 @@ export interface RentalContract {
   convertedFromDepositNumber?: string;
   partySnapshot?: ContractParties;
   tenancies: RoomTenancy[];
+  amendments?: Amendment[];
   currentRoomId?: string;
   currentRoomCode?: string;
   currentRoomName?: string;
@@ -61,6 +72,11 @@ export interface UpdateActiveRentalContractInput {
   cycleMonths?: number;
   billingAnchor?: number;
   note?: string;
+}
+
+export interface ExtendRentalContractInput {
+  newEndDate: string;
+  reason: string;
 }
 
 export interface RentalContractFilterInput {
