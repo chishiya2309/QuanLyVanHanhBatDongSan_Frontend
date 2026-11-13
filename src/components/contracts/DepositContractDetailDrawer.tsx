@@ -54,23 +54,23 @@ export const DepositContractDetailDrawer: React.FC<DepositContractDetailDrawerPr
 
         <div className="contract-drawer-body">
           {/* Trạng thái hợp đồng */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', background: '#f9fafb', borderRadius: '6px', border: '1px solid #e5e7eb' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', background: 'var(--color-paper-2)', borderRadius: '6px', border: '1px solid var(--color-rule)' }}>
             <span style={{ fontSize: '13px', color: 'var(--color-muted)' }}>Trạng thái hiện tại:</span>
             {renderStatusBadge(contract.status)}
           </div>
 
           {/* Khối thông tin hủy cọc nếu hợp đồng CANCELLED */}
           {contract.status === 'CANCELLED' && (
-            <div className="drawer-section" style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '6px', padding: '12px 14px' }}>
-              <h3 style={{ color: '#991b1b', marginBottom: '8px' }}>Thông tin hủy đặt cọc</h3>
+            <div className="drawer-section" style={{ background: 'var(--color-error-wash)', border: '1px solid var(--color-error-ring)', borderRadius: '6px', padding: '12px 14px' }}>
+              <h3 style={{ color: 'var(--color-error)', marginBottom: '8px' }}>Thông tin hủy đặt cọc</h3>
               <div className="info-grid">
-                <span className="info-label" style={{ color: '#b91c1c' }}>Thời điểm hủy:</span>
+                <span className="info-label" style={{ color: 'var(--color-error)' }}>Thời điểm hủy:</span>
                 <span className="info-value" style={{ fontWeight: 600 }}>
                   {contract.cancelledAt ? new Date(contract.cancelledAt).toLocaleString('vi-VN') : 'Không rõ'}
                 </span>
 
-                <span className="info-label" style={{ color: '#b91c1c' }}>Lý do hủy:</span>
-                <span className="info-value" style={{ color: '#7f1d1d' }}>
+                <span className="info-label" style={{ color: 'var(--color-error)' }}>Lý do hủy:</span>
+                <span className="info-value" style={{ color: 'var(--color-error)' }}>
                   {contract.cancelReason || 'Không có lý do'}
                 </span>
               </div>
@@ -79,18 +79,18 @@ export const DepositContractDetailDrawer: React.FC<DepositContractDetailDrawerPr
 
           {/* Khối thông tin nếu hợp đồng CONVERTED sang HĐ thuê */}
           {contract.status === 'CONVERTED' && (
-            <div className="drawer-section" style={{ background: '#eef2ff', border: '1px solid #c7d2fe', borderRadius: '6px', padding: '12px 14px' }}>
-              <h3 style={{ color: '#3730a3', marginBottom: '8px' }}>Đã chuyển thành Hợp đồng thuê</h3>
+            <div className="drawer-section" style={{ background: 'var(--color-accent-wash)', border: '1px solid var(--color-rule)', borderRadius: '6px', padding: '12px 14px' }}>
+              <h3 style={{ color: 'var(--color-accent-primary)', marginBottom: '8px' }}>Đã chuyển thành Hợp đồng thuê</h3>
               <div className="info-grid">
-                <span className="info-label" style={{ color: '#4338ca' }}>Trạng thái:</span>
-                <span className="info-value" style={{ fontWeight: 600, color: '#3730a3' }}>
+                <span className="info-label" style={{ color: 'var(--color-accent-primary)' }}>Trạng thái:</span>
+                <span className="info-value" style={{ fontWeight: 600, color: 'var(--color-accent-primary)' }}>
                   Đã hoàn tất chuyển đổi
                 </span>
 
                 {contract.convertedToRentalNumber && (
                   <>
-                    <span className="info-label" style={{ color: '#4338ca' }}>Mã HĐ thuê:</span>
-                    <span className="info-value" style={{ fontWeight: 700, color: '#1e1b4b' }}>
+                    <span className="info-label" style={{ color: 'var(--color-accent-primary)' }}>Mã HĐ thuê:</span>
+                    <span className="info-value" style={{ fontWeight: 600, color: 'var(--color-ink)' }}>
                       {contract.convertedToRentalNumber}
                     </span>
                   </>
@@ -137,7 +137,7 @@ export const DepositContractDetailDrawer: React.FC<DepositContractDetailDrawerPr
             <h3>Điều khoản đặt cọc</h3>
             <div className="info-grid">
               <span className="info-label">Tiền cọc yêu cầu:</span>
-              <span className="info-value" style={{ color: '#b8381e', fontSize: '15px', fontWeight: 700 }}>
+              <span className="info-value" style={{ color: 'var(--color-accent-primary)', fontSize: '15px', fontWeight: 600 }}>
                 {contract.amountRequired.toLocaleString('vi-VN')} VNĐ
               </span>
 
@@ -181,7 +181,7 @@ export const DepositContractDetailDrawer: React.FC<DepositContractDetailDrawerPr
             <button
               type="button"
               className="contract-action-btn"
-              style={{ color: '#dc2626', borderColor: '#fca5a5' }}
+              style={{ color: 'var(--color-error)', borderColor: 'var(--color-error-ring)' }}
               onClick={() => {
                 onClose();
                 onCancel(contract);
@@ -206,7 +206,7 @@ export const DepositContractDetailDrawer: React.FC<DepositContractDetailDrawerPr
             <button
               type="button"
               className="contract-action-btn"
-              style={{ color: '#ffffff', background: '#4f46e5', borderColor: '#4f46e5', fontWeight: 600 }}
+              style={{ color: 'var(--color-white)', background: 'var(--color-accent-primary)', borderColor: 'var(--color-accent-primary)', fontWeight: 600 }}
               onClick={() => {
                 onClose();
                 onConvert(contract);
