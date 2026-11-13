@@ -29,7 +29,7 @@ window.fetch = async (input, init) => {
   return new Response('{}', { status: 404 });
 };
 history.replaceState(null, '', '/deposit-contracts');
-function Preview() {
+export function Preview() {
   const [open, setOpen] = useState(true);
   const close = () => setOpen(false);
   return <><App />{dialog === 'create'
