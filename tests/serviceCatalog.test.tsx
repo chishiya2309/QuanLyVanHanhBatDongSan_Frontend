@@ -201,6 +201,10 @@ describe('UC19 forms, first price and mutation outcomes', () => {
     expect(window.location.pathname + window.location.search).toBe(draftUrl);
     expect(screen.getByRole('dialog')).toBeTruthy();
     expect(screen.queryByRole('heading', { name: 'Hợp đồng đặt cọc' })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Hợp đồng thuê' }));
+    expect(window.location.pathname + window.location.search).toBe(draftUrl);
+    expect(screen.getByRole('dialog')).toBeTruthy();
+    expect(screen.queryByRole('heading', { name: 'Hợp đồng thuê' })).toBeNull();
     const gate = deferred<Response>(); api.csrf.mockReturnValueOnce(gate.promise); const save = within(dialog()).getByRole('button', { name: 'Lưu thay đổi' });
     fireEvent.click(save); fireEvent.click(save); expect(api.csrf).toHaveBeenCalledTimes(1); expect((within(dialog()).getByRole('button', { name: 'Hủy' }) as HTMLButtonElement).disabled).toBe(true);
     await act(async () => gate.resolve(ok({ headerName: 'X-CSRF-TOKEN', token: 'late' }))); await screen.findByText(m.updateSuccess); expect(api.write).toHaveBeenCalledTimes(1);

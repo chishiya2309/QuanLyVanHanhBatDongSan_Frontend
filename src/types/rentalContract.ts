@@ -45,3 +45,71 @@ export interface ConvertDepositToRentalInput {
   billingAnchor: number;
 }
 
+export interface CreateRentalContractInput {
+  customerId: string;
+  roomId: string;
+  startDate: string;
+  endDate: string;
+  rent: number;
+  depositRequired: number;
+  cycleMonths: number;
+  billingAnchor?: number;
+}
+
+export interface UpdateActiveRentalContractInput {
+  depositRequired?: number;
+  cycleMonths?: number;
+  billingAnchor?: number;
+  note?: string;
+}
+
+export interface RentalContractFilterInput {
+  keyword?: string;
+  status?: RentalStatus;
+  areaId?: string;
+  buildingId?: string;
+  roomId?: string;
+  page?: number;
+  size?: number;
+}
+
+export interface AvailableRoomForRental {
+  id: string;
+  code: string;
+  name: string;
+  buildingId?: string;
+  buildingName?: string;
+  floorId?: string;
+  floorLevel?: number;
+  area?: number;
+  defaultRent?: number;
+  defaultDeposit?: number;
+  status: string;
+}
+
+export interface AvailableCustomerForRental {
+  id: string;
+  fullName: string;
+  phone: string;
+  email?: string;
+  identityNo?: string;
+}
+
+export interface RentalContractRoute {
+  keyword?: string;
+  status?: RentalStatus;
+  page?: number;
+  create?: boolean;
+  editId?: string;
+  detailId?: string;
+}
+
+export interface PageResponse<T> {
+  content: T[];
+  totalPages: number;
+  totalElements: number;
+  number: number;
+  size: number;
+  first: boolean;
+  last: boolean;
+}

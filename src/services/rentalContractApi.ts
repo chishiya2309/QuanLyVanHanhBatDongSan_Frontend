@@ -1,5 +1,14 @@
 import { AuthApiError, clearCsrfCache, getCsrfToken } from './authApi';
-import type { ConvertDepositToRentalInput, RentalContract } from '../types/rentalContract';
+import type {
+  ConvertDepositToRentalInput,
+  CreateRentalContractInput,
+  UpdateActiveRentalContractInput,
+  RentalContractFilterInput,
+  RentalContract,
+  AvailableRoomForRental,
+  AvailableCustomerForRental,
+  PageResponse,
+} from '../types/rentalContract';
 
 const API_BASE_URL = (import.meta.env.VITE_API_URL || '/api/v1').replace(/\/+$/, '');
 
@@ -98,12 +107,60 @@ async function mutate<T>(path: string, method: string, body?: unknown): Promise<
 }
 
 export const rentalContractApi = {
+  // Lập hợp đồng thuê trực tiếp (UC27 - Luồng chính)
+  createRentalContract: (input: CreateRentalContractInput): Promise<RentalContract> => {
+    return mutate<RentalContract>('/rental-contracts', 'POST', input);
+  },
+
+  // Cập nhật hợp đồng thuê đang hiệu lực (UC27 - Luồng thay thế 2)
+  updateActiveRentalContract: (id: string, input: UpdateActiveRentalContractInput): Promise<RentalContract> => {
+    return mutate<RentalContract>(`/rental-contracts/${encodeURIComponent(id)}`, 'PUT', input);
+  },
+
+  // Cập nhật hợp đồng thuê ở trạng thái Nháp (UC27 - Luồng thay thế 1)
+  updateDraftRentalContract: (id: string, input: CreateRentalContractInput): Promise<RentalContract> => {
+    return mutate<RentalContract>(`/rental-contracts/${encodeURIComponent(id)}/draft`, 'PUT', input);
+  },
+
+  // Chuyển đặt cọc thành hợp đồng thuê (UC26)
   convertDepositToRental: (depositId: string, input: ConvertDepositToRentalInput): Promise<RentalContract> => {
     return mutate<RentalContract>(`/rental-contracts/convert-from-deposit/${encodeURIComponent(depositId)}`, 'POST', input);
   },
 
+  // Lấy chi tiết hợp đồng thuê
   getRentalContractDetail: (id: string): Promise<RentalContract> => {
     return request<RentalContract>(`/rental-contracts/${encodeURIComponent(id)}`, {
+      method: 'GET',
+    });
+  },
+
+  // Tìm kiếm và phân trang hợp đồng thuê (UC28)
+  searchRentalContracts: (params: RentalContractFilterInput = {}): Promise<PageResponse<RentalContract>> => {
+    const query = new URLSearchParams();
+    if (params.keyword?.trim()) query.set('keyword', params.keyword.trim());
+    if (params.status) query.set('status', params.status);
+    if (params.areaId) query.set('areaId', params.areaId);
+    if (params.buildingId) query.set('buildingId', params.buildingId);
+    if (params.roomId) query.set('roomId', params.roomId);
+    if (params.page !== undefined) query.set('page', String(params.page));
+    if (params.size !== undefined) query.set('size', String(params.size));
+
+    const qs = query.toString();
+    return request<PageResponse<RentalContract>>(`/rental-contracts${qs ? `?${qs}` : ''}`, {
+      method: 'GET',
+    });
+  },
+
+  // Lấy danh sách phòng khả dụng (VACANT)
+  getAvailableRooms: (): Promise<AvailableRoomForRental[]> => {
+    return request<AvailableRoomForRental[]>('/rental-contracts/available-rooms', {
+      method: 'GET',
+    });
+  },
+
+  // Lấy danh sách khách thuê của Host
+  getAvailableCustomers: (): Promise<AvailableCustomerForRental[]> => {
+    return request<AvailableCustomerForRental[]>('/rental-contracts/available-customers', {
       method: 'GET',
     });
   },
