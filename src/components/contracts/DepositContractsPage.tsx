@@ -227,6 +227,34 @@ export const DepositContractsPage: React.FC<DepositContractsPageProps> = ({
 
   return (
     <div className="contracts-page">
+      {/* Tabs navigation between Deposit Contracts & Rental Contracts */}
+      <div className="contracts-tabs">
+        <button
+          type="button"
+          className="contracts-tab-btn is-active"
+          aria-current="page"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+            <line x1="16" y1="13" x2="8" y2="13"></line>
+            <line x1="16" y1="17" x2="8" y2="17"></line>
+          </svg>
+          Hợp đồng đặt cọc
+        </button>
+        <button
+          type="button"
+          className="contracts-tab-btn"
+          onClick={() => onNavigate('/rental-contracts')}
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+            <polyline points="9 22 9 12 15 12 15 22"></polyline>
+          </svg>
+          Hợp đồng thuê
+        </button>
+      </div>
+
       {/* Header */}
       <div className="contract-page-heading">
         <div>
