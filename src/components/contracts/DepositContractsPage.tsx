@@ -403,7 +403,7 @@ export const DepositContractsPage: React.FC<DepositContractsPageProps> = ({
                           <button
                             type="button"
                             className="contract-action-btn"
-                            style={{ color: '#4f46e5', borderColor: '#c7d2fe', fontWeight: 600, marginRight: '6px' }}
+                            style={{ color: 'var(--color-accent-primary)', borderColor: 'var(--color-rule)', fontWeight: 600, marginRight: '6px' }}
                             onClick={() => handleOpenConvert(c)}
                             title="Chuyển đặt cọc này thành hợp đồng thuê chính thức"
                           >
@@ -423,7 +423,7 @@ export const DepositContractsPage: React.FC<DepositContractsPageProps> = ({
                             <button
                               type="button"
                               className="contract-action-btn"
-                              style={{ color: '#dc2626', borderColor: '#fca5a5' }}
+                              style={{ color: 'var(--color-error)', borderColor: 'var(--color-error-ring)' }}
                               onClick={() => handleOpenCancel(c)}
                             >
                               Hủy cọc

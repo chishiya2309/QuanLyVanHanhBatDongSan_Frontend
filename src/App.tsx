@@ -323,6 +323,145 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
   const lastUrl = useRef(window.location.pathname + window.location.search);
   useLayoutEffect(() => {
     lastUrl.current = window.location.pathname + window.location.search;
+  }, [hostRoute, assetRoute, propertiesRoute, roomsRoute, catalogRoute, policyRoute, customerRoute, contractRoute]);
+  const googleEntry = useRef(isGoogleEntry());
+  const [authCheck, setAuthCheck] = useState<'checking' | 'ready' | 'error'>(() => isGoogleEntry() ? 'ready' : 'checking');
+  const [authRetry, setAuthRetry] = useState(0);
+
+  // Khi đăng nhập thành công: Nối tạm trực tiếp vào dashboard hiện có
+  const handleAuthSuccess = useCallback((user: AuthenticatedUserResponse) => {
+    if (recoveryRoute.current) return;
+    authGeneration.current++;
+    googleEntry.current = false;
+    if (window.location.pathname === '/auth/onboarding' || window.location.pathname === '/auth/callback') window.history.replaceState(null, '', '/');
+    clearCsrfCache();
+    rememberSession(user);
+    setAuthNotice(null);
+    setCurrentUser(user);
+    setAuthCheck('ready');
+    setView('dashboard');
+  }, []);
+
+  // Tự động kiểm tra phiên đăng nhập hiện tại từ cookie HttpOnly khi mở ứng dụng
+  useEffect(() => {
+    if (recoveryRoute.current || googleEntry.current) return;
+    const controller = new AbortController();
+    let cancelled = false;
+    const generation = authGeneration.current;
+    getCurrentUser({ signal: controller.signal })
+      .then((user) => {
+        if (!cancelled && generation === authGeneration.current) handleAuthSuccess(user);
+      })
+      .catch((error: unknown) => {
+        if (cancelled || generation !== authGeneration.current) return;
+        const assets = parseAssetRoute(window.location.pathname, window.location.search);
+        const services = parseCatalogRoute(window.location.pathname, window.location.search);
+        const policy = parseServicePolicyRoute(window.location.pathname, window.location.search);
+        const customers = parseCustomerRoute(window.location.pathname, window.location.search);
+        if (!(error instanceof AuthApiError) || error.status !== 401) {
+          setAuthCheck('error'); return;
+        }
+        setAuthCheck('ready');
+        if (isProtectedPath(window.location.pathname, window.location.search)) {
+          window.history.replaceState(null, '', '/');
+          setHostRoute(null);
+          setAssetRoute(null);
+          setPropertiesRoute(null);
+          setRoomsRoute(null);
+          setCatalogRoute(null);
+          setPolicyRoute(null);
+          setCustomerRoute(null);
+          setContractRoute(null);
+          setAuthNotice({
+            kind: 'error',
+            message: customers ? customerMessages.sessionInvalid : services || policy ? catalogMessages.sessionInvalid : assets ? assetMessages.sessionInvalid : hostAccountMessages.sessionInvalid,
+          });
+        }
+      });
+    return () => { cancelled = true; controller.abort(); };
+  }, [handleAuthSuccess, authRetry]);
+
+  useEffect(() => {
+    initialRecovery?.release();
+    const onPopState = () => {
+      if (pendingCreateUrl.current) { window.history.pushState(null, '', pendingCreateUrl.current); return; }
+      if (!permitNavigation()) { window.history.pushState(null, '', lastUrl.current); return; }
+      const next = captureRecoveryEntry();
+      const wasRecovery = recoveryRoute.current !== null;
+      recoveryRoute.current = next.path;
+      setHostRoute(parseHostAccountRoute(window.location.pathname));
+      setAssetRoute(parseAssetRoute(window.location.pathname, window.location.search));
+      setPropertiesRoute(parsePropertiesRoute(window.location.pathname, window.location.search));
+      setRoomsRoute(parseRoomsRoute(window.location.pathname, window.location.search));
+      setCatalogRoute(parseCatalogRoute(window.location.pathname, window.location.search));
+      setPolicyRoute(parseServicePolicyRoute(window.location.pathname, window.location.search));
+      setCustomerRoute(parseCustomerRoute(window.location.pathname, window.location.search));
+      setContractRoute(parseDepositContractRoute(window.location.pathname, window.location.search));
+
+      // Private navigation preserves the authenticated user and pending session check.
+      if (!next.path && !wasRecovery) return;
+      authGeneration.current++;
+      setRecovery(next); setRecoveryVisit((n) => n + 1);
+      setCurrentUser(null); setView('login'); setAuthNotice(null);
+      if (!next.path && isProtectedPath(window.location.pathname, window.location.search)) {
+        setAuthCheck('checking'); setAuthRetry((n) => n + 1);
+      } else setAuthCheck('ready');
+    };
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, [initialRecovery, permitNavigation]);
+
+  useEffect(() => {
+    let cancelled = false;
+    void Promise.resolve().then(() => {
+      if (!cancelled) setRecovery((entry) => entry.token ? { ...entry, token: null } : entry);
+    });
+    return () => { cancelled = true; };
+  }, [recoveryVisit]);
+
+  const resetAuthentication = useCallback((notice: AuthNotice | null = null) => {
+    authGeneration.current++;
+    invalidateSession();
+    pendingCreateUrl.current = null;
+    clearCsrfCache();
+    setCurrentUser(null);
+    setView('login');
+    setAuthNotice(notice);
+    setAuthCheck('ready');
+    window.history.replaceState(null, '', '/');
+    setHostRoute(null);
+    setAssetRoute(null);
+    setPropertiesRoute(null);
+    setRoomsRoute(null);
+    setCatalogRoute(null);
+    setPolicyRoute(null);
+    setCustomerRoute(null);
+    navigationGuard.current = null;
+    setContractRoute(null);
+  }, []);
+
+  useEffect(() => onSessionChange((event) => {
+    resetAuthentication({ kind: 'error', message: 'Phiên đăng nhập đã thay đổi ở tab khác. Vui lòng tiếp tục với phiên hiện tại.' });
+    if (event.accountId) { googleEntry.current = false; setAuthCheck('checking'); setAuthRetry((n) => n + 1); }
+  }), [resetAuthentication]);
+
+  const handleLogout = useCallback(() => {
+    resetAuthentication();
+    void logout().catch(() => undefined);
+  }, [resetAuthentication]);
+
+  const handleSessionExpired = useCallback(() => {
+    resetAuthentication({
+      kind: 'error',
+      message:
+        parseCustomerRoute(window.location.pathname, window.location.search)
+          ? customerMessages.sessionInvalid
+          : parseCatalogRoute(window.location.pathname, window.location.search) ||
+            parseServicePolicyRoute(window.location.pathname, window.location.search)
+            ? catalogMessages.sessionInvalid
+            : parseAssetRoute(window.location.pathname, window.location.search)
+              ? assetMessages.sessionInvalid
+              : profileMessages.sessionInvalid,
 }, [hostRoute, assetRoute, propertiesRoute, roomsRoute, catalogRoute, policyRoute, customerRoute, contractRoute, rentalContractRoute]);
 const googleEntry = useRef(isGoogleEntry());
 const [authCheck, setAuthCheck] = useState<'checking' | 'ready' | 'error'>(() => isGoogleEntry() ? 'ready' : 'checking');
@@ -596,6 +735,160 @@ const navigatePolicy = useCallback((url: string, replace = false) => {
   const catalog = parseCatalogRoute(target.pathname, target.search);
   if (catalog) {
     if (!permitNavigation()) return;
+    window.history.pushState(null, '', url);
+    setHostRoute(null);
+    setAssetRoute(null);
+    setPropertiesRoute(null);
+    setContractRoute(null);
+    setRoomsRoute(parseRoomsRoute(window.location.pathname, window.location.search));
+    setCatalogRoute(null);
+    setPolicyRoute(null);
+    setCustomerRoute(null);
+  }, [permitNavigation]);
+
+  const navigateCatalog = useCallback((url: string, replace = false) => {
+    const target = new URL(url, window.location.origin);
+    const policy = parseServicePolicyRoute(target.pathname, target.search);
+    if (policy) {
+      if (!permitNavigation()) return;
+      const canonical = servicePolicyUrl(policy);
+      if (window.location.pathname + window.location.search !== canonical) {
+        if (replace) window.history.replaceState(null, '', canonical); else window.history.pushState(null, '', canonical);
+      }
+      setHostRoute(null); setAssetRoute(null); setPropertiesRoute(null); setRoomsRoute(null); setCatalogRoute(null); setCustomerRoute(null);
+      setContractRoute(null);
+      setPolicyRoute(policy);
+      return;
+    }
+    const next = parseCatalogRoute(target.pathname, target.search);
+    if (!next || target.origin !== window.location.origin || !permitNavigation()) return;
+    const canonical = catalogUrl(next, next.action, next.serviceId);
+    if (window.location.pathname + window.location.search !== canonical) {
+      if (replace) window.history.replaceState(null, '', canonical); else window.history.pushState(null, '', canonical);
+    }
+    setHostRoute(null); setAssetRoute(null); setPropertiesRoute(null); setRoomsRoute(null); setPolicyRoute(null); setCustomerRoute(null);
+    setContractRoute(null);
+    setCatalogRoute(next);
+  }, [permitNavigation]);
+
+  const navigatePolicy = useCallback((url: string, replace = false) => {
+    const target = new URL(url, window.location.origin);
+    const catalog = parseCatalogRoute(target.pathname, target.search);
+    if (catalog) {
+      if (!permitNavigation()) return;
+      const canonical = catalogUrl(catalog, catalog.action, catalog.serviceId);
+      if (window.location.pathname + window.location.search !== canonical) {
+        if (replace) window.history.replaceState(null, '', canonical); else window.history.pushState(null, '', canonical);
+      }
+      setHostRoute(null); setAssetRoute(null); setPropertiesRoute(null); setRoomsRoute(null); setPolicyRoute(null); setCustomerRoute(null);
+      setContractRoute(null);
+      setCatalogRoute(catalog);
+      return;
+    }
+    const next = parseServicePolicyRoute(target.pathname, target.search);
+    if (!next || target.origin !== window.location.origin || !permitNavigation()) return;
+    const canonical = servicePolicyUrl(next);
+    if (window.location.pathname + window.location.search !== canonical) {
+      if (replace) window.history.replaceState(null, '', canonical); else window.history.pushState(null, '', canonical);
+    }
+    setHostRoute(null); setAssetRoute(null); setPropertiesRoute(null); setRoomsRoute(null); setCatalogRoute(null); setCustomerRoute(null);
+    setContractRoute(null);
+    setPolicyRoute(next);
+  }, [permitNavigation]);
+
+  const navigateCustomers = useCallback((url: string, replace = false) => {
+    if (!permitNavigation()) return;
+    const target = new URL(url, window.location.origin);
+    const next = parseCustomerRoute(target.pathname, target.search);
+    if (!next || target.origin !== window.location.origin) return;
+    if (window.location.pathname + window.location.search !== url) {
+      if (replace) window.history.replaceState(null, '', url); else window.history.pushState(null, '', url);
+    }
+    setHostRoute(null);
+    setAssetRoute(null);
+    setPropertiesRoute(null);
+    setRoomsRoute(null);
+    setCatalogRoute(null);
+    setPolicyRoute(null);
+    setCustomerRoute(next);
+    setContractRoute(null);
+  }, [permitNavigation]);
+
+  useEffect(() => {
+    if (!catalogRoute || catalogRoute.invalid) return;
+    const canonical = catalogUrl(catalogRoute, catalogRoute.action, catalogRoute.serviceId);
+    if (window.location.pathname + window.location.search !== canonical) window.history.replaceState(null, '', canonical);
+  }, [catalogRoute]);
+
+  useEffect(() => {
+    if (!policyRoute || policyRoute.invalid) return;
+    const canonical = servicePolicyUrl(policyRoute);
+    if (window.location.pathname + window.location.search !== canonical) window.history.replaceState(null, '', canonical);
+  }, [policyRoute]);
+
+  const navigateContracts = useCallback((url: string) => {
+    if (!permitNavigation()) return;
+    const target = new URL(url, window.location.origin);
+    const next = parseDepositContractRoute(target.pathname, target.search);
+    if (!next || target.origin !== window.location.origin) return;
+    if (window.location.pathname + window.location.search !== url) window.history.pushState(null, '', url);
+    setHostRoute(null);
+    setAssetRoute(null);
+    setPropertiesRoute(null);
+    setRoomsRoute(null);
+    setCatalogRoute(null);
+    setPolicyRoute(null);
+    setCustomerRoute(null);
+    setContractRoute(next);
+  }, [permitNavigation]);
+
+  useEffect(() => {
+    if (!assetRoute) return;
+    const canonical = assetRouteKey(assetRoute);
+    if (window.location.pathname + window.location.search !== canonical) window.history.replaceState(null, '', canonical);
+  }, [assetRoute]);
+
+  if (recovery.path === '/forgot-password') return <ForgotPasswordPage key={recoveryVisit} onLogin={() => navigateRecovery(null)} />;
+  if (recovery.path === '/reset-password') return <ResetPasswordPage key={recoveryVisit} token={recovery.token}
+    onLogin={() => navigateRecovery(null)} onNewRequest={() => navigateRecovery('/forgot-password')} onSuccess={finishRecovery} />;
+
+  if (authCheck !== 'ready') return <main className="host-boot">
+    <h1>{customerRoute ? 'Quản lý khách thuê' : catalogRoute || policyRoute ? 'Danh mục dịch vụ' : assetRoute ? 'Quản lý tài sản' : hostRoute ? 'Quản lý tài khoản Host' : 'RentOps'}</h1>
+    {authCheck === 'checking' ? <p role="status">Đang kiểm tra phiên đăng nhập</p> : <><p role="alert">{customerRoute ? customerMessages.listFailure : catalogRoute || policyRoute ? catalogMessages.listFailure : assetRoute ? assetMessages.listFailure : hostRoute ? hostAccountMessages.listFailure : 'Chưa thể khôi phục phiên đăng nhập. Vui lòng kiểm tra kết nối rồi thử lại.'}</p>
+      <button type="button" className="host-button" onClick={() => { setAuthCheck('checking'); setAuthRetry((n) => n + 1); }}>Thử lại</button>
+      <button type="button" className="host-button" onClick={() => resetAuthentication()}>Đăng nhập lại</button></>}
+  </main>;
+
+  // 1. Màn hình Dashboard hiện có
+  if (view === 'dashboard' && currentUser) {
+    return (
+      <AuthenticatedDashboard
+        key={currentUser.accountId}
+        user={currentUser}
+        onLogout={handleLogout}
+        onSessionExpired={handleSessionExpired}
+        onAuthenticationEnded={handleAuthenticationEnded}
+        hostRoute={hostRoute}
+        assetRoute={assetRoute}
+        onNavigateAssets={navigateAssets}
+        propertiesRoute={propertiesRoute}
+        onNavigateProperties={navigateProperties}
+        roomsRoute={roomsRoute}
+        onNavigateRooms={navigateRooms}
+        contractRoute={contractRoute}
+        onNavigateContracts={navigateContracts}
+        onCreatePendingChange={handleCreatePendingChange}
+        onNavigateHost={navigateHost}
+        onOverview={navigateOverview}
+        catalogRoute={catalogRoute}
+        onNavigateCatalog={navigateCatalog}
+        policyRoute={policyRoute}
+        onNavigatePolicy={navigatePolicy}
+        customerRoute={customerRoute}
+        onNavigateCustomers={navigateCustomers}
+        registerGuard={registerGuard}
+      />
+    );
     const canonical = catalogUrl(catalog, catalog.action, catalog.serviceId);
     if (window.location.pathname + window.location.search !== canonical) {
       if (replace) window.history.replaceState(null, '', canonical); else window.history.pushState(null, '', canonical);

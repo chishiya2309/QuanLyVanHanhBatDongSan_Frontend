@@ -79,9 +79,9 @@ export const CancelDepositModal: React.FC<CancelDepositModalProps> = ({
       }}
     >
       <div className="contract-modal" style={{ maxWidth: '520px', width: '90%' }}>
-        <div className="contract-modal-header" style={{ borderBottom: '1px solid #e2e8f0', padding: '16px 20px' }}>
-          <h2 style={{ fontSize: '18px', fontWeight: 600, color: '#dc2626', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ fontSize: '20px' }}>⚠️</span> Hủy hợp đồng đặt cọc
+        <div className="contract-modal-header" style={{ borderBottom: '1px solid var(--color-rule)', padding: '16px 20px' }}>
+          <h2 style={{ fontSize: '18px', fontWeight: 600, color: 'var(--color-error)', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+            Hủy hợp đồng đặt cọc
           </h2>
           <button
             type="button"
@@ -89,7 +89,7 @@ export const CancelDepositModal: React.FC<CancelDepositModalProps> = ({
             onClick={onClose}
             disabled={submitting}
             aria-label="Đóng"
-            style={{ fontSize: '20px', background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }}
+            style={{ fontSize: '20px', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-muted)' }}
           >
             &times;
           </button>
@@ -98,37 +98,36 @@ export const CancelDepositModal: React.FC<CancelDepositModalProps> = ({
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column' }}>
           <div className="contract-modal-body" style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
             {generalError && (
-              <div style={{ background: '#fef2f2', border: '1px solid #f87171', color: '#991b1b', padding: '10px 14px', borderRadius: '6px', fontSize: '13px' }}>
+              <div style={{ background: 'var(--color-error-wash)', border: '1px solid var(--color-error)', color: 'var(--color-error)', padding: '10px 14px', borderRadius: '6px', fontSize: '13px' }}>
                 {generalError}
               </div>
             )}
 
             {/* Thông tin tóm tắt hợp đồng */}
-            <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '14px 16px' }}>
+            <div style={{ background: 'var(--color-paper-2)', border: '1px solid var(--color-rule)', borderRadius: '8px', padding: '14px 16px' }}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', fontSize: '13px' }}>
                 <div>
-                  <span style={{ color: '#64748b', display: 'block', marginBottom: '2px' }}>Mã hợp đồng:</span>
-                  <strong style={{ color: '#0f172a' }}>{contract.contractNumber}</strong>
+                  <span style={{ color: 'var(--color-muted)', display: 'block', marginBottom: '2px' }}>Mã hợp đồng:</span>
+                  <strong style={{ color: 'var(--color-ink)' }}>{contract.contractNumber}</strong>
                 </div>
                 <div>
-                  <span style={{ color: '#64748b', display: 'block', marginBottom: '2px' }}>Khách thuê đại diện:</span>
-                  <strong style={{ color: '#0f172a' }}>{contract.customerName || contract.partySnapshot?.customerName || '—'}</strong>
+                  <span style={{ color: 'var(--color-muted)', display: 'block', marginBottom: '2px' }}>Khách thuê đại diện:</span>
+                  <strong style={{ color: 'var(--color-ink)' }}>{contract.customerName || contract.partySnapshot?.customerName || '—'}</strong>
                 </div>
                 <div>
-                  <span style={{ color: '#64748b', display: 'block', marginBottom: '2px' }}>Phòng đặt cọc:</span>
-                  <strong style={{ color: '#0f172a' }}>{contract.roomCode} ({contract.buildingName})</strong>
+                  <span style={{ color: 'var(--color-muted)', display: 'block', marginBottom: '2px' }}>Phòng đặt cọc:</span>
+                  <strong style={{ color: 'var(--color-ink)' }}>{contract.roomCode} ({contract.buildingName})</strong>
                 </div>
                 <div>
-                  <span style={{ color: '#64748b', display: 'block', marginBottom: '2px' }}>Số tiền cọc:</span>
-                  <strong style={{ color: '#b91c1c' }}>{Number(contract.amountRequired).toLocaleString('vi-VN')} đ</strong>
+                  <span style={{ color: 'var(--color-muted)', display: 'block', marginBottom: '2px' }}>Số tiền cọc:</span>
+                  <strong style={{ color: 'var(--color-error)' }}>{Number(contract.amountRequired).toLocaleString('vi-VN')} đ</strong>
                 </div>
               </div>
             </div>
 
             {/* Hộp cảnh báo */}
-            <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: '8px', padding: '12px 14px', display: 'flex', gap: '10px' }}>
-              <span style={{ fontSize: '18px', lineHeight: 1 }}>📢</span>
-              <div style={{ fontSize: '13px', color: '#92400e', lineHeight: 1.5 }}>
+            <div style={{ background: 'var(--color-status-warn-wash)', border: '1px solid var(--color-status-warn-rule)', borderRadius: '8px', padding: '12px 14px', display: 'flex', gap: '10px' }}>
+              <div style={{ fontSize: '13px', color: 'var(--color-status-warn-ink)', lineHeight: 1.5 }}>
                 {isReserved ? (
                   <>
                     <strong>Lưu ý:</strong> Hợp đồng sẽ chuyển sang trạng thái <strong>ĐÃ HỦY (CANCELLED)</strong> và phòng <strong>{contract.roomCode}</strong> sẽ được tự động hoàn trả về trạng thái <strong>ĐANG TRỐNG (VACANT)</strong> để sẵn sàng cho khách khác cọc hoặc thuê.
@@ -143,7 +142,7 @@ export const CancelDepositModal: React.FC<CancelDepositModalProps> = ({
 
             {/* Ô nhập lý do hủy */}
             <div>
-              <label htmlFor="cancel-reason-input" style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#334155', marginBottom: '6px' }}>
+              <label htmlFor="cancel-reason-input" style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--color-ink-2)', marginBottom: '6px' }}>
                 Lý do hủy đặt cọc (*)
               </label>
               <textarea
@@ -161,16 +160,16 @@ export const CancelDepositModal: React.FC<CancelDepositModalProps> = ({
                   padding: '10px 12px',
                   fontSize: '13px',
                   borderRadius: '6px',
-                  border: validationError ? '1px solid #ef4444' : '1px solid #cbd5e1',
+                  border: validationError ? '1px solid var(--color-error)' : '1px solid var(--color-rule-2)',
                   outline: 'none',
-                  backgroundColor: submitting ? '#f1f5f9' : '#fff',
-                  boxShadow: validationError ? '0 0 0 1px #ef4444' : 'none',
+                  backgroundColor: submitting ? 'var(--color-paper-2)' : 'var(--color-white)',
+                  boxShadow: validationError ? '0 0 0 1px var(--color-error)' : 'none',
                   resize: 'vertical',
                 }}
                 autoFocus
               />
               {validationError && (
-                <div style={{ color: '#dc2626', fontSize: '12px', marginTop: '4px', fontWeight: 500 }}>
+                <div style={{ color: 'var(--color-error)', fontSize: '12px', marginTop: '4px', fontWeight: 500 }}>
                   {validationError}
                 </div>
               )}
@@ -181,11 +180,11 @@ export const CancelDepositModal: React.FC<CancelDepositModalProps> = ({
             className="contract-modal-footer"
             style={{
               padding: '14px 20px',
-              borderTop: '1px solid #e2e8f0',
+              borderTop: '1px solid var(--color-rule)',
               display: 'flex',
               justifyContent: 'flex-end',
               gap: '10px',
-              background: '#f8fafc',
+              background: 'var(--color-paper-2)',
             }}
           >
             <button
@@ -199,9 +198,9 @@ export const CancelDepositModal: React.FC<CancelDepositModalProps> = ({
                 fontSize: '13px',
                 fontWeight: 500,
                 cursor: submitting ? 'not-allowed' : 'pointer',
-                background: '#fff',
-                border: '1px solid #cbd5e1',
-                color: '#475569',
+                background: 'var(--color-white)',
+                border: '1px solid var(--color-rule-2)',
+                color: 'var(--color-muted)',
               }}
             >
               Đóng
@@ -215,9 +214,9 @@ export const CancelDepositModal: React.FC<CancelDepositModalProps> = ({
                 fontSize: '13px',
                 fontWeight: 600,
                 cursor: submitting ? 'not-allowed' : 'pointer',
-                background: '#dc2626',
+                background: 'var(--color-error)',
                 border: 'none',
-                color: '#fff',
+                color: 'var(--color-white)',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '6px',
@@ -225,7 +224,7 @@ export const CancelDepositModal: React.FC<CancelDepositModalProps> = ({
             >
               {submitting ? (
                 <>
-                  <span className="spinner" style={{ width: '14px', height: '14px', border: '2px solid #fff', borderTopColor: 'transparent', borderRadius: '50%', display: 'inline-block', animation: 'spin 0.6s linear infinite' }} />
+                  <span className="spinner" style={{ width: '14px', height: '14px', border: '2px solid var(--color-white)', borderTopColor: 'transparent', borderRadius: '50%', display: 'inline-block', animation: 'spin 0.6s linear infinite' }} />
                   Đang xử lý...
                 </>
               ) : (
