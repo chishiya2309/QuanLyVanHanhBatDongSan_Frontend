@@ -196,6 +196,11 @@ describe('UC19 forms, first price and mutation outcomes', () => {
   it('protects dirty internal navigation and suppresses double submit from CSRF onwards', async () => {
     const api = install(); render(<App />); await ready(); await edit(); fill(/Tên dịch vụ/, 'Bản nháp'); vi.mocked(window.confirm).mockReturnValue(false);
     fireEvent.click(within(dialog()).getByRole('button', { name: 'Hủy' })); expect(screen.getByRole('dialog')).toBeTruthy();
+    const draftUrl = window.location.pathname + window.location.search;
+    fireEvent.click(screen.getByRole('button', { name: 'Hợp đồng đặt cọc' }));
+    expect(window.location.pathname + window.location.search).toBe(draftUrl);
+    expect(screen.getByRole('dialog')).toBeTruthy();
+    expect(screen.queryByRole('heading', { name: 'Hợp đồng đặt cọc' })).toBeNull();
     const gate = deferred<Response>(); api.csrf.mockReturnValueOnce(gate.promise); const save = within(dialog()).getByRole('button', { name: 'Lưu thay đổi' });
     fireEvent.click(save); fireEvent.click(save); expect(api.csrf).toHaveBeenCalledTimes(1); expect((within(dialog()).getByRole('button', { name: 'Hủy' }) as HTMLButtonElement).disabled).toBe(true);
     await act(async () => gate.resolve(ok({ headerName: 'X-CSRF-TOKEN', token: 'late' }))); await screen.findByText(m.updateSuccess); expect(api.write).toHaveBeenCalledTimes(1);

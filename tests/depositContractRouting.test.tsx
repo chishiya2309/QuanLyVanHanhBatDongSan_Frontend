@@ -2,6 +2,8 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import App from '../src/App';
 import { deferred, failure, ok } from './apiMock';
+import { customerMessages } from '../src/types/customer';
+import { catalogMessages } from '../src/types/serviceCatalog';
 
 const user = { accountId: 'deposit-host', loginName: 'host', role: 'HOST', hostId: 'host', customerId: null };
 
@@ -27,6 +29,15 @@ function install() {
     if (url.pathname === '/api/v1/deposit-contracts') return contractsData();
     if (url.pathname === '/api/v1/deposit-contracts/available-rooms') return availableRooms();
     if (url.pathname === '/api/v1/deposit-contracts/available-customers') return availableCustomers();
+    if (url.pathname === '/api/v1/customers') return new Response(JSON.stringify({
+      status: 200,
+      message: customerMessages.listSuccess,
+      data: { content: [], page: 0, size: 20, totalElements: 0, totalPages: 0, first: true, last: true },
+    }), { status: 200 });
+    if (url.pathname === '/api/v1/services') return new Response(JSON.stringify({
+      status: 200, message: catalogMessages.listSuccess, data: [],
+    }), { status: 200 });
+    if (url.pathname === '/api/v1/buildings') return ok([]);
     throw new Error('Unexpected test request ' + url.pathname);
   });
   vi.stubGlobal('fetch', fetch);
@@ -54,7 +65,7 @@ describe('deposit contract routing and interaction in the application', () => {
   });
 
   it('switches to deposit contracts page via sidebar click', async () => {
-    const api = install();
+    install();
     render(<App />);
 
     const sidebarBtn = await screen.findByRole('button', { name: 'Hợp đồng đặt cọc' });
@@ -65,8 +76,36 @@ describe('deposit contract routing and interaction in the application', () => {
     expect(sidebarBtn.getAttribute('aria-current')).toBe('page');
   });
 
-  it('opens and closes the create deposit contract modal', async () => {
+  it.each([
+    { path: '/customers', heading: 'Quản lý khách thuê', menu: 'Khách thuê', returnHeading: 'Quản lý khách thuê' },
+    { path: '/services', heading: 'Danh mục dịch vụ', menu: 'Danh mục dịch vụ', returnHeading: 'Danh mục dịch vụ' },
+    { path: '/services/policy', heading: 'Thiết lập chính sách dịch vụ', menu: 'Danh mục dịch vụ', returnHeading: 'Danh mục dịch vụ' },
+  ])('switches from $path to deposit contracts and back with only one active menu', async ({ path, heading, menu, returnHeading }) => {
     const api = install();
+    window.history.replaceState(null, '', path);
+    render(<App />);
+    await screen.findByRole('heading', { name: heading });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Hợp đồng đặt cọc' }));
+    await screen.findByRole('heading', { name: 'Hợp đồng đặt cọc' });
+    expect(screen.queryByRole('heading', { name: heading })).toBeNull();
+    expect(window.location.pathname).toBe('/deposit-contracts');
+    expect(document.querySelectorAll('[aria-current="page"]')).toHaveLength(1);
+    await waitFor(() => expect(api.contractsData).toHaveBeenCalled());
+
+    fireEvent.click(screen.getByRole('button', { name: menu }));
+    await screen.findByRole('heading', { name: returnHeading });
+    expect(screen.queryByRole('heading', { name: 'Hợp đồng đặt cọc' })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Hợp đồng đặt cọc' }).getAttribute('aria-current')).toBeNull();
+    expect(document.querySelectorAll('[aria-current="page"]')).toHaveLength(1);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Hợp đồng đặt cọc' }));
+    await screen.findByRole('heading', { name: 'Hợp đồng đặt cọc' });
+    expect(api.me).toHaveBeenCalledOnce();
+  });
+
+  it('opens and closes the create deposit contract modal', async () => {
+    install();
     render(<App />);
 
     fireEvent.click(await screen.findByRole('button', { name: 'Hợp đồng đặt cọc' }));
@@ -86,7 +125,7 @@ describe('deposit contract routing and interaction in the application', () => {
   });
 
   it('toggles quick customer creation inside the modal', async () => {
-    const api = install();
+    install();
     render(<App />);
 
     fireEvent.click(await screen.findByRole('button', { name: 'Hợp đồng đặt cọc' }));

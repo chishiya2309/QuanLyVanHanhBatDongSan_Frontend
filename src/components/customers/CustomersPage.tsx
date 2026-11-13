@@ -305,7 +305,7 @@ export function CustomersPage({
                           )
                         }
                       >
-                        ← Trang trước
+                        Trang trước
                       </button>
                       <button
                         type="button"
@@ -321,7 +321,7 @@ export function CustomersPage({
                           )
                         }
                       >
-                        Trang sau →
+                        Trang sau
                       </button>
                     </div>
                   </div>

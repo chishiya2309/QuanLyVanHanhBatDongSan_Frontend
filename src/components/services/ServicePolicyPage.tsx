@@ -428,7 +428,7 @@ export function ServicePolicyPage({
                       onChange={() => setProrate(true)}
                     />
                     <span>
-                      <strong>Có tính ngày lẻ (true)</strong> — Phí được chia theo số ngày thực tế trong chu kỳ.
+                      <strong>Có tính ngày lẻ (true)</strong>. Phí được chia theo số ngày thực tế trong chu kỳ.
                     </span>
                   </label>
                   <label className="policy-radio-option">
@@ -441,7 +441,7 @@ export function ServicePolicyPage({
                       onChange={() => setProrate(false)}
                     />
                     <span>
-                      <strong>Không tính ngày lẻ (false)</strong> — Thu trọn gói cả kỳ hợp đồng dù vào/ra giữa kỳ.
+                      <strong>Không tính ngày lẻ (false)</strong>. Thu trọn gói cả kỳ hợp đồng dù vào/ra giữa kỳ.
                     </span>
                   </label>
                 </div>
@@ -597,7 +597,7 @@ export function ServicePolicyPage({
                   <div key={bId} className="policy-new-building-row">
                     <div>
                       <strong>{item.building.name}</strong>
-                      {item.building.areaName && <span> — {item.building.areaName}</span>}
+                      {item.building.areaName && <span> ({item.building.areaName})</span>}
                       {item.building.address && (
                         <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-muted)' }}>
                           {item.building.address}

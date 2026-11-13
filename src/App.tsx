@@ -294,14 +294,14 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
   const [catalogRoute, setCatalogRoute] = useState<CatalogRoute | null>(() => parseCatalogRoute(window.location.pathname, window.location.search));
   const [policyRoute, setPolicyRoute] = useState<ServicePolicyRoute | null>(() => parseServicePolicyRoute(window.location.pathname, window.location.search));
   const [customerRoute, setCustomerRoute] = useState<CustomerRoute | null>(() => parseCustomerRoute(window.location.pathname, window.location.search));
+  const [contractRoute, setContractRoute] = useState<DepositContractRoute | null>(() => parseDepositContractRoute(window.location.pathname, window.location.search));
   const navigationGuard = useRef<(() => boolean) | null>(null);
   const registerGuard = useCallback<NavigationGuardRegistration>((guard) => { navigationGuard.current = guard; }, []);
   const permitNavigation = useCallback(() => navigationGuard.current?.() !== false, []);
   const lastUrl = useRef(window.location.pathname + window.location.search);
   useLayoutEffect(() => {
     lastUrl.current = window.location.pathname + window.location.search;
-  }, [hostRoute, assetRoute, propertiesRoute, roomsRoute, catalogRoute, policyRoute, customerRoute]);
-  const [contractRoute, setContractRoute] = useState<DepositContractRoute | null>(() => parseDepositContractRoute(window.location.pathname, window.location.search));
+  }, [hostRoute, assetRoute, propertiesRoute, roomsRoute, catalogRoute, policyRoute, customerRoute, contractRoute]);
   const googleEntry = useRef(isGoogleEntry());
   const [authCheck, setAuthCheck] = useState<'checking' | 'ready' | 'error'>(() => isGoogleEntry() ? 'ready' : 'checking');
   const [authRetry, setAuthRetry] = useState(0);
@@ -549,6 +549,7 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
         if (replace) window.history.replaceState(null, '', canonical); else window.history.pushState(null, '', canonical);
       }
       setHostRoute(null); setAssetRoute(null); setPropertiesRoute(null); setRoomsRoute(null); setCatalogRoute(null); setCustomerRoute(null);
+      setContractRoute(null);
       setPolicyRoute(policy);
       return;
     }
@@ -559,6 +560,7 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
       if (replace) window.history.replaceState(null, '', canonical); else window.history.pushState(null, '', canonical);
     }
     setHostRoute(null); setAssetRoute(null); setPropertiesRoute(null); setRoomsRoute(null); setPolicyRoute(null); setCustomerRoute(null);
+    setContractRoute(null);
     setCatalogRoute(next);
   }, [permitNavigation]);
 
@@ -572,6 +574,7 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
         if (replace) window.history.replaceState(null, '', canonical); else window.history.pushState(null, '', canonical);
       }
       setHostRoute(null); setAssetRoute(null); setPropertiesRoute(null); setRoomsRoute(null); setPolicyRoute(null); setCustomerRoute(null);
+      setContractRoute(null);
       setCatalogRoute(catalog);
       return;
     }
@@ -582,6 +585,7 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
       if (replace) window.history.replaceState(null, '', canonical); else window.history.pushState(null, '', canonical);
     }
     setHostRoute(null); setAssetRoute(null); setPropertiesRoute(null); setRoomsRoute(null); setCatalogRoute(null); setCustomerRoute(null);
+    setContractRoute(null);
     setPolicyRoute(next);
   }, [permitNavigation]);
 
@@ -600,6 +604,7 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
     setCatalogRoute(null);
     setPolicyRoute(null);
     setCustomerRoute(next);
+    setContractRoute(null);
   }, [permitNavigation]);
 
   useEffect(() => {
@@ -615,13 +620,20 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
   }, [policyRoute]);
 
   const navigateContracts = useCallback((url: string) => {
-    window.history.pushState(null, '', url);
+    if (!permitNavigation()) return;
+    const target = new URL(url, window.location.origin);
+    const next = parseDepositContractRoute(target.pathname, target.search);
+    if (!next || target.origin !== window.location.origin) return;
+    if (window.location.pathname + window.location.search !== url) window.history.pushState(null, '', url);
     setHostRoute(null);
     setAssetRoute(null);
     setPropertiesRoute(null);
     setRoomsRoute(null);
-    setContractRoute(parseDepositContractRoute(window.location.pathname, window.location.search));
-  }, []);
+    setCatalogRoute(null);
+    setPolicyRoute(null);
+    setCustomerRoute(null);
+    setContractRoute(next);
+  }, [permitNavigation]);
 
   useEffect(() => {
     if (!assetRoute) return;
