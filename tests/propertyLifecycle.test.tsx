@@ -118,7 +118,7 @@ describe('property requests follow the current page and drawer', () => {
     }));
     const props = { isOpen: true, roomId: 'r1', onClose: vi.fn(), onEditRoom: vi.fn(), onSessionExpired: vi.fn() };
     const view = render(<RoomDetailDrawer {...props} />);
-    expect(screen.getByText('Đang tải thông tin chi tiết...')).toBeTruthy();
+    expect(screen.getByText('Đang tải thông tin chi tiết…')).toBeTruthy();
     view.rerender(<RoomDetailDrawer {...props} roomId="r2" />);
     await screen.findByRole('heading', { name: 'Phòng: P202' });
     await act(async () => oldDetail.resolve(ok(room)));

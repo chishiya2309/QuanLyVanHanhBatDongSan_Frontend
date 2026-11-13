@@ -32,6 +32,8 @@ import { FloorModal } from './FloorModal';
 import { RoomModal } from './RoomModal';
 import { RoomDetailDrawer } from './RoomDetailDrawer';
 import './properties.css';
+import { roomsUrl } from '../../utils/propertyNavigation';
+import { roomServicesUrl } from '../../utils/roomServiceNavigation';
 
 interface RoomsPageProps {
   route: RoomsRoute;
@@ -61,6 +63,10 @@ export const RoomsPage: React.FC<RoomsPageProps> = ({
   const [searchLoading, setSearchLoading] = useState(route.view === 'table');
   const [filterParams, setFilterParams] = useState<RoomFilterParams>({
     buildingId: route.buildingId || undefined,
+    floorId: route.floorId || undefined,
+    keyword: route.keyword,
+    areaId: route.areaId,
+    status: route.status,
   });
 
   // Banners & Notifications
@@ -489,7 +495,7 @@ export const RoomsPage: React.FC<RoomsPageProps> = ({
       <RoomDetailDrawer
         isOpen={drawerOpen}
         roomId={drawerRoomId}
-        buildingId={selectedBuildingId}
+        buildingId={viewMode === 'matrix' ? selectedBuildingId : undefined}
         initialTab={drawerInitialTab}
         onClose={() => {
           setDrawerOpen(false);
@@ -500,6 +506,15 @@ export const RoomsPage: React.FC<RoomsPageProps> = ({
           setModalError(null);
           setModalFieldErrors({});
           setRoomModalOpen(true);
+        }}
+        onConfigureServices={(room) => {
+          const returnTo = roomsUrl({
+            ...filterParams, view: viewMode, buildingId: viewMode === 'matrix' ? selectedBuildingId : filterParams.buildingId,
+            roomId: room.id, action: 'detail',
+          });
+          // Serialize the current selection before leaving so native Back also restores it.
+          window.history.replaceState(window.history.state, '', returnTo);
+          onNavigate(roomServicesUrl(room.id, returnTo));
         }}
         onSessionExpired={onSessionExpired}
       />

@@ -10,6 +10,7 @@ interface RoomDetailDrawerProps {
   initialTab?: 'detail' | 'history';
   onClose: () => void;
   onEditRoom: (room: RoomDetail) => void;
+  onConfigureServices?: (room: RoomDetail) => void;
   onSessionExpired: () => void;
 }
 
@@ -24,6 +25,7 @@ const RoomDetailDrawerContent: React.FC<RoomDetailDrawerProps & { roomId: string
   initialTab = 'detail',
   onClose,
   onEditRoom,
+  onConfigureServices,
   onSessionExpired,
 }) => {
   const [activeTab, setActiveTab] = useState<'detail' | 'tenancy' | 'state'>(
@@ -117,7 +119,7 @@ const RoomDetailDrawerContent: React.FC<RoomDetailDrawerProps & { roomId: string
         </nav>
 
         <div className="prop-drawer-body">
-          {loading && <p>Đang tải thông tin chi tiết...</p>}
+          {loading && <p>Đang tải thông tin chi tiết…</p>}
           {error && (
             <div className="prop-banner prop-banner--error" role="alert">
               <p>{error}</p>
@@ -262,6 +264,9 @@ const RoomDetailDrawerContent: React.FC<RoomDetailDrawerProps & { roomId: string
         </div>
 
         <footer className="prop-drawer-footer">
+          {detail && onConfigureServices && !error && (
+            <button type="button" className="prop-btn prop-btn--outline" onClick={() => onConfigureServices(detail)}>Cấu hình dịch vụ</button>
+          )}
           <button type="button" className="prop-btn" onClick={onClose}>
             Đóng
           </button>
