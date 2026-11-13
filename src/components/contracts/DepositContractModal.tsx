@@ -228,7 +228,7 @@ export const DepositContractModal: React.FC<DepositContractModalProps> = ({
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        <form onSubmit={handleSubmit} noValidate style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
           <div className="contract-modal-body">
             {errorMessage && <div className="error-banner">{errorMessage}</div>}
 
