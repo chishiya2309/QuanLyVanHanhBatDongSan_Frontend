@@ -16,6 +16,7 @@ import { PropertyStatusTable } from './PropertyStatusTable';
 import './dashboard.css';
 
 interface DashboardShellProps {
+  showMeterReadings?: boolean; meterReadingsActive?: boolean; onNavigateMeterReadings?: () => void;
   showServices?: boolean; servicesActive?: boolean; onNavigateServices?: () => void;
   user: UserProfile;
   onLogout: () => void;
@@ -45,6 +46,7 @@ interface DashboardShellProps {
 }
 
 export const DashboardShell: React.FC<DashboardShellProps> = ({
+  showMeterReadings = false, meterReadingsActive = false, onNavigateMeterReadings,
   showServices = false, servicesActive = false, onNavigateServices,
   user,
   onLogout,
@@ -175,6 +177,7 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
   }, [selectedPropertyId, user.managedProperties]);
 
   const handleQuickAction = (actionKey: string) => {
+    if (actionKey === 'record-utilities' && showMeterReadings) { onNavigateMeterReadings?.(); return; }
     const actionTitles: Record<string, string> = {
       'create-contract': 'Mở biểu mẫu tạo Hợp đồng thuê phòng mới',
       'add-tenant': 'Mở biểu mẫu tiếp nhận thông tin Khách thuê mới',
@@ -186,7 +189,7 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
     setTimeout(() => setToastMessage(null), 3000);
   };
 
-  const isCustomView = hostAccountsActive || assetsActive || propertiesActive || roomsActive || servicesActive || customersActive;
+  const isCustomView = meterReadingsActive || hostAccountsActive || assetsActive || propertiesActive || roomsActive || servicesActive || customersActive;
 
   return (
     <div className={`dashboard-root${hostAccountsActive ? ' dashboard-root--admin' : ''}${assetsActive ? ' dashboard-root--assets' : ''}`}>
@@ -209,6 +212,7 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
           { label: 'Tổng quan', path: '/', active: !isCustomView, action: onNavigateOverview, show: true },
           { label: 'Tài sản', path: '/assets', active: assetsActive, action: onNavigateAssets, show: showAssets },
           { label: 'Khách thuê', path: '/customers', active: customersActive, action: onNavigateCustomers, show: showCustomers },
+          { label: 'Ghi chỉ số', path: '/meter-readings', active: meterReadingsActive, action: onNavigateMeterReadings, show: showMeterReadings },
           { label: 'Danh mục dịch vụ', path: '/services', active: servicesActive, action: onNavigateServices, show: showServices },
           { label: 'Cơ sở & Tòa nhà', path: '/properties', active: propertiesActive, action: onNavigateProperties, show: propertiesActive },
           { label: 'Mặt bằng & Phòng', path: '/rooms', active: roomsActive, action: onNavigateRooms, show: roomsActive },
@@ -219,6 +223,9 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
       </nav>}
       <div className="dashboard-layout">
         <Sidebar
+          showMeterReadings={showMeterReadings}
+          meterReadingsActive={meterReadingsActive}
+          onNavigateMeterReadings={mobileNavigate(onNavigateMeterReadings)}
           markCurrent={!smallScreen || mobileOpen}
           mobileOpen={mobileOpen}
           showServices={showServices}
