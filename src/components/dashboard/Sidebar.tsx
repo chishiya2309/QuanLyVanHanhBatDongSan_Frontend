@@ -1,6 +1,7 @@
 import React from 'react';
 
 interface SidebarProps {
+  showMeterReadings?: boolean; meterReadingsActive?: boolean; onNavigateMeterReadings?: () => void;
   showServices?: boolean; servicesActive?: boolean; onNavigateServices?: () => void; mobileOpen?: boolean; markCurrent?: boolean;
   showHostAccounts?: boolean; hostAccountsActive?: boolean;
   showAssets?: boolean; assetsActive?: boolean; onNavigateAssets?: () => void;
@@ -12,6 +13,7 @@ interface SidebarProps {
   onNavigateOverview?: () => void; onNavigateHostAccounts?: () => void;
 }
 export const Sidebar: React.FC<SidebarProps> = ({
+  showMeterReadings = false, meterReadingsActive = false, onNavigateMeterReadings,
   showServices = false, servicesActive = false, onNavigateServices, mobileOpen = false, markCurrent = true,
   showHostAccounts = false,
   hostAccountsActive = false,
@@ -35,7 +37,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onNavigateOverview,
   onNavigateHostAccounts,
 }) => {
-  const isOverviewActive = !hostAccountsActive && !assetsActive && !propertiesActive && !roomsActive && !servicesActive && !customersActive && !contractsActive && !rentalContractsActive;
+  const isOverviewActive = !meterReadingsActive && !hostAccountsActive && !assetsActive && !propertiesActive && !roomsActive && !servicesActive && !customersActive && !contractsActive && !rentalContractsActive;
   return (
     <aside id="rentops-navigation" className={`dash-sidebar${mobileOpen ? ' is-mobile-open' : ''}`} aria-label="Thanh điều hướng chính">
       <div className="dash-nav-group">
@@ -168,12 +170,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="M4 4h16v16H4zM4 10h16M10 4v16" /></svg><span>Danh mục dịch vụ</span>
         </button>}
 
-        <button type="button" className="dash-nav-item">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
-          </svg>
-          <span>Chỉ số Điện &amp; Nước</span>
-        </button>
+        {showMeterReadings && <button type="button" className={`dash-nav-item${meterReadingsActive ? ' is-active' : ''}`} aria-current={meterReadingsActive && markCurrent ? 'page' : undefined} onClick={onNavigateMeterReadings}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="M4 5h16v14H4zM8 9h8M8 13h3" /></svg>
+          <span>Ghi và kiểm tra chỉ số</span>
+        </button>}
 
         <button type="button" className="dash-nav-item">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">

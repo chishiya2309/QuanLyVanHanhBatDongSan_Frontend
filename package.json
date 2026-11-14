@@ -23,7 +23,8 @@
     "test:browser:polish": "node tests/browser/frontend-polish-browser.mjs",
     "test:browser:customers": "node tests/browser/customers-browser.mjs",
     "test:browser:customer-accounts": "node tests/browser/customer-accounts-browser.mjs",
-    "test:browser:contracts": "node tests/browser/contract-dialogs-browser.mjs"
+    "test:browser:contracts": "node tests/browser/contract-dialogs-browser.mjs",
+    "test:browser:meter-readings": "node tests/browser/meter-readings-browser.mjs"
   },
   "dependencies": {
     "lossless-json": "^4.3.3",
