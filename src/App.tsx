@@ -46,6 +46,13 @@ import { MeterReadingsPage, MeterForbidden } from './components/meter/MeterReadi
 import type { MeterRoute } from './types/meterReading';
 import { parseMeterRoute, meterUrl } from './utils/meterNavigation';
 import { parseRentalContractRoute } from './utils/rentalContractNavigation';
+import { PeriodUsagePage, UsageForbidden } from './components/usage/PeriodUsagePage';
+import type { PeriodUsageRoute } from './types/periodUsage';
+import { parsePeriodUsageRoute, periodUsageUrl } from './utils/periodUsageNavigation';
+import { ProvisionalChargesPage } from './components/provisional/ProvisionalChargesPage';
+import type { ProvisionalRoute } from './types/provisionalCharge';
+import { provisionalMessages } from './types/provisionalCharge';
+import { parseProvisionalRoute, provisionalPath, provisionalUrl } from './utils/provisionalChargeNavigation';
 
 const SESSION_SPLASH_MIN_MS = 800;
 
@@ -56,7 +63,9 @@ function isGoogleEntry(): boolean {
 
 function isProtectedPath(pathname: string, search: string): boolean {
   return Boolean(
-    parseMeterRoute(pathname, search)
+    parseProvisionalRoute(pathname, search)
+    || parsePeriodUsageRoute(pathname, search)
+    || parseMeterRoute(pathname, search)
     || parseHostAccountRoute(pathname)
     || parseAssetRoute(pathname, search)
     || parsePropertiesRoute(pathname, search)
@@ -94,6 +103,10 @@ function AuthenticatedDashboard({
   onNavigatePolicy,
   meterRoute,
   onNavigateMeter,
+  periodUsageRoute,
+  onNavigatePeriodUsage,
+  provisionalRoute,
+  onNavigateProvisional,
   customerRoute,
   onNavigateCustomers,
   registerGuard,
@@ -122,6 +135,10 @@ function AuthenticatedDashboard({
   onNavigatePolicy: (url: string, replace?: boolean) => void;
   meterRoute: MeterRoute | null;
   onNavigateMeter: (url: string) => void;
+  periodUsageRoute: PeriodUsageRoute | null;
+  onNavigatePeriodUsage: (url: string) => void;
+  provisionalRoute: ProvisionalRoute | null;
+  onNavigateProvisional: (url: string) => void;
   customerRoute: CustomerRoute | null;
   onNavigateCustomers: (url: string, replace?: boolean) => void;
   registerGuard: NavigationGuardRegistration;
@@ -180,6 +197,13 @@ function AuthenticatedDashboard({
         showMeterReadings={user.role === 'HOST'}
         meterReadingsActive={meterRoute !== null}
         onNavigateMeterReadings={() => onNavigateMeter('/meter-readings')}
+        showPeriodUsages={user.role === 'HOST'}
+        periodUsagesActive={periodUsageRoute !== null}
+        onNavigatePeriodUsages={() => onNavigatePeriodUsage('/period-usages')}
+        showProvisionalCharges={user.role === 'HOST' || user.role === 'CUSTOMER'}
+        provisionalChargesActive={provisionalRoute !== null}
+        provisionalChargesPath={provisionalPath(user.role === 'CUSTOMER' ? 'CUSTOMER' : 'HOST')}
+        onNavigateProvisionalCharges={() => onNavigateProvisional(provisionalPath(user.role === 'CUSTOMER' ? 'CUSTOMER' : 'HOST'))}
         customersActive={customerRoute !== null}
         onNavigateCustomers={() => onNavigateCustomers('/customers')}
         showServices={user.role === 'HOST' && !catalogDenied}
@@ -188,7 +212,19 @@ function AuthenticatedDashboard({
         onNavigateOverview={onOverview}
         onNavigateHostAccounts={() => onNavigateHost(null)}
       >
-        {meterRoute ? (
+        {provisionalRoute ? (
+          <ProvisionalChargesPage user={user} route={provisionalRoute} onNavigate={onNavigateProvisional} onBack={onOverview}
+            onSessionExpired={(message) => onAuthenticationEnded({ kind: 'error', message })} />
+        ) : periodUsageRoute ? (
+          user.role !== 'HOST' ? <UsageForbidden onBack={onOverview} /> : (
+            <PeriodUsagePage
+              route={periodUsageRoute}
+              onNavigate={onNavigatePeriodUsage}
+              registerGuard={registerGuard}
+              onSessionExpired={(message) => onAuthenticationEnded({ kind: 'error', message: message || 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.' })}
+            />
+          )
+        ) : meterRoute ? (
           user.role !== 'HOST' ? <MeterForbidden onBack={onOverview} /> : (
             <MeterReadingsPage route={meterRoute} onNavigate={onNavigateMeter} registerGuard={registerGuard}
               onSessionExpired={(message) => onAuthenticationEnded({ kind: 'error', message: message || 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.' })} />
@@ -344,6 +380,8 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
   const [catalogRoute, setCatalogRoute] = useState<CatalogRoute | null>(() => parseCatalogRoute(window.location.pathname, window.location.search));
   const [policyRoute, setPolicyRoute] = useState<ServicePolicyRoute | null>(() => parseServicePolicyRoute(window.location.pathname, window.location.search));
   const [meterRoute, setMeterRoute] = useState<MeterRoute | null>(() => parseMeterRoute(window.location.pathname, window.location.search));
+  const [periodUsageRoute, setPeriodUsageRoute] = useState<PeriodUsageRoute | null>(() => parsePeriodUsageRoute(window.location.pathname, window.location.search));
+  const [provisionalRoute, setProvisionalRoute] = useState<ProvisionalRoute | null>(() => parseProvisionalRoute(window.location.pathname, window.location.search));
   const [customerRoute, setCustomerRoute] = useState<CustomerRoute | null>(() => parseCustomerRoute(window.location.pathname, window.location.search));
   const [contractRoute, setContractRoute] = useState<DepositContractRoute | null>(() => parseDepositContractRoute(window.location.pathname, window.location.search));
   const [rentalContractRoute, setRentalContractRoute] = useState<RentalContractRoute | null>(() => parseRentalContractRoute(window.location.pathname, window.location.search));
@@ -353,7 +391,7 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
   const lastUrl = useRef(window.location.pathname + window.location.search);
   useLayoutEffect(() => {
     lastUrl.current = window.location.pathname + window.location.search;
-  }, [hostRoute, assetRoute, propertiesRoute, roomsRoute, catalogRoute, policyRoute, meterRoute, customerRoute, contractRoute, rentalContractRoute]);
+  }, [hostRoute, assetRoute, propertiesRoute, roomsRoute, catalogRoute, policyRoute, meterRoute, periodUsageRoute, provisionalRoute, customerRoute, contractRoute, rentalContractRoute]);
   const googleEntry = useRef(isGoogleEntry());
   const [authCheck, setAuthCheck] = useState<'checking' | 'ready' | 'error'>(() => isGoogleEntry() ? 'ready' : 'checking');
   const [authRetry, setAuthRetry] = useState(0);
@@ -399,6 +437,7 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
         const services = parseCatalogRoute(window.location.pathname, window.location.search);
         const policy = parseServicePolicyRoute(window.location.pathname, window.location.search);
         const customers = parseCustomerRoute(window.location.pathname, window.location.search);
+        const provisional = parseProvisionalRoute(window.location.pathname, window.location.search);
         if (!(error instanceof AuthApiError) || error.status !== 401) {
           setAuthCheck('error'); return;
         }
@@ -412,12 +451,14 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
             setRoomsRoute(null);
             setCatalogRoute(null);
             setPolicyRoute(null);
-            setMeterRoute(null); setCustomerRoute(null);
+            setMeterRoute(null);
+            setPeriodUsageRoute(null); setProvisionalRoute(null);
+            setCustomerRoute(null);
             setContractRoute(null);
             setRentalContractRoute(null);
             setAuthNotice({
               kind: 'error',
-              message: customers ? customerMessages.sessionInvalid : services || policy ? catalogMessages.sessionInvalid : assets ? assetMessages.sessionInvalid : hostAccountMessages.sessionInvalid,
+              message: provisional ? provisionalMessages.session : customers ? customerMessages.sessionInvalid : services || policy ? catalogMessages.sessionInvalid : assets ? assetMessages.sessionInvalid : hostAccountMessages.sessionInvalid,
             });
           }
         });
@@ -440,6 +481,8 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
       setCatalogRoute(parseCatalogRoute(window.location.pathname, window.location.search));
       setPolicyRoute(parseServicePolicyRoute(window.location.pathname, window.location.search));
       setMeterRoute(parseMeterRoute(window.location.pathname, window.location.search));
+      setPeriodUsageRoute(parsePeriodUsageRoute(window.location.pathname, window.location.search));
+      setProvisionalRoute(parseProvisionalRoute(window.location.pathname, window.location.search));
       setCustomerRoute(parseCustomerRoute(window.location.pathname, window.location.search));
       setContractRoute(parseDepositContractRoute(window.location.pathname, window.location.search));
       setRentalContractRoute(parseRentalContractRoute(window.location.pathname, window.location.search));
@@ -481,7 +524,9 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
     setRoomsRoute(null);
     setCatalogRoute(null);
     setPolicyRoute(null);
-    setMeterRoute(null); setCustomerRoute(null);
+    setMeterRoute(null);
+    setPeriodUsageRoute(null); setProvisionalRoute(null);
+    setCustomerRoute(null);
     navigationGuard.current = null;
     setContractRoute(null);
     setRentalContractRoute(null);
@@ -525,7 +570,7 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
     window.history.pushState(null, '', path || '/');
     setRecovery({ path, token: null }); setRecoveryVisit((n) => n + 1);
     setCurrentUser(null); setView('login'); setAuthNotice(null);
-    setHostRoute(null); setAssetRoute(null); setPropertiesRoute(null); setRoomsRoute(null); setCatalogRoute(null); setPolicyRoute(null); setMeterRoute(null); setCustomerRoute(null); setContractRoute(null); setRentalContractRoute(null); setAuthCheck('ready');
+    setHostRoute(null); setAssetRoute(null); setPropertiesRoute(null); setRoomsRoute(null); setCatalogRoute(null); setPolicyRoute(null); setMeterRoute(null); setPeriodUsageRoute(null); setProvisionalRoute(null); setCustomerRoute(null); setContractRoute(null); setRentalContractRoute(null); setAuthCheck('ready');
   };
 
   const finishRecovery = (notice: AuthNotice) => {
@@ -545,7 +590,7 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
     setRoomsRoute(null);
     setCatalogRoute(null);
     setPolicyRoute(null);
-    setMeterRoute(null); setCustomerRoute(null);
+    setMeterRoute(null); setPeriodUsageRoute(null); setProvisionalRoute(null); setCustomerRoute(null);
     setContractRoute(null);
     setRentalContractRoute(null);
   }, [permitNavigation]);
@@ -559,7 +604,7 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
     setRoomsRoute(null);
     setCatalogRoute(null);
     setPolicyRoute(null);
-    setMeterRoute(null); setCustomerRoute(null);
+    setMeterRoute(null); setPeriodUsageRoute(null); setProvisionalRoute(null); setCustomerRoute(null);
     setContractRoute(null);
     setRentalContractRoute(null);
   }, [permitNavigation]);
@@ -581,7 +626,7 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
     setAssetRoute(next);
     setCatalogRoute(null);
     setPolicyRoute(null);
-    setMeterRoute(null); setCustomerRoute(null);
+    setMeterRoute(null); setPeriodUsageRoute(null); setProvisionalRoute(null); setCustomerRoute(null);
   }, [permitNavigation]);
 
   const navigateProperties = useCallback((url: string) => {
@@ -595,7 +640,7 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
     setPropertiesRoute(parsePropertiesRoute(window.location.pathname, window.location.search));
     setCatalogRoute(null);
     setPolicyRoute(null);
-    setMeterRoute(null); setCustomerRoute(null);
+    setMeterRoute(null); setPeriodUsageRoute(null); setProvisionalRoute(null); setCustomerRoute(null);
   }, [permitNavigation]);
 
   const navigateRooms = useCallback((url: string) => {
@@ -609,7 +654,7 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
     setRoomsRoute(parseRoomsRoute(window.location.pathname, window.location.search));
     setCatalogRoute(null);
     setPolicyRoute(null);
-    setMeterRoute(null); setCustomerRoute(null);
+    setMeterRoute(null); setPeriodUsageRoute(null); setProvisionalRoute(null); setCustomerRoute(null);
   }, [permitNavigation]);
 
   const navigateCatalog = useCallback((url: string, replace = false) => {
@@ -621,7 +666,7 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
       if (window.location.pathname + window.location.search !== canonical) {
         if (replace) window.history.replaceState(null, '', canonical); else window.history.pushState(null, '', canonical);
       }
-      setHostRoute(null); setAssetRoute(null); setPropertiesRoute(null); setRoomsRoute(null); setCatalogRoute(null); setMeterRoute(null); setCustomerRoute(null); setContractRoute(null); setRentalContractRoute(null);
+      setHostRoute(null); setAssetRoute(null); setPropertiesRoute(null); setRoomsRoute(null); setCatalogRoute(null); setMeterRoute(null); setPeriodUsageRoute(null); setProvisionalRoute(null); setCustomerRoute(null); setContractRoute(null); setRentalContractRoute(null);
       setPolicyRoute(policy);
       return;
     }
@@ -631,7 +676,7 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
     if (window.location.pathname + window.location.search !== canonical) {
       if (replace) window.history.replaceState(null, '', canonical); else window.history.pushState(null, '', canonical);
     }
-    setHostRoute(null); setAssetRoute(null); setPropertiesRoute(null); setRoomsRoute(null); setPolicyRoute(null); setMeterRoute(null); setCustomerRoute(null); setContractRoute(null); setRentalContractRoute(null);
+    setHostRoute(null); setAssetRoute(null); setPropertiesRoute(null); setRoomsRoute(null); setPolicyRoute(null); setMeterRoute(null); setPeriodUsageRoute(null); setProvisionalRoute(null); setCustomerRoute(null); setContractRoute(null); setRentalContractRoute(null);
     setCatalogRoute(next);
   }, [permitNavigation]);
 
@@ -644,7 +689,7 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
       if (window.location.pathname + window.location.search !== canonical) {
         if (replace) window.history.replaceState(null, '', canonical); else window.history.pushState(null, '', canonical);
       }
-      setHostRoute(null); setAssetRoute(null); setPropertiesRoute(null); setRoomsRoute(null); setPolicyRoute(null); setMeterRoute(null); setCustomerRoute(null); setContractRoute(null); setRentalContractRoute(null);
+      setHostRoute(null); setAssetRoute(null); setPropertiesRoute(null); setRoomsRoute(null); setPolicyRoute(null); setMeterRoute(null); setPeriodUsageRoute(null); setProvisionalRoute(null); setCustomerRoute(null); setContractRoute(null); setRentalContractRoute(null);
       setCatalogRoute(catalog);
       return;
     }
@@ -654,7 +699,7 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
     if (window.location.pathname + window.location.search !== canonical) {
       if (replace) window.history.replaceState(null, '', canonical); else window.history.pushState(null, '', canonical);
     }
-    setHostRoute(null); setAssetRoute(null); setPropertiesRoute(null); setRoomsRoute(null); setCatalogRoute(null); setMeterRoute(null); setCustomerRoute(null); setContractRoute(null); setRentalContractRoute(null);
+    setHostRoute(null); setAssetRoute(null); setPropertiesRoute(null); setRoomsRoute(null); setCatalogRoute(null); setMeterRoute(null); setPeriodUsageRoute(null); setProvisionalRoute(null); setCustomerRoute(null); setContractRoute(null); setRentalContractRoute(null);
     setPolicyRoute(next);
   }, [permitNavigation]);
 
@@ -675,6 +720,7 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
     setContractRoute(null);
     setRentalContractRoute(null);
     setMeterRoute(null);
+    setPeriodUsageRoute(null); setProvisionalRoute(null);
     setCustomerRoute(next);
   }, [permitNavigation]);
 
@@ -685,8 +731,31 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
     const canonical = next.invalid ? url : meterUrl(next);
     if (window.location.pathname + window.location.search !== canonical) window.history.pushState(null, '', canonical);
     setHostRoute(null); setAssetRoute(null); setPropertiesRoute(null); setRoomsRoute(null);
-    setCatalogRoute(null); setPolicyRoute(null); setCustomerRoute(null); setContractRoute(null); setRentalContractRoute(null);
+    setCatalogRoute(null); setPolicyRoute(null); setPeriodUsageRoute(null); setProvisionalRoute(null); setCustomerRoute(null); setContractRoute(null); setRentalContractRoute(null);
     setMeterRoute(next);
+  }, [permitNavigation]);
+
+  const navigatePeriodUsage = useCallback((url: string) => {
+    const target = new URL(url, window.location.origin);
+    const next = parsePeriodUsageRoute(target.pathname, target.search);
+    if (!next || target.origin !== window.location.origin || !permitNavigation()) return;
+    const canonical = next.invalid ? url : periodUsageUrl(next);
+    if (window.location.pathname + window.location.search !== canonical) window.history.pushState(null, '', canonical);
+    setHostRoute(null); setAssetRoute(null); setPropertiesRoute(null); setRoomsRoute(null);
+    setCatalogRoute(null); setPolicyRoute(null); setMeterRoute(null); setCustomerRoute(null); setContractRoute(null); setRentalContractRoute(null);
+    setProvisionalRoute(null); setPeriodUsageRoute(next);
+  }, [permitNavigation]);
+
+  const navigateProvisional = useCallback((url: string) => {
+    const target = new URL(url, window.location.origin);
+    const next = parseProvisionalRoute(target.pathname, target.search);
+    if (!next || target.origin !== window.location.origin || !permitNavigation()) return;
+    const canonical = next.invalid ? target.pathname + target.search : provisionalUrl(next);
+    if (window.location.pathname + window.location.search !== canonical) window.history.pushState(null, '', canonical);
+    setHostRoute(null); setAssetRoute(null); setPropertiesRoute(null); setRoomsRoute(null);
+    setCatalogRoute(null); setPolicyRoute(null); setMeterRoute(null); setPeriodUsageRoute(null);
+    setCustomerRoute(null); setContractRoute(null); setRentalContractRoute(null);
+    setProvisionalRoute(next);
   }, [permitNavigation]);
 
   useEffect(() => {
@@ -701,6 +770,12 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
     if (window.location.pathname + window.location.search !== canonical) window.history.replaceState(null, '', canonical);
   }, [policyRoute]);
 
+  useEffect(() => {
+    if (!periodUsageRoute || periodUsageRoute.invalid) return;
+    const canonical = periodUsageUrl(periodUsageRoute);
+    if (window.location.pathname + window.location.search !== canonical) window.history.replaceState(null, '', canonical);
+  }, [periodUsageRoute]);
+
   const navigateContracts = useCallback((url: string) => {
     if (!permitNavigation()) return;
     const target = new URL(url, window.location.origin);
@@ -714,7 +789,7 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
     setRoomsRoute(null);
     setCatalogRoute(null);
     setPolicyRoute(null);
-    setMeterRoute(null); setCustomerRoute(null);
+    setMeterRoute(null); setPeriodUsageRoute(null); setProvisionalRoute(null); setCustomerRoute(null);
     setContractRoute(deposit);
     setRentalContractRoute(rental);
   }, [permitNavigation]);
@@ -732,7 +807,7 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
   if (authCheck === 'checking') return <SessionSplash />;
 
   if (authCheck === 'error') return <main className="host-boot">
-    <h1>{customerRoute ? 'Quản lý khách thuê' : catalogRoute || policyRoute ? 'Danh mục dịch vụ' : assetRoute ? 'Quản lý tài sản' : hostRoute ? 'Quản lý tài khoản Host' : 'RentOps'}</h1>
+    <h1>{provisionalRoute ? provisionalMessages.title : customerRoute ? 'Quản lý khách thuê' : periodUsageRoute ? 'Số lượng, phí & giảm trừ' : catalogRoute || policyRoute ? 'Danh mục dịch vụ' : assetRoute ? 'Quản lý tài sản' : hostRoute ? 'Quản lý tài khoản Host' : 'RentOps'}</h1>
     <p role="alert">{customerRoute ? customerMessages.listFailure : catalogRoute || policyRoute ? catalogMessages.listFailure : assetRoute ? assetMessages.listFailure : hostRoute ? hostAccountMessages.listFailure : 'Chưa thể khôi phục phiên đăng nhập. Vui lòng kiểm tra kết nối rồi thử lại.'}</p>
     <button type="button" className="host-button" onClick={() => { setAuthCheck('checking'); setAuthRetry((n) => n + 1); }}>Thử lại</button>
     <button type="button" className="host-button" onClick={() => resetAuthentication()}>Đăng nhập lại</button>
@@ -767,6 +842,10 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
         onNavigatePolicy={navigatePolicy}
         meterRoute={meterRoute}
         onNavigateMeter={navigateMeter}
+        periodUsageRoute={periodUsageRoute}
+        onNavigatePeriodUsage={navigatePeriodUsage}
+        provisionalRoute={provisionalRoute}
+        onNavigateProvisional={navigateProvisional}
         customerRoute={customerRoute}
         onNavigateCustomers={navigateCustomers}
         registerGuard={registerGuard}
