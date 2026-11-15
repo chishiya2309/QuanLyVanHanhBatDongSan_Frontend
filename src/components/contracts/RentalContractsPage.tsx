@@ -12,6 +12,7 @@ import {
 import { buildRentalContractUrl } from '../../utils/rentalContractNavigation';
 import { CreateRentalContractModal } from './CreateRentalContractModal';
 import { UpdateRentalContractModal } from './UpdateRentalContractModal';
+import { ExtendRentalContractModal } from './ExtendRentalContractModal';
 import { RentalContractDetailDrawer } from './RentalContractDetailDrawer';
 import './contracts.css';
 
@@ -85,6 +86,9 @@ export const RentalContractsPage: React.FC<RentalContractsPageProps> = ({
   const [createModalOpen, setCreateModalOpen] = useState(Boolean(route.create));
   const [editModalOpen, setEditModalOpen] = useState(Boolean(route.editId));
   const [contractToEdit, setContractToEdit] = useState<RentalContract | null>(null);
+
+  const [extendModalOpen, setExtendModalOpen] = useState(false);
+  const [contractToExtend, setContractToExtend] = useState<RentalContract | null>(null);
 
   const [drawerOpen, setDrawerOpen] = useState(Boolean(route.detailId));
   const [detailContract, setDetailContract] = useState<RentalContract | null>(null);
@@ -323,6 +327,31 @@ export const RentalContractsPage: React.FC<RentalContractsPageProps> = ({
     setTimeout(() => {
       setSuccessMessage(null);
     }, 4000);
+  };
+
+  const handleOpenExtend = async (contract: { id: string }) => {
+    try {
+      const full = await rentalContractApi.getRentalContractDetail(contract.id);
+      setContractToExtend(full);
+      setExtendModalOpen(true);
+    } catch {
+      setLoadError('Không thể tải thông tin hợp đồng để gia hạn');
+    }
+  };
+
+  const handleExtendSuccess = (saved: RentalContract) => {
+    setSuccessMessage(`Gia hạn hợp đồng ${saved.contractNumber} thành công! Ngày kết thúc mới: ${saved.endDate}`);
+    loadContracts();
+    fetchExpiringBadge();
+    if (activeSubtab === 'expiring') {
+      loadExpiringContracts();
+    }
+    if (detailContract && detailContract.id === saved.id) {
+      setDetailContract(saved);
+    }
+    setTimeout(() => {
+      setSuccessMessage(null);
+    }, 5000);
   };
 
   return (
@@ -614,6 +643,26 @@ export const RentalContractsPage: React.FC<RentalContractsPageProps> = ({
                             Chi tiết
                           </button>
 
+                          {c.status === 'ACTIVE' && (
+                            <button
+                              type="button"
+                              className="contract-action-btn"
+                              style={{
+                                padding: '4px 10px',
+                                fontSize: '12px',
+                                color: '#16a34a',
+                                borderColor: '#bbf7d0',
+                                background: '#f0fdf4',
+                                marginRight: '6px',
+                                fontWeight: 500,
+                              }}
+                              onClick={() => handleOpenExtend(c)}
+                              title="Gia hạn hợp đồng thuê (UC29)"
+                            >
+                              Gia hạn
+                            </button>
+                          )}
+
                           {(c.status === 'ACTIVE' || c.status === 'DRAFT') && (
                             <button
                               type="button"
@@ -784,9 +833,16 @@ export const RentalContractsPage: React.FC<RentalContractsPageProps> = ({
                           <button
                             type="button"
                             className="contract-action-btn"
-                            style={{ padding: '4px 10px', fontSize: '12px', color: '#2563eb', borderColor: '#bfdbfe' }}
-                            onClick={() => handleOpenDetail(c)}
-                            title="Xem chi tiết để chuẩn bị gia hạn hợp đồng (UC29)"
+                            style={{
+                              padding: '4px 10px',
+                              fontSize: '12px',
+                              color: '#16a34a',
+                              borderColor: '#bbf7d0',
+                              background: '#f0fdf4',
+                              fontWeight: 500,
+                            }}
+                            onClick={() => handleOpenExtend(c)}
+                            title="Gia hạn hợp đồng thuê (UC29)"
                           >
                             Gia hạn
                           </button>
@@ -857,7 +913,23 @@ export const RentalContractsPage: React.FC<RentalContractsPageProps> = ({
           handleCloseDrawer();
           handleOpenEdit(contract);
         }}
+        onExtend={(contract) => {
+          handleCloseDrawer();
+          handleOpenExtend(contract);
+        }}
         contract={detailContract}
+      />
+
+      {/* Modal Gia hạn hợp đồng thuê (UC29) */}
+      <ExtendRentalContractModal
+        isOpen={extendModalOpen}
+        onClose={() => {
+          setExtendModalOpen(false);
+          setContractToExtend(null);
+        }}
+        onSuccess={handleExtendSuccess}
+        contract={contractToExtend}
+        onSessionExpired={onSessionExpired}
       />
     </div>
   );

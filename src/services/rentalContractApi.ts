@@ -3,8 +3,10 @@ import type {
   ConvertDepositToRentalInput,
   CreateRentalContractInput,
   UpdateActiveRentalContractInput,
+  ExtendRentalContractInput,
   RentalContractFilterInput,
   RentalContract,
+  Amendment,
   AvailableRoomForRental,
   AvailableCustomerForRental,
   ExpiringRentalContract,
@@ -126,6 +128,18 @@ export const rentalContractApi = {
   // Chuyển đặt cọc thành hợp đồng thuê (UC26)
   convertDepositToRental: (depositId: string, input: ConvertDepositToRentalInput): Promise<RentalContract> => {
     return mutate<RentalContract>(`/rental-contracts/convert-from-deposit/${encodeURIComponent(depositId)}`, 'POST', input);
+  },
+
+  // Gia hạn hợp đồng thuê (UC29)
+  extendRentalContract: (id: string, input: ExtendRentalContractInput): Promise<RentalContract> => {
+    return mutate<RentalContract>(`/rental-contracts/${encodeURIComponent(id)}/extend`, 'POST', input);
+  },
+
+  // Xem danh sách phụ lục gia hạn (UC29)
+  getContractAmendments: (id: string): Promise<Amendment[]> => {
+    return request<Amendment[]>(`/rental-contracts/${encodeURIComponent(id)}/amendments`, {
+      method: 'GET',
+    });
   },
 
   // Lấy chi tiết hợp đồng thuê

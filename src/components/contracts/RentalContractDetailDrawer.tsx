@@ -7,6 +7,7 @@ interface RentalContractDetailDrawerProps {
   isOpen: boolean;
   onClose: () => void;
   onEdit: (contract: RentalContract) => void;
+  onExtend?: (contract: RentalContract) => void;
 }
 
 const renderStatusBadge = (status: RentalStatus) => {
@@ -27,6 +28,7 @@ export const RentalContractDetailDrawer: React.FC<RentalContractDetailDrawerProp
   isOpen,
   onClose,
   onEdit,
+  onExtend,
 }) => {
   if (!isOpen || !contract) return null;
 
@@ -194,6 +196,57 @@ export const RentalContractDetailDrawer: React.FC<RentalContractDetailDrawerProp
             )}
           </div>
 
+          {/* Phụ lục gia hạn hợp đồng (UC29) */}
+          <div className="drawer-section">
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+              <h3 style={{ margin: 0 }}>Lịch sử phụ lục gia hạn</h3>
+              {contract.amendments && contract.amendments.length > 0 && (
+                <span style={{ fontSize: '12px', background: '#e0f2fe', color: '#0369a1', padding: '2px 8px', borderRadius: '12px', fontWeight: 600 }}>
+                  {contract.amendments.length} lần gia hạn
+                </span>
+              )}
+            </div>
+
+            {contract.amendments && contract.amendments.length > 0 ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {contract.amendments.map((am, idx) => (
+                  <div
+                    key={am.id || idx}
+                    style={{
+                      border: '1px solid #e2e8f0',
+                      borderRadius: '6px',
+                      padding: '10px 12px',
+                      background: '#f8fafc',
+                      fontSize: '12.5px',
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                      <span style={{ fontWeight: 600, color: '#1e293b' }}>
+                        {am.oldEndDate} <span style={{ color: '#059669' }}>➔</span> <strong style={{ color: '#047857' }}>{am.newEndDate}</strong>
+                      </span>
+                      <span style={{ fontSize: '11px', color: '#64748b' }}>
+                        {am.recordedAt ? new Date(am.recordedAt).toLocaleString('vi-VN') : ''}
+                      </span>
+                    </div>
+                    <div style={{ color: '#475569', marginTop: '2px' }}>
+                      <span style={{ color: '#64748b' }}>Lý do: </span>
+                      {am.reason}
+                    </div>
+                    {am.createdByName && (
+                      <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '4px' }}>
+                        Người thực hiện: {am.createdByName}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p style={{ margin: 0, fontSize: '13px', color: 'var(--color-muted)' }}>
+                Chưa có phụ lục gia hạn nào.
+              </p>
+            )}
+          </div>
+
           {/* Bên cho thuê */}
           {contract.partySnapshot?.hostName && (
             <div className="drawer-section">
@@ -243,6 +296,25 @@ export const RentalContractDetailDrawer: React.FC<RentalContractDetailDrawerProp
           >
             Đóng
           </button>
+
+          {contract.status === 'ACTIVE' && onExtend && (
+            <button
+              type="button"
+              className="contract-action-btn"
+              style={{
+                color: '#16a34a',
+                borderColor: '#bbf7d0',
+                background: '#f0fdf4',
+                fontWeight: 600,
+              }}
+              onClick={() => {
+                onClose();
+                onExtend(contract);
+              }}
+            >
+              + Gia hạn hợp đồng
+            </button>
+          )}
 
           {canEdit && (
             <button
