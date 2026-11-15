@@ -2,6 +2,7 @@ import React from 'react';
 
 interface SidebarProps {
   showMeterReadings?: boolean; meterReadingsActive?: boolean; onNavigateMeterReadings?: () => void;
+  showPeriodUsages?: boolean; periodUsagesActive?: boolean; onNavigatePeriodUsages?: () => void;
   showServices?: boolean; servicesActive?: boolean; onNavigateServices?: () => void; mobileOpen?: boolean; markCurrent?: boolean;
   showHostAccounts?: boolean; hostAccountsActive?: boolean;
   showAssets?: boolean; assetsActive?: boolean; onNavigateAssets?: () => void;
@@ -14,6 +15,7 @@ interface SidebarProps {
 }
 export const Sidebar: React.FC<SidebarProps> = ({
   showMeterReadings = false, meterReadingsActive = false, onNavigateMeterReadings,
+  showPeriodUsages = false, periodUsagesActive = false, onNavigatePeriodUsages,
   showServices = false, servicesActive = false, onNavigateServices, mobileOpen = false, markCurrent = true,
   showHostAccounts = false,
   hostAccountsActive = false,
@@ -37,7 +39,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onNavigateOverview,
   onNavigateHostAccounts,
 }) => {
-  const isOverviewActive = !meterReadingsActive && !hostAccountsActive && !assetsActive && !propertiesActive && !roomsActive && !servicesActive && !customersActive && !contractsActive && !rentalContractsActive;
+  const isOverviewActive = !meterReadingsActive && !periodUsagesActive && !hostAccountsActive && !assetsActive && !propertiesActive && !roomsActive && !servicesActive && !customersActive && !contractsActive && !rentalContractsActive;
   return (
     <aside id="rentops-navigation" className={`dash-sidebar${mobileOpen ? ' is-mobile-open' : ''}`} aria-label="Thanh điều hướng chính">
       <div className="dash-nav-group">
@@ -173,6 +175,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
         {showMeterReadings && <button type="button" className={`dash-nav-item${meterReadingsActive ? ' is-active' : ''}`} aria-current={meterReadingsActive && markCurrent ? 'page' : undefined} onClick={onNavigateMeterReadings}>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="M4 5h16v14H4zM8 9h8M8 13h3" /></svg>
           <span>Ghi và kiểm tra chỉ số</span>
+        </button>}
+
+        {showPeriodUsages && <button type="button" className={`dash-nav-item${periodUsagesActive ? ' is-active' : ''}`} aria-current={periodUsagesActive && markCurrent ? 'page' : undefined} onClick={onNavigatePeriodUsages}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2z" /></svg>
+          <span>Số lượng, phí &amp; giảm trừ</span>
         </button>}
 
         <button type="button" className="dash-nav-item">

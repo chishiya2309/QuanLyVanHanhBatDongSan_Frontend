@@ -16,6 +16,7 @@ import { PropertyStatusTable } from './PropertyStatusTable';
 import './dashboard.css';
 
 interface DashboardShellProps {
+  showPeriodUsages?: boolean; periodUsagesActive?: boolean; onNavigatePeriodUsages?: () => void;
   showMeterReadings?: boolean; meterReadingsActive?: boolean; onNavigateMeterReadings?: () => void;
   showServices?: boolean; servicesActive?: boolean; onNavigateServices?: () => void;
   user: UserProfile;
@@ -46,6 +47,7 @@ interface DashboardShellProps {
 }
 
 export const DashboardShell: React.FC<DashboardShellProps> = ({
+  showPeriodUsages = false, periodUsagesActive = false, onNavigatePeriodUsages,
   showMeterReadings = false, meterReadingsActive = false, onNavigateMeterReadings,
   showServices = false, servicesActive = false, onNavigateServices,
   user,
@@ -213,6 +215,7 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
           { label: 'Tài sản', path: '/assets', active: assetsActive, action: onNavigateAssets, show: showAssets },
           { label: 'Khách thuê', path: '/customers', active: customersActive, action: onNavigateCustomers, show: showCustomers },
           { label: 'Ghi chỉ số', path: '/meter-readings', active: meterReadingsActive, action: onNavigateMeterReadings, show: showMeterReadings },
+          { label: 'Số lượng, phí & giảm trừ', path: '/period-usages', active: periodUsagesActive, action: onNavigatePeriodUsages, show: showPeriodUsages },
           { label: 'Danh mục dịch vụ', path: '/services', active: servicesActive, action: onNavigateServices, show: showServices },
           { label: 'Cơ sở & Tòa nhà', path: '/properties', active: propertiesActive, action: onNavigateProperties, show: propertiesActive },
           { label: 'Mặt bằng & Phòng', path: '/rooms', active: roomsActive, action: onNavigateRooms, show: roomsActive },
@@ -226,6 +229,9 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
           showMeterReadings={showMeterReadings}
           meterReadingsActive={meterReadingsActive}
           onNavigateMeterReadings={mobileNavigate(onNavigateMeterReadings)}
+          showPeriodUsages={showPeriodUsages}
+          periodUsagesActive={periodUsagesActive}
+          onNavigatePeriodUsages={mobileNavigate(onNavigatePeriodUsages)}
           markCurrent={!smallScreen || mobileOpen}
           mobileOpen={mobileOpen}
           showServices={showServices}
