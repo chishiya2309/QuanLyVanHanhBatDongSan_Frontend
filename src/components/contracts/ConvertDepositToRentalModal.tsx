@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import type { DepositContract } from '../../types/depositContract';
 import type { RentalContract, ConvertDepositToRentalInput } from '../../types/rentalContract';
 import { rentalContractApi, RentalContractApiError } from '../../services/rentalContractApi';
@@ -33,10 +33,18 @@ export const ConvertDepositToRentalModal: React.FC<ConvertDepositToRentalModalPr
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [generalError, setGeneralError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const dialogRef = useRef<HTMLDialogElement>(null);
+
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (isOpen && contract && dialog && !dialog.open) dialog.showModal();
+    return () => { if (dialog?.open) dialog.close(); };
+  }, [isOpen, contract]);
 
   useEffect(() => {
     if (isOpen && contract) {
       const initialStart = contract.moveInDate || new Date().toISOString().split('T')[0];
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- Reinitialize the existing draft when the dialog opens for a contract.
       setStartDate(initialStart);
 
       // Mặc định hợp đồng 1 năm
@@ -135,23 +143,29 @@ export const ConvertDepositToRentalModal: React.FC<ConvertDepositToRentalModalPr
   };
 
   return (
-    <div
-      className="contract-modal-backdrop"
+    <dialog
+      ref={dialogRef}
+      className="contract-modal-backdrop contract-modal-dialog"
+      aria-labelledby="convert-deposit-title"
+      onCancel={(event) => {
+        event.preventDefault();
+        if (!submitting) onClose();
+      }}
       onClick={(e) => {
         if (e.target === e.currentTarget && !submitting) onClose();
       }}
     >
-      <div className="contract-modal" style={{ maxWidth: '600px', width: '92%' }}>
+      <div className="contract-modal contract-modal--convert">
         {/* Header */}
         <div className="contract-modal-header" style={{ padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
-            <h2 style={{ fontSize: '18px', fontWeight: 600, color: '#111827', margin: 0 }}>
+            <h2 id="convert-deposit-title">
               Chuyển đặt cọc thành hợp đồng thuê
             </h2>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px', fontSize: '12px', color: '#64748b' }}>
+            <div className="contract-modal-meta">
               <span>HĐ cọc:</span>
-              <span style={{ fontWeight: 600, color: '#0f172a' }}>{contract.contractNumber}</span>
-              <span className="badge-status-reserved" style={{ fontSize: '11px', padding: '1px 6px' }}>
+              <strong>{contract.contractNumber}</strong>
+              <span className="badge-status-reserved">
                 Đang giữ chỗ
               </span>
             </div>
@@ -170,7 +184,7 @@ export const ConvertDepositToRentalModal: React.FC<ConvertDepositToRentalModalPr
 
         {/* Content Form */}
         <form onSubmit={handleSubmit} noValidate style={{ display: 'flex', flexDirection: 'column' }}>
-          <div className="contract-modal-body" style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px', maxHeight: '72vh', overflowY: 'auto' }}>
+          <div className="contract-modal-body">
             {generalError && (
               <div className="error-banner" role="alert">
                 {generalError}
@@ -178,56 +192,45 @@ export const ConvertDepositToRentalModal: React.FC<ConvertDepositToRentalModalPr
             )}
 
             {/* Readonly Summary Info Card */}
-            <div
-              style={{
-                background: '#f8fafc',
-                border: '1px solid #e2e8f0',
-                borderRadius: '6px',
-                padding: '12px 14px',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '8px',
-                fontSize: '13px',
-              }}
-            >
+            <div className="contract-conversion-summary">
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                 <div>
-                  <span style={{ color: '#64748b', display: 'block', fontSize: '12px' }}>Khách thuê đại diện:</span>
-                  <span style={{ fontWeight: 600, color: '#1e293b' }}>{contract.customerName}</span>
+                  <span style={{ color: 'var(--color-muted)', display: 'block', fontSize: '12px' }}>Khách thuê đại diện:</span>
+                  <span style={{ fontWeight: 600, color: 'var(--color-ink)' }}>{contract.customerName}</span>
                   {contract.customerPhone && (
-                    <span style={{ color: '#64748b', display: 'block', fontSize: '12px', marginTop: '2px' }}>
+                    <span style={{ color: 'var(--color-muted)', display: 'block', fontSize: '12px', marginTop: '2px' }}>
                       {contract.customerPhone}
                     </span>
                   )}
                 </div>
                 <div>
-                  <span style={{ color: '#64748b', display: 'block', fontSize: '12px' }}>Phòng đặt cọc:</span>
-                  <span style={{ fontWeight: 600, color: '#4338ca' }}>
+                  <span style={{ color: 'var(--color-muted)', display: 'block', fontSize: '12px' }}>Phòng đặt cọc:</span>
+                  <span style={{ fontWeight: 600, color: 'var(--color-accent-primary)' }}>
                     {contract.roomCode} - {contract.roomName}
                   </span>
-                  <span style={{ color: '#64748b', display: 'block', fontSize: '12px', marginTop: '2px' }}>
+                  <span style={{ color: 'var(--color-muted)', display: 'block', fontSize: '12px', marginTop: '2px' }}>
                     {contract.buildingName} {contract.floorLevel ? `(Tầng ${contract.floorLevel})` : ''}
                   </span>
                 </div>
               </div>
               <div
                 style={{
-                  borderTop: '1px solid #e2e8f0',
+                  borderTop: '1px solid var(--color-rule)',
                   paddingTop: '8px',
                   display: 'flex',
                   justifyContent: 'space-between',
                   alignItems: 'center',
                 }}
               >
-                <span style={{ color: '#64748b', fontSize: '12px' }}>Tiền cọc từ thỏa thuận:</span>
-                <span style={{ fontWeight: 700, color: '#0f172a' }}>{formatCurrency(contract.amountRequired)}</span>
+                <span style={{ color: 'var(--color-muted)', fontSize: '12px' }}>Tiền cọc từ thỏa thuận:</span>
+                <span style={{ fontWeight: 600, color: 'var(--color-ink)' }}>{formatCurrency(contract.amountRequired)}</span>
               </div>
             </div>
 
             {/* Giá thuê */}
             <div className="form-group">
               <label htmlFor="convert-rent">
-                Giá thuê hàng tháng (VNĐ) <span style={{ color: '#dc2626' }}>*</span>
+                Giá thuê hàng tháng (VNĐ) <span style={{ color: 'var(--color-error)' }}>*</span>
               </label>
               <div style={{ position: 'relative' }}>
                 <input
@@ -243,7 +246,7 @@ export const ConvertDepositToRentalModal: React.FC<ConvertDepositToRentalModalPr
                     width: '100%',
                     boxSizing: 'border-box',
                     paddingRight: '85px',
-                    borderColor: fieldErrors.rent ? '#ef4444' : undefined,
+                    borderColor: fieldErrors.rent ? 'var(--color-error)' : undefined,
                   }}
                 />
                 <span
@@ -253,7 +256,7 @@ export const ConvertDepositToRentalModal: React.FC<ConvertDepositToRentalModalPr
                     top: '50%',
                     transform: 'translateY(-50%)',
                     fontSize: '12px',
-                    color: '#64748b',
+                    color: 'var(--color-muted)',
                     fontWeight: 500,
                     pointerEvents: 'none',
                   }}
@@ -262,18 +265,18 @@ export const ConvertDepositToRentalModal: React.FC<ConvertDepositToRentalModalPr
                 </span>
               </div>
               {rent !== '' && Number(rent) > 0 && (
-                <span style={{ fontSize: '12px', color: '#4338ca', fontWeight: 600 }}>
+                <span style={{ fontSize: '12px', color: 'var(--color-accent-primary)', fontWeight: 600 }}>
                   {formatCurrency(Number(rent))} / tháng
                 </span>
               )}
-              {fieldErrors.rent && <span style={{ fontSize: '12px', color: '#dc2626' }}>{fieldErrors.rent}</span>}
+              {fieldErrors.rent && <span style={{ fontSize: '12px', color: 'var(--color-error)' }}>{fieldErrors.rent}</span>}
             </div>
 
             {/* Thời hạn thuê */}
             <div className="form-row">
               <div className="form-group">
                 <label htmlFor="convert-start-date">
-                  Ngày bắt đầu thuê <span style={{ color: '#dc2626' }}>*</span>
+                  Ngày bắt đầu thuê <span style={{ color: 'var(--color-error)' }}>*</span>
                 </label>
                 <input
                   id="convert-start-date"
@@ -284,17 +287,17 @@ export const ConvertDepositToRentalModal: React.FC<ConvertDepositToRentalModalPr
                   style={{
                     width: '100%',
                     boxSizing: 'border-box',
-                    borderColor: fieldErrors.startDate ? '#ef4444' : undefined,
+                    borderColor: fieldErrors.startDate ? 'var(--color-error)' : undefined,
                   }}
                 />
                 {fieldErrors.startDate && (
-                  <span style={{ fontSize: '12px', color: '#dc2626' }}>{fieldErrors.startDate}</span>
+                  <span style={{ fontSize: '12px', color: 'var(--color-error)' }}>{fieldErrors.startDate}</span>
                 )}
               </div>
 
               <div className="form-group">
                 <label htmlFor="convert-end-date">
-                  Ngày kết thúc thuê <span style={{ color: '#dc2626' }}>*</span>
+                  Ngày kết thúc thuê <span style={{ color: 'var(--color-error)' }}>*</span>
                 </label>
                 <input
                   id="convert-end-date"
@@ -305,11 +308,11 @@ export const ConvertDepositToRentalModal: React.FC<ConvertDepositToRentalModalPr
                   style={{
                     width: '100%',
                     boxSizing: 'border-box',
-                    borderColor: fieldErrors.endDate ? '#ef4444' : undefined,
+                    borderColor: fieldErrors.endDate ? 'var(--color-error)' : undefined,
                   }}
                 />
                 {fieldErrors.endDate && (
-                  <span style={{ fontSize: '12px', color: '#dc2626' }}>{fieldErrors.endDate}</span>
+                  <span style={{ fontSize: '12px', color: 'var(--color-error)' }}>{fieldErrors.endDate}</span>
                 )}
               </div>
             </div>
@@ -331,7 +334,7 @@ export const ConvertDepositToRentalModal: React.FC<ConvertDepositToRentalModalPr
                     width: '100%',
                     boxSizing: 'border-box',
                     paddingRight: '55px',
-                    borderColor: fieldErrors.depositRequired ? '#ef4444' : undefined,
+                    borderColor: fieldErrors.depositRequired ? 'var(--color-error)' : undefined,
                   }}
                 />
                 <span
@@ -341,7 +344,7 @@ export const ConvertDepositToRentalModal: React.FC<ConvertDepositToRentalModalPr
                     top: '50%',
                     transform: 'translateY(-50%)',
                     fontSize: '12px',
-                    color: '#64748b',
+                    color: 'var(--color-muted)',
                     fontWeight: 500,
                     pointerEvents: 'none',
                   }}
@@ -350,12 +353,12 @@ export const ConvertDepositToRentalModal: React.FC<ConvertDepositToRentalModalPr
                 </span>
               </div>
               {depositRequired !== '' && Number(depositRequired) > 0 && (
-                <span style={{ fontSize: '12px', color: '#64748b' }}>
+                <span style={{ fontSize: '12px', color: 'var(--color-muted)' }}>
                   {formatCurrency(Number(depositRequired))}
                 </span>
               )}
               {fieldErrors.depositRequired && (
-                <span style={{ fontSize: '12px', color: '#dc2626' }}>{fieldErrors.depositRequired}</span>
+                <span style={{ fontSize: '12px', color: 'var(--color-error)' }}>{fieldErrors.depositRequired}</span>
               )}
             </div>
 
@@ -363,7 +366,7 @@ export const ConvertDepositToRentalModal: React.FC<ConvertDepositToRentalModalPr
             <div className="form-row">
               <div className="form-group">
                 <label htmlFor="convert-cycle">
-                  Chu kỳ thanh toán <span style={{ color: '#dc2626' }}>*</span>
+                  Chu kỳ thanh toán <span style={{ color: 'var(--color-error)' }}>*</span>
                 </label>
                 <select
                   id="convert-cycle"
@@ -379,13 +382,13 @@ export const ConvertDepositToRentalModal: React.FC<ConvertDepositToRentalModalPr
                   <option value={12}>12 tháng / lần (Theo năm)</option>
                 </select>
                 {fieldErrors.cycleMonths && (
-                  <span style={{ fontSize: '12px', color: '#dc2626' }}>{fieldErrors.cycleMonths}</span>
+                  <span style={{ fontSize: '12px', color: 'var(--color-error)' }}>{fieldErrors.cycleMonths}</span>
                 )}
               </div>
 
               <div className="form-group">
                 <label htmlFor="convert-billing-anchor">
-                  Ngày chốt hóa đơn <span style={{ color: '#dc2626' }}>*</span>
+                  Ngày chốt hóa đơn <span style={{ color: 'var(--color-error)' }}>*</span>
                 </label>
                 <select
                   id="convert-billing-anchor"
@@ -401,7 +404,7 @@ export const ConvertDepositToRentalModal: React.FC<ConvertDepositToRentalModalPr
                   ))}
                 </select>
                 {fieldErrors.billingAnchor && (
-                  <span style={{ fontSize: '12px', color: '#dc2626' }}>{fieldErrors.billingAnchor}</span>
+                  <span style={{ fontSize: '12px', color: 'var(--color-error)' }}>{fieldErrors.billingAnchor}</span>
                 )}
               </div>
             </div>
@@ -409,20 +412,19 @@ export const ConvertDepositToRentalModal: React.FC<ConvertDepositToRentalModalPr
             {/* Lưu ý nghiệp vụ */}
             <div
               style={{
-                background: '#fffbeb',
-                border: '1px solid #fde68a',
+                background: 'var(--color-status-warn-wash)',
+                border: '1px solid var(--color-status-warn-rule)',
                 borderRadius: '6px',
                 padding: '12px 14px',
                 fontSize: '12.5px',
-                color: '#92400e',
+                color: 'var(--color-status-warn-ink)',
                 lineHeight: 1.5,
               }}
             >
               <div style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
-                <span style={{ fontSize: '14px' }}>ℹ️</span>
                 <span>Đồng bộ trạng thái sau khi chuyển đổi:</span>
               </div>
-              <ul style={{ margin: '4px 0 0 18px', padding: 0, color: '#b45309' }}>
+              <ul style={{ margin: '4px 0 0 18px', padding: 0, color: 'var(--color-status-warn-ink)' }}>
                 <li>
                   Hợp đồng cọc chuyển sang trạng thái <strong>ĐÃ CHUYỂN THUÊ (CONVERTED)</strong>.
                 </li>
@@ -450,11 +452,11 @@ export const ConvertDepositToRentalModal: React.FC<ConvertDepositToRentalModalPr
               disabled={submitting}
               style={{ minWidth: '160px', justifyContent: 'center', fontWeight: 600 }}
             >
-              {submitting ? 'Đang xử lý...' : '✓ Xác nhận tạo HĐ thuê'}
+              {submitting ? 'Đang xử lý...' : 'Xác nhận tạo HĐ thuê'}
             </button>
           </div>
         </form>
       </div>
-    </div>
+    </dialog>
   );
 };

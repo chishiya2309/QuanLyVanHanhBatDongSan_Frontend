@@ -190,6 +190,11 @@ export interface PropertiesRoute {
 }
 
 export interface RoomsRoute {
+  services?: boolean;
+  returnTo?: string;
+  keyword?: string;
+  areaId?: string;
+  status?: string;
   view: 'matrix' | 'table';
   buildingId?: string | null;
   roomId?: string | null;
