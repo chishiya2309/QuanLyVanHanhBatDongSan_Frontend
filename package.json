@@ -25,7 +25,8 @@
     "test:browser:customer-accounts": "node tests/browser/customer-accounts-browser.mjs",
     "test:browser:contracts": "node tests/browser/contract-dialogs-browser.mjs",
     "test:browser:meter-readings": "node tests/browser/meter-readings-browser.mjs",
-    "test:browser:provisional-charges": "node tests/browser/provisional-charges-browser.mjs"
+    "test:browser:provisional-charges": "node tests/browser/provisional-charges-browser.mjs",
+    "test:browser:funding-sources": "node tests/browser/funding-sources-browser.mjs"
   },
   "dependencies": {
     "lossless-json": "^4.3.3",
