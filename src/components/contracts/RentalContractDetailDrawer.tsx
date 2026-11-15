@@ -8,6 +8,7 @@ interface RentalContractDetailDrawerProps {
   onClose: () => void;
   onEdit: (contract: RentalContract) => void;
   onExtend?: (contract: RentalContract) => void;
+  onTransfer?: (contract: RentalContract) => void;
 }
 
 const renderStatusBadge = (status: RentalStatus) => {
@@ -29,6 +30,7 @@ export const RentalContractDetailDrawer: React.FC<RentalContractDetailDrawerProp
   onClose,
   onEdit,
   onExtend,
+  onTransfer,
 }) => {
   if (!isOpen || !contract) return null;
 
@@ -162,30 +164,69 @@ export const RentalContractDetailDrawer: React.FC<RentalContractDetailDrawerProp
                   </thead>
                   <tbody>
                     {contract.tenancies.map((t, idx) => {
-                      const isCurrent = idx === contract.tenancies.length - 1;
+                      const isCurrent = t.toDate === contract.endDate || !t.toDate;
+                      const hasHandoverDetails =
+                        t.startElectricityIndex !== undefined ||
+                        t.startWaterIndex !== undefined ||
+                        t.endElectricityIndex !== undefined ||
+                        t.endWaterIndex !== undefined ||
+                        t.handoverNote;
+
                       return (
-                        <tr
-                          key={t.id || idx}
-                          style={{
-                            borderBottom: '1px solid #e2e8f0',
-                            background: isCurrent ? '#f0fdf4' : 'transparent',
-                          }}
-                        >
-                          <td style={{ padding: '6px 8px', fontWeight: 600 }}>{t.roomCode}</td>
-                          <td style={{ padding: '6px 8px' }}>{t.roomName}</td>
-                          <td style={{ padding: '6px 8px', fontWeight: 500, color: '#047857' }}>
-                            {Number(t.rent).toLocaleString('vi-VN')} đ
-                          </td>
-                          <td style={{ padding: '6px 8px' }}>{t.fromDate}</td>
-                          <td style={{ padding: '6px 8px' }}>{t.toDate || 'Hiện tại'}</td>
-                          <td style={{ padding: '6px 8px' }}>
-                            {isCurrent ? (
-                              <span style={{ color: '#059669', fontWeight: 600 }}>● Đang ở</span>
-                            ) : (
-                              <span style={{ color: '#64748b' }}>Đã kết thúc</span>
-                            )}
-                          </td>
-                        </tr>
+                        <React.Fragment key={t.id || idx}>
+                          <tr
+                            style={{
+                              borderBottom: hasHandoverDetails ? 'none' : '1px solid #e2e8f0',
+                              background: isCurrent ? '#f0fdf4' : 'transparent',
+                            }}
+                          >
+                            <td style={{ padding: '6px 8px', fontWeight: 600 }}>{t.roomCode}</td>
+                            <td style={{ padding: '6px 8px' }}>
+                              {t.roomName}
+                              {t.buildingName ? ` (${t.buildingName})` : ''}
+                            </td>
+                            <td style={{ padding: '6px 8px', fontWeight: 500, color: '#047857' }}>
+                              {Number(t.rent).toLocaleString('vi-VN')} đ
+                            </td>
+                            <td style={{ padding: '6px 8px' }}>{t.fromDate}</td>
+                            <td style={{ padding: '6px 8px' }}>{t.toDate || 'Hiện tại'}</td>
+                            <td style={{ padding: '6px 8px' }}>
+                              {isCurrent ? (
+                                <span style={{ color: '#059669', fontWeight: 600 }}>● Đang ở</span>
+                              ) : (
+                                <span style={{ color: '#64748b' }}>Đã chuyển/kết thúc</span>
+                              )}
+                            </td>
+                          </tr>
+                          {hasHandoverDetails && (
+                            <tr
+                              style={{
+                                background: isCurrent ? '#fafffa' : '#f8fafc',
+                                borderBottom: '1px solid #e2e8f0',
+                              }}
+                            >
+                              <td colSpan={6} style={{ padding: '3px 8px 7px', fontSize: '11px', color: '#475569' }}>
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'center' }}>
+                                  {(t.startElectricityIndex !== undefined || t.startWaterIndex !== undefined) && (
+                                    <span>
+                                      <strong style={{ color: '#047857' }}>Nhận phòng:</strong> Điện: {t.startElectricityIndex ?? '---'} kWh | Nước: {t.startWaterIndex ?? '---'} m³
+                                    </span>
+                                  )}
+                                  {(t.endElectricityIndex !== undefined || t.endWaterIndex !== undefined) && (
+                                    <span>
+                                      <strong style={{ color: '#b91c1c' }}>Trả phòng:</strong> Điện: {t.endElectricityIndex ?? '---'} kWh | Nước: {t.endWaterIndex ?? '---'} m³
+                                    </span>
+                                  )}
+                                  {t.handoverNote && (
+                                    <span>
+                                      <strong style={{ color: '#4338ca' }}>Ghi chú:</strong> {t.handoverNote}
+                                    </span>
+                                  )}
+                                </div>
+                              </td>
+                            </tr>
+                          )}
+                        </React.Fragment>
                       );
                     })}
                   </tbody>
@@ -296,6 +337,25 @@ export const RentalContractDetailDrawer: React.FC<RentalContractDetailDrawerProp
           >
             Đóng
           </button>
+
+          {contract.status === 'ACTIVE' && onTransfer && (
+            <button
+              type="button"
+              className="contract-action-btn"
+              style={{
+                color: '#4f46e5',
+                borderColor: '#c7d2fe',
+                background: '#eef2ff',
+                fontWeight: 600,
+              }}
+              onClick={() => {
+                onClose();
+                onTransfer(contract);
+              }}
+            >
+              Chuyển phòng
+            </button>
+          )}
 
           {contract.status === 'ACTIVE' && onExtend && (
             <button

@@ -4,6 +4,7 @@ import type {
   CreateRentalContractInput,
   UpdateActiveRentalContractInput,
   ExtendRentalContractInput,
+  TransferRoomInput,
   RentalContractFilterInput,
   RentalContract,
   Amendment,
@@ -140,6 +141,18 @@ export const rentalContractApi = {
     return request<Amendment[]>(`/rental-contracts/${encodeURIComponent(id)}/amendments`, {
       method: 'GET',
     });
+  },
+
+  // Lấy danh sách phòng khả dụng để chuyển phòng (UC30)
+  getTransferAvailableRooms: (contractId: string): Promise<AvailableRoomForRental[]> => {
+    return request<AvailableRoomForRental[]>(`/rental-contracts/${encodeURIComponent(contractId)}/transfer-available-rooms`, {
+      method: 'GET',
+    });
+  },
+
+  // Chuyển phòng thuê (UC30)
+  transferRoom: (contractId: string, input: TransferRoomInput): Promise<RentalContract> => {
+    return mutate<RentalContract>(`/rental-contracts/${encodeURIComponent(contractId)}/transfer-room`, 'POST', input);
   },
 
   // Lấy chi tiết hợp đồng thuê

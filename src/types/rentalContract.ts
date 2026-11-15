@@ -7,9 +7,15 @@ export interface RoomTenancy {
   roomId: string;
   roomCode: string;
   roomName: string;
+  buildingName?: string;
   fromDate: string;
   toDate?: string;
   rent: number;
+  startElectricityIndex?: number;
+  startWaterIndex?: number;
+  endElectricityIndex?: number;
+  endWaterIndex?: number;
+  handoverNote?: string;
 }
 
 export interface Amendment {
@@ -77,6 +83,17 @@ export interface UpdateActiveRentalContractInput {
 export interface ExtendRentalContractInput {
   newEndDate: string;
   reason: string;
+}
+
+export interface TransferRoomInput {
+  newRoomId: string;
+  transferDate: string;
+  newRent: number;
+  handoverNote?: string;
+  oldRoomElectricityIndex?: number;
+  oldRoomWaterIndex?: number;
+  newRoomElectricityIndex?: number;
+  newRoomWaterIndex?: number;
 }
 
 export interface RentalContractFilterInput {

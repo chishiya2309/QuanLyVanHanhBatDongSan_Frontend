@@ -13,6 +13,7 @@ import { buildRentalContractUrl } from '../../utils/rentalContractNavigation';
 import { CreateRentalContractModal } from './CreateRentalContractModal';
 import { UpdateRentalContractModal } from './UpdateRentalContractModal';
 import { ExtendRentalContractModal } from './ExtendRentalContractModal';
+import { TransferRoomModal } from './TransferRoomModal';
 import { RentalContractDetailDrawer } from './RentalContractDetailDrawer';
 import './contracts.css';
 
@@ -89,6 +90,9 @@ export const RentalContractsPage: React.FC<RentalContractsPageProps> = ({
 
   const [extendModalOpen, setExtendModalOpen] = useState(false);
   const [contractToExtend, setContractToExtend] = useState<RentalContract | null>(null);
+
+  const [transferModalOpen, setTransferModalOpen] = useState(false);
+  const [contractToTransfer, setContractToTransfer] = useState<RentalContract | null>(null);
 
   const [drawerOpen, setDrawerOpen] = useState(Boolean(route.detailId));
   const [detailContract, setDetailContract] = useState<RentalContract | null>(null);
@@ -341,6 +345,31 @@ export const RentalContractsPage: React.FC<RentalContractsPageProps> = ({
 
   const handleExtendSuccess = (saved: RentalContract) => {
     setSuccessMessage(`Gia hạn hợp đồng ${saved.contractNumber} thành công! Ngày kết thúc mới: ${saved.endDate}`);
+    loadContracts();
+    fetchExpiringBadge();
+    if (activeSubtab === 'expiring') {
+      loadExpiringContracts();
+    }
+    if (detailContract && detailContract.id === saved.id) {
+      setDetailContract(saved);
+    }
+    setTimeout(() => {
+      setSuccessMessage(null);
+    }, 5000);
+  };
+
+  const handleOpenTransfer = async (contract: { id: string }) => {
+    try {
+      const full = await rentalContractApi.getRentalContractDetail(contract.id);
+      setContractToTransfer(full);
+      setTransferModalOpen(true);
+    } catch {
+      setLoadError('Không thể tải thông tin hợp đồng để chuyển phòng');
+    }
+  };
+
+  const handleTransferSuccess = (saved: RentalContract) => {
+    setSuccessMessage(`Chuyển phòng cho hợp đồng ${saved.contractNumber} thành công! Phòng mới: ${saved.currentRoomCode || ''}`);
     loadContracts();
     fetchExpiringBadge();
     if (activeSubtab === 'expiring') {
@@ -650,6 +679,26 @@ export const RentalContractsPage: React.FC<RentalContractsPageProps> = ({
                               style={{
                                 padding: '4px 10px',
                                 fontSize: '12px',
+                                color: '#4f46e5',
+                                borderColor: '#c7d2fe',
+                                background: '#eef2ff',
+                                marginRight: '6px',
+                                fontWeight: 500,
+                              }}
+                              onClick={() => handleOpenTransfer(c)}
+                              title="Chuyển phòng thuê (UC30)"
+                            >
+                              Chuyển phòng
+                            </button>
+                          )}
+
+                          {c.status === 'ACTIVE' && (
+                            <button
+                              type="button"
+                              className="contract-action-btn"
+                              style={{
+                                padding: '4px 10px',
+                                fontSize: '12px',
                                 color: '#16a34a',
                                 borderColor: '#bbf7d0',
                                 background: '#f0fdf4',
@@ -917,6 +966,10 @@ export const RentalContractsPage: React.FC<RentalContractsPageProps> = ({
           handleCloseDrawer();
           handleOpenExtend(contract);
         }}
+        onTransfer={(contract) => {
+          handleCloseDrawer();
+          handleOpenTransfer(contract);
+        }}
         contract={detailContract}
       />
 
@@ -929,6 +982,18 @@ export const RentalContractsPage: React.FC<RentalContractsPageProps> = ({
         }}
         onSuccess={handleExtendSuccess}
         contract={contractToExtend}
+        onSessionExpired={onSessionExpired}
+      />
+
+      {/* Modal Chuyển phòng thuê (UC30) */}
+      <TransferRoomModal
+        isOpen={transferModalOpen}
+        onClose={() => {
+          setTransferModalOpen(false);
+          setContractToTransfer(null);
+        }}
+        onSuccess={handleTransferSuccess}
+        contract={contractToTransfer}
         onSessionExpired={onSessionExpired}
       />
     </div>
