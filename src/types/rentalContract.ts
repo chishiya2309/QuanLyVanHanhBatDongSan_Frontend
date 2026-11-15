@@ -1,6 +1,34 @@
 import type { ContractParties } from './depositContract';
 
 export type RentalStatus = 'DRAFT' | 'ACTIVE' | 'TERMINATED';
+export type SettlementStatus = 'CONFIRMED' | 'SETTLED' | 'CANCELLED';
+
+export interface TerminationRecord {
+  id: string;
+  rentalContractId: string;
+  contractNumber: string;
+  customerName?: string;
+  roomCode?: string;
+  roomName?: string;
+  endedAt: string;
+  depositHeld: number;
+  debtRemaining: number;
+  deductionAmount: number;
+  deductionReason?: string | null;
+  refundDue: number;
+  reason: string;
+  status: SettlementStatus;
+  recordedAt: string;
+  createdByName?: string | null;
+}
+
+export interface TerminateRentalContractInput {
+  endedAt: string;
+  debtRemaining?: number;
+  deductionAmount?: number;
+  deductionReason?: string;
+  reason: string;
+}
 
 export interface RoomTenancy {
   id: string;
@@ -45,6 +73,7 @@ export interface RentalContract {
   partySnapshot?: ContractParties;
   tenancies: RoomTenancy[];
   amendments?: Amendment[];
+  terminationRecord?: TerminationRecord;
   currentRoomId?: string;
   currentRoomCode?: string;
   currentRoomName?: string;

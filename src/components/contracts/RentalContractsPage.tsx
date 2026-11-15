@@ -14,6 +14,7 @@ import { CreateRentalContractModal } from './CreateRentalContractModal';
 import { UpdateRentalContractModal } from './UpdateRentalContractModal';
 import { ExtendRentalContractModal } from './ExtendRentalContractModal';
 import { TransferRoomModal } from './TransferRoomModal';
+import { TerminateRentalContractModal } from './TerminateRentalContractModal';
 import { RentalContractDetailDrawer } from './RentalContractDetailDrawer';
 import './contracts.css';
 
@@ -93,6 +94,9 @@ export const RentalContractsPage: React.FC<RentalContractsPageProps> = ({
 
   const [transferModalOpen, setTransferModalOpen] = useState(false);
   const [contractToTransfer, setContractToTransfer] = useState<RentalContract | null>(null);
+
+  const [terminateModalOpen, setTerminateModalOpen] = useState(false);
+  const [contractToTerminate, setContractToTerminate] = useState<RentalContract | null>(null);
 
   const [drawerOpen, setDrawerOpen] = useState(Boolean(route.detailId));
   const [detailContract, setDetailContract] = useState<RentalContract | null>(null);
@@ -381,6 +385,41 @@ export const RentalContractsPage: React.FC<RentalContractsPageProps> = ({
     setTimeout(() => {
       setSuccessMessage(null);
     }, 5000);
+  };
+
+  const handleOpenTerminate = async (contract: { id: string }) => {
+    try {
+      const full = await rentalContractApi.getRentalContractDetail(contract.id);
+      setContractToTerminate(full);
+      setTerminateModalOpen(true);
+    } catch {
+      setLoadError('Không thể tải thông tin hợp đồng để thanh lý');
+    }
+  };
+
+  const handleTerminateSuccess = (record: { contractNumber: string; refundDue: number }) => {
+    setSuccessMessage(
+      `Thanh lý hợp đồng ${record.contractNumber} thành công! ${
+        record.refundDue > 0
+          ? `Số tiền hoàn cọc: ${new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(record.refundDue)}`
+          : record.refundDue < 0
+          ? `Số tiền khách nộp bù: ${new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(Math.abs(record.refundDue))}`
+          : 'Hai bên đã tất toán đủ tiền cọc và công nợ'
+      }`
+    );
+    loadContracts();
+    fetchExpiringBadge();
+    if (activeSubtab === 'expiring') {
+      loadExpiringContracts();
+    }
+    if (detailContract && contractToTerminate && detailContract.id === contractToTerminate.id) {
+      rentalContractApi.getRentalContractDetail(contractToTerminate.id)
+        .then((updated) => setDetailContract(updated))
+        .catch(() => {});
+    }
+    setTimeout(() => {
+      setSuccessMessage(null);
+    }, 6000);
   };
 
   return (
@@ -712,6 +751,26 @@ export const RentalContractsPage: React.FC<RentalContractsPageProps> = ({
                             </button>
                           )}
 
+                          {c.status === 'ACTIVE' && (
+                            <button
+                              type="button"
+                              className="contract-action-btn"
+                              style={{
+                                padding: '4px 10px',
+                                fontSize: '12px',
+                                color: '#dc2626',
+                                borderColor: '#fecaca',
+                                background: '#fef2f2',
+                                marginRight: '6px',
+                                fontWeight: 500,
+                              }}
+                              onClick={() => handleOpenTerminate(c)}
+                              title="Thanh lý hợp đồng thuê (UC31)"
+                            >
+                              Thanh lý
+                            </button>
+                          )}
+
                           {(c.status === 'ACTIVE' || c.status === 'DRAFT') && (
                             <button
                               type="button"
@@ -888,12 +947,29 @@ export const RentalContractsPage: React.FC<RentalContractsPageProps> = ({
                               color: '#16a34a',
                               borderColor: '#bbf7d0',
                               background: '#f0fdf4',
+                              marginRight: '6px',
                               fontWeight: 500,
                             }}
                             onClick={() => handleOpenExtend(c)}
                             title="Gia hạn hợp đồng thuê (UC29)"
                           >
                             Gia hạn
+                          </button>
+                          <button
+                            type="button"
+                            className="contract-action-btn"
+                            style={{
+                              padding: '4px 10px',
+                              fontSize: '12px',
+                              color: '#dc2626',
+                              borderColor: '#fecaca',
+                              background: '#fef2f2',
+                              fontWeight: 500,
+                            }}
+                            onClick={() => handleOpenTerminate(c)}
+                            title="Thanh lý hợp đồng thuê (UC31)"
+                          >
+                            Thanh lý
                           </button>
                         </td>
                       </tr>
@@ -970,6 +1046,10 @@ export const RentalContractsPage: React.FC<RentalContractsPageProps> = ({
           handleCloseDrawer();
           handleOpenTransfer(contract);
         }}
+        onTerminate={(contract) => {
+          handleCloseDrawer();
+          handleOpenTerminate(contract);
+        }}
         contract={detailContract}
       />
 
@@ -994,6 +1074,18 @@ export const RentalContractsPage: React.FC<RentalContractsPageProps> = ({
         }}
         onSuccess={handleTransferSuccess}
         contract={contractToTransfer}
+        onSessionExpired={onSessionExpired}
+      />
+
+      {/* Modal Thanh lý hợp đồng thuê (UC31) */}
+      <TerminateRentalContractModal
+        isOpen={terminateModalOpen}
+        onClose={() => {
+          setTerminateModalOpen(false);
+          setContractToTerminate(null);
+        }}
+        onSuccess={handleTerminateSuccess}
+        contract={contractToTerminate}
         onSessionExpired={onSessionExpired}
       />
     </div>

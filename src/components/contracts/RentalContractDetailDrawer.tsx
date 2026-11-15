@@ -1,5 +1,6 @@
-import React from 'react';
-import type { RentalContract, RentalStatus } from '../../types/rentalContract';
+import React, { useState, useEffect } from 'react';
+import type { RentalContract, RentalStatus, TerminationRecord } from '../../types/rentalContract';
+import { rentalContractApi } from '../../services/rentalContractApi';
 import './contracts.css';
 
 interface RentalContractDetailDrawerProps {
@@ -9,6 +10,7 @@ interface RentalContractDetailDrawerProps {
   onEdit: (contract: RentalContract) => void;
   onExtend?: (contract: RentalContract) => void;
   onTransfer?: (contract: RentalContract) => void;
+  onTerminate?: (contract: RentalContract) => void;
 }
 
 const renderStatusBadge = (status: RentalStatus) => {
@@ -31,7 +33,24 @@ export const RentalContractDetailDrawer: React.FC<RentalContractDetailDrawerProp
   onEdit,
   onExtend,
   onTransfer,
+  onTerminate,
 }) => {
+  const [terminationRecord, setTerminationRecord] = useState<TerminationRecord | null>(null);
+  const [loadingTermination, setLoadingTermination] = useState(false);
+
+  useEffect(() => {
+    if (contract?.status === 'TERMINATED' && contract?.id) {
+      setLoadingTermination(true);
+      rentalContractApi
+        .getTerminationRecord(contract.id)
+        .then((res) => setTerminationRecord(res))
+        .catch(() => setTerminationRecord(null))
+        .finally(() => setLoadingTermination(false));
+    } else {
+      setTerminationRecord(null);
+    }
+  }, [contract?.id, contract?.status]);
+
   if (!isOpen || !contract) return null;
 
   const canEdit = contract.status === 'ACTIVE' || contract.status === 'DRAFT';
@@ -302,6 +321,60 @@ export const RentalContractDetailDrawer: React.FC<RentalContractDetailDrawerProp
             </div>
           )}
 
+          {/* Thông tin thanh lý & Quyết toán tài chính (UC31) */}
+          {contract.status === 'TERMINATED' && (
+            <div className="drawer-section" style={{ border: '1px solid #fecaca', background: '#fef2f2', borderRadius: '8px', padding: '14px' }}>
+              <h3 style={{ color: '#991b1b', margin: '0 0 10px 0', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span>📋</span> Biên bản thanh lý & Quyết toán tài chính
+              </h3>
+              {loadingTermination ? (
+                <p style={{ margin: 0, fontSize: '13px', color: '#7f1d1d' }}>Đang tải thông tin biên bản thanh lý...</p>
+              ) : terminationRecord ? (
+                <div className="info-grid">
+                  <span className="info-label" style={{ color: '#991b1b' }}>Ngày kết thúc:</span>
+                  <span className="info-value" style={{ fontWeight: 600 }}>{terminationRecord.endedAt}</span>
+
+                  <span className="info-label" style={{ color: '#991b1b' }}>Lý do thanh lý:</span>
+                  <span className="info-value">{terminationRecord.reason}</span>
+
+                  <span className="info-label" style={{ color: '#991b1b' }}>Tiền cọc giữ:</span>
+                  <span className="info-value">{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(terminationRecord.depositHeld)}</span>
+
+                  <span className="info-label" style={{ color: '#991b1b' }}>Nợ tồn đọng:</span>
+                  <span className="info-value" style={{ color: '#b45309' }}>
+                    {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(terminationRecord.debtRemaining)}
+                  </span>
+
+                  <span className="info-label" style={{ color: '#991b1b' }}>Khấu trừ bồi thường:</span>
+                  <span className="info-value" style={{ color: '#b45309' }}>
+                    {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(terminationRecord.deductionAmount)}
+                    {terminationRecord.deductionReason ? ` (${terminationRecord.deductionReason})` : ''}
+                  </span>
+
+                  <span className="info-label" style={{ color: '#991b1b', fontWeight: 700 }}>
+                    {terminationRecord.refundDue > 0 ? 'Hoàn lại khách:' : terminationRecord.refundDue < 0 ? 'Khách nộp bù:' : 'Tất toán:'}
+                  </span>
+                  <span className="info-value" style={{ fontWeight: 700, color: terminationRecord.refundDue > 0 ? '#15803d' : terminationRecord.refundDue < 0 ? '#b91c1c' : '#374151' }}>
+                    {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(terminationRecord.refundDue)}
+                  </span>
+
+                  <span className="info-label" style={{ color: '#991b1b' }}>Trạng thái quyết toán:</span>
+                  <span className="info-value">{terminationRecord.status}</span>
+
+                  <span className="info-label" style={{ color: '#991b1b' }}>Người lập:</span>
+                  <span className="info-value">{terminationRecord.createdByName || 'Hệ thống'}</span>
+
+                  <span className="info-label" style={{ color: '#991b1b' }}>Thời điểm ghi nhận:</span>
+                  <span className="info-value">{new Date(terminationRecord.recordedAt).toLocaleString('vi-VN')}</span>
+                </div>
+              ) : (
+                <p style={{ margin: 0, fontSize: '13px', color: '#991b1b' }}>
+                  Không tìm thấy chi tiết biên bản thanh lý.
+                </p>
+              )}
+            </div>
+          )}
+
           {/* Thông tin hệ thống */}
           <div className="drawer-section">
             <h3>Thông tin lưu trữ</h3>
@@ -373,6 +446,25 @@ export const RentalContractDetailDrawer: React.FC<RentalContractDetailDrawerProp
               }}
             >
               + Gia hạn hợp đồng
+            </button>
+          )}
+
+          {contract.status === 'ACTIVE' && onTerminate && (
+            <button
+              type="button"
+              className="contract-action-btn"
+              style={{
+                color: '#dc2626',
+                borderColor: '#fecaca',
+                background: '#fef2f2',
+                fontWeight: 600,
+              }}
+              onClick={() => {
+                onClose();
+                onTerminate(contract);
+              }}
+            >
+              Thanh lý hợp đồng
             </button>
           )}
 

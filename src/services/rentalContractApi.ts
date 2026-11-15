@@ -5,6 +5,8 @@ import type {
   UpdateActiveRentalContractInput,
   ExtendRentalContractInput,
   TransferRoomInput,
+  TerminateRentalContractInput,
+  TerminationRecord,
   RentalContractFilterInput,
   RentalContract,
   Amendment,
@@ -202,6 +204,18 @@ export const rentalContractApi = {
   // Đếm số lượng hợp đồng sắp hết hạn (UC28)
   countExpiringRentalContracts: (days = 30): Promise<number> => {
     return request<number>(`/rental-contracts/expiring-count?days=${days}`, {
+      method: 'GET',
+    });
+  },
+
+  // Thanh lý hợp đồng thuê (UC31)
+  terminateRentalContract: (id: string, input: TerminateRentalContractInput): Promise<TerminationRecord> => {
+    return mutate<TerminationRecord>(`/rental-contracts/${encodeURIComponent(id)}/terminate`, 'POST', input);
+  },
+
+  // Xem biên bản thanh lý hợp đồng thuê (UC31)
+  getTerminationRecord: (id: string): Promise<TerminationRecord> => {
+    return request<TerminationRecord>(`/rental-contracts/${encodeURIComponent(id)}/termination-record`, {
       method: 'GET',
     });
   },
