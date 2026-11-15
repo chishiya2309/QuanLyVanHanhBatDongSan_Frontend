@@ -16,6 +16,7 @@ import { PropertyStatusTable } from './PropertyStatusTable';
 import './dashboard.css';
 
 interface DashboardShellProps {
+  showFundingSources?: boolean; fundingSourcesActive?: boolean; onNavigateFundingSources?: () => void;
   showProvisionalCharges?: boolean; provisionalChargesActive?: boolean; provisionalChargesPath?: string; onNavigateProvisionalCharges?: () => void;
   showPeriodUsages?: boolean; periodUsagesActive?: boolean; onNavigatePeriodUsages?: () => void;
   showMeterReadings?: boolean; meterReadingsActive?: boolean; onNavigateMeterReadings?: () => void;
@@ -48,6 +49,7 @@ interface DashboardShellProps {
 }
 
 export const DashboardShell: React.FC<DashboardShellProps> = ({
+  showFundingSources = false, fundingSourcesActive = false, onNavigateFundingSources,
   showProvisionalCharges = false, provisionalChargesActive = false, provisionalChargesPath = '/provisional-charges', onNavigateProvisionalCharges,
   showPeriodUsages = false, periodUsagesActive = false, onNavigatePeriodUsages,
   showMeterReadings = false, meterReadingsActive = false, onNavigateMeterReadings,
@@ -193,7 +195,7 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
     setTimeout(() => setToastMessage(null), 3000);
   };
 
-  const isCustomView = provisionalChargesActive || meterReadingsActive || hostAccountsActive || assetsActive || propertiesActive || roomsActive || servicesActive || customersActive;
+  const isCustomView = fundingSourcesActive || provisionalChargesActive || meterReadingsActive || hostAccountsActive || assetsActive || propertiesActive || roomsActive || servicesActive || customersActive;
 
   return (
     <div className={`dashboard-root${hostAccountsActive ? ' dashboard-root--admin' : ''}${assetsActive ? ' dashboard-root--assets' : ''}`}>
@@ -218,6 +220,7 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
           { label: 'Khách thuê', path: '/customers', active: customersActive, action: onNavigateCustomers, show: showCustomers },
           { label: 'Ghi chỉ số', path: '/meter-readings', active: meterReadingsActive, action: onNavigateMeterReadings, show: showMeterReadings },
           { label: 'Số lượng, phí & giảm trừ', path: '/period-usages', active: periodUsagesActive, action: onNavigatePeriodUsages, show: showPeriodUsages },
+          { label: 'Quản lý nguồn tiền', path: '/funding-sources', active: fundingSourcesActive, action: onNavigateFundingSources, show: showFundingSources },
           { label: 'Tạm tính dịch vụ', path: provisionalChargesPath, active: provisionalChargesActive, action: onNavigateProvisionalCharges, show: showProvisionalCharges },
           { label: 'Danh mục dịch vụ', path: '/services', active: servicesActive, action: onNavigateServices, show: showServices },
           { label: 'Cơ sở & Tòa nhà', path: '/properties', active: propertiesActive, action: onNavigateProperties, show: propertiesActive },
@@ -229,6 +232,9 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
       </nav>}
       <div className="dashboard-layout">
         <Sidebar
+          showFundingSources={showFundingSources}
+          fundingSourcesActive={fundingSourcesActive}
+          onNavigateFundingSources={mobileNavigate(onNavigateFundingSources)}
           showProvisionalCharges={showProvisionalCharges}
           provisionalChargesActive={provisionalChargesActive}
           onNavigateProvisionalCharges={mobileNavigate(onNavigateProvisionalCharges)}
