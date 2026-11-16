@@ -1,3 +1,4 @@
+import { CustomerLookupPage } from './components/customers/CustomerLookupPage';
 import { useState, useEffect, useLayoutEffect, useCallback, useRef } from 'react';
 import { LoginPage } from './components/auth/LoginPage';
 import { SessionSplash } from './components/auth/SessionSplash';
@@ -249,6 +250,10 @@ function AuthenticatedDashboard({
         ) : customerRoute ? (
           user.role !== 'HOST' || customersDenied ? (
             <CustomerForbidden onOverview={onOverview} />
+          ) : customerRoute.lookup ? (
+            <CustomerLookupPage route={customerRoute.lookup} onNavigate={onNavigateCustomers}
+              onSessionExpired={(message) => onAuthenticationEnded({ kind: 'error', message: message || customerMessages.sessionInvalid })}
+              onForbidden={denyCustomers} />
           ) : (
             <CustomersPage
               route={customerRoute}
