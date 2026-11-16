@@ -4,6 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
+    "test:browser:room-services": "node tests/browser/room-services-browser.mjs",
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
@@ -13,6 +14,7 @@
     "test:browser": "node tests/browser/profile-browser.mjs",
     "test:browser:password": "node tests/browser/change-password-browser.mjs",
     "test:browser:recovery": "node tests/browser/recovery-browser.mjs",
+    "test:browser:session-splash": "node tests/browser/session-splash-browser.mjs",
     "test:browser:hosts": "node tests/browser/host-accounts-browser.mjs",
     "test:browser:assets": "node tests/browser/assets-browser.mjs",
     "test:browser:asset-placements": "node tests/browser/asset-placements-browser.mjs",
@@ -20,7 +22,11 @@
     "test:browser:service-policies": "node tests/browser/service-policies-browser.mjs",
     "test:browser:polish": "node tests/browser/frontend-polish-browser.mjs",
     "test:browser:customers": "node tests/browser/customers-browser.mjs",
-    "test:browser:customer-accounts": "node tests/browser/customer-accounts-browser.mjs"
+    "test:browser:customer-accounts": "node tests/browser/customer-accounts-browser.mjs",
+    "test:browser:contracts": "node tests/browser/contract-dialogs-browser.mjs",
+    "test:browser:meter-readings": "node tests/browser/meter-readings-browser.mjs",
+    "test:browser:provisional-charges": "node tests/browser/provisional-charges-browser.mjs",
+    "test:browser:funding-sources": "node tests/browser/funding-sources-browser.mjs"
   },
   "dependencies": {
     "lossless-json": "^4.3.3",

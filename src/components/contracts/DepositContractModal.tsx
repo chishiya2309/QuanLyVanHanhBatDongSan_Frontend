@@ -248,12 +248,12 @@ export const DepositContractModal: React.FC<DepositContractModalProps> = ({
               </div>
 
               {showQuickCustomer ? (
-                <div style={{ padding: '12px', background: '#f8fafc', border: '1px solid #cbd5e1', borderRadius: '6px', marginBottom: '8px' }}>
+                <div style={{ padding: '12px', background: 'var(--color-paper-2)', border: '1px solid var(--color-rule-2)', borderRadius: '6px', marginBottom: '8px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                    <strong style={{ fontSize: '13px', color: '#1e293b' }}>Thêm nhanh khách thuê mới</strong>
+                    <strong style={{ fontSize: '13px', color: 'var(--color-ink)' }}>Thêm nhanh khách thuê mới</strong>
                     <button
                       type="button"
-                      style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '16px', color: '#64748b' }}
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '16px', color: 'var(--color-muted)' }}
                       onClick={() => setShowQuickCustomer(false)}
                       disabled={quickSaving}
                     >
@@ -261,7 +261,7 @@ export const DepositContractModal: React.FC<DepositContractModalProps> = ({
                     </button>
                   </div>
                   {quickCustomerError && (
-                    <div style={{ color: '#dc2626', fontSize: '12px', marginBottom: '8px', padding: '6px 8px', background: '#fef2f2', borderRadius: '4px' }}>
+                    <div style={{ color: 'var(--color-error)', fontSize: '12px', marginBottom: '8px', padding: '6px 8px', background: 'var(--color-error-wash)', borderRadius: '4px' }}>
                       {quickCustomerError}
                     </div>
                   )}
@@ -274,7 +274,7 @@ export const DepositContractModal: React.FC<DepositContractModalProps> = ({
                         placeholder="VD: Nguyễn Văn A"
                         value={quickFullName}
                         onChange={(e) => setQuickFullName(e.target.value)}
-                        style={{ width: '100%', padding: '6px 8px', fontSize: '13px', borderRadius: '4px', border: '1px solid #d1d5db' }}
+                        style={{ width: '100%', padding: '6px 8px', fontSize: '13px', borderRadius: '4px', border: '1px solid var(--color-rule-2)' }}
                         disabled={quickSaving}
                         autoFocus
                       />
@@ -287,21 +287,21 @@ export const DepositContractModal: React.FC<DepositContractModalProps> = ({
                         placeholder="VD: 0912345678"
                         value={quickPhone}
                         onChange={(e) => setQuickPhone(e.target.value)}
-                        style={{ width: '100%', padding: '6px 8px', fontSize: '13px', borderRadius: '4px', border: '1px solid #d1d5db' }}
+                        style={{ width: '100%', padding: '6px 8px', fontSize: '13px', borderRadius: '4px', border: '1px solid var(--color-rule-2)' }}
                         disabled={quickSaving}
                       />
                     </div>
                   </div>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '10px' }}>
                     <div>
-                      <label htmlFor="quick-identity" style={{ fontSize: '12px', fontWeight: 500, display: 'block', marginBottom: '2px' }}>Số CCCD / CMND</label>
+                      <label htmlFor="quick-identity" style={{ fontSize: '12px', fontWeight: 500, display: 'block', marginBottom: '2px' }}>Số <abbr title="Căn cước công dân">CCCD</abbr> / <abbr title="Chứng minh nhân dân">CMND</abbr></label>
                       <input
                         id="quick-identity"
                         type="text"
                         placeholder="VD: 079201001234"
                         value={quickIdentityNo}
                         onChange={(e) => setQuickIdentityNo(e.target.value)}
-                        style={{ width: '100%', padding: '6px 8px', fontSize: '13px', borderRadius: '4px', border: '1px solid #d1d5db' }}
+                        style={{ width: '100%', padding: '6px 8px', fontSize: '13px', borderRadius: '4px', border: '1px solid var(--color-rule-2)' }}
                         disabled={quickSaving}
                       />
                     </div>
@@ -313,7 +313,7 @@ export const DepositContractModal: React.FC<DepositContractModalProps> = ({
                         placeholder="VD: khachthue@gmail.com"
                         value={quickEmail}
                         onChange={(e) => setQuickEmail(e.target.value)}
-                        style={{ width: '100%', padding: '6px 8px', fontSize: '13px', borderRadius: '4px', border: '1px solid #d1d5db' }}
+                        style={{ width: '100%', padding: '6px 8px', fontSize: '13px', borderRadius: '4px', border: '1px solid var(--color-rule-2)' }}
                         disabled={quickSaving}
                       />
                     </div>
@@ -357,7 +357,7 @@ export const DepositContractModal: React.FC<DepositContractModalProps> = ({
                     ))}
                   </select>
                   {customers.length === 0 && (
-                    <p style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px', marginBottom: 0 }}>
+                    <p style={{ fontSize: '12px', color: 'var(--color-muted)', marginTop: '4px', marginBottom: 0 }}>
                       Chưa có khách thuê nào. Bấm <strong>+ Thêm khách mới</strong> ở trên để tạo nhanh.
                     </p>
                   )}
@@ -381,7 +381,7 @@ export const DepositContractModal: React.FC<DepositContractModalProps> = ({
               </div>
 
               {isEditing && !isChangingRoom ? (
-                <div style={{ padding: '8px 12px', background: '#f3f4f6', borderRadius: '4px', border: '1px solid #e5e7eb' }}>
+                <div style={{ padding: '8px 12px', background: 'var(--color-paper-2)', borderRadius: '4px', border: '1px solid var(--color-rule)' }}>
                   <strong>{contractToEdit?.roomCode}</strong> - {contractToEdit?.roomName} ({contractToEdit?.buildingName})
                 </div>
               ) : (
