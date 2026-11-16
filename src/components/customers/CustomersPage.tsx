@@ -157,6 +157,7 @@ export function CustomersPage({
           <header className="customer-heading">
             <div>
               <h1 id="customers-page-title">Quản lý khách thuê</h1>
+              <button type="button" className="customer-button" onClick={() => onNavigate('/customers/search')}>Tra cứu và lịch sử thuê</button>
               <p>Quản lý hồ sơ khách thuê đại diện và phương tiện trong phạm vi quản lý của Host.</p>
             </div>
             <button

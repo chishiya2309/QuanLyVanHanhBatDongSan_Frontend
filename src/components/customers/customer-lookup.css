@@ -1,0 +1,51 @@
+/* Hallmark · shape: app screen · genre: modern-minimal · theme: existing RentOps · scope: app · signature: rental intervals · posture: restrained · v2.0.0 */
+/* Critique · preserve the operational shell; prioritize Customer identity and actual room intervals. */
+/* Hallmark · answered F19 · Existing RentOps navigation and semantic Customer row headings retain four font weights for identity hierarchy. */
+.lookup-page { width: 100%; box-sizing: border-box; max-width: 1440px; margin-inline: auto; padding: 24px; color: var(--color-ink); font-family: var(--font-body); min-width: 0; }
+.lookup-page h1 { font-size: 28px; line-height: 1.3; min-width: 0; overflow-wrap: break-word; }
+.lookup-page h2 { font-size: 20px; overflow-wrap: break-word; }
+.lookup-heading, .lookup-pagination, .lookup-modes { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.lookup-heading p { color: var(--color-muted); }
+.lookup-modes { justify-content: flex-start; margin-block: 24px 16px; }
+.lookup-page button, .lookup-page input, .lookup-page select { font: inherit; }
+.lookup-button, .lookup-page select, .lookup-page input { min-height: 44px; border: 1px solid var(--color-rule-2); border-radius: var(--radius-input); padding: 8px 12px; background: var(--color-surface); color: var(--color-ink); }
+.lookup-button { cursor: pointer; }
+.lookup-button:hover { background: var(--color-surface-hover); }
+.lookup-button:active { transform: translateY(1px); }
+.lookup-button:disabled { background: var(--color-paper-2); color: var(--color-muted); border-color: var(--color-rule); cursor: not-allowed; }
+.lookup-primary, .lookup-button[aria-pressed="true"] { background: var(--color-accent-primary); color: var(--color-white); border-color: var(--color-accent-primary); }
+.lookup-primary:hover, .lookup-button[aria-pressed="true"]:hover { background: var(--color-accent-hover); }
+.lookup-page :is(button, input, select, a, [tabindex]):focus-visible { outline: 2px solid var(--color-focus); outline-offset: 3px; }
+.lookup-filters { display: flex; align-items: flex-end; gap: 12px; flex-wrap: wrap; border-block: 1px solid var(--color-rule); padding-block: 20px; }
+.lookup-filters label { display: grid; gap: 8px; flex: 1 1 240px; min-width: 0; }
+.lookup-filters :is(input,select) { width: 100%; box-sizing: border-box; }
+.lookup-filters p { flex-basis: 100%; margin: 0; }
+.lookup-page [aria-invalid="true"] { border-color: var(--color-error); }
+.lookup-state { padding: 32px 16px; background: var(--color-paper-2); margin-block: 20px; border-radius: var(--radius-card); }
+.lookup-state[role="alert"], .lookup-filters [role="alert"] { color: var(--color-error); }
+.lookup-skeleton { height: 100px; border-block: 1px solid var(--color-rule-2); background: var(--color-paper-3); }
+.lookup-notice { padding: 12px; background: var(--color-status-info-wash); color: var(--color-status-info-ink); }
+.lookup-pagination { margin-block: 20px; font-variant-numeric: tabular-nums; }
+.lookup-pagination label { display: flex; align-items: center; gap: 12px; }
+.lookup-table-wrap { max-width: 100%; overflow-x: auto; }
+.lookup-table { width: 100%; border-collapse: collapse; text-align: left; }
+.lookup-table th, .lookup-table td { padding: 16px 12px; border-bottom: 1px solid var(--color-rule); vertical-align: top; min-width: 140px; }
+.lookup-table thead th { font-size: 14px; font-weight: 400; background: var(--color-paper-2); }
+.lookup-page a { color: var(--color-accent-primary); text-decoration: underline; text-underline-offset: 3px; }
+.lookup-stay { display: grid; gap: 8px; padding-block: 8px; }
+.lookup-current { color: var(--color-status-success); }
+.lookup-former { color: var(--color-muted); }
+.lookup-history { list-style: none; padding: 0; }
+.lookup-history > li { border: 1px solid var(--color-rule); padding: 16px 20px; margin-block: 16px; }
+.lookup-history dl { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.lookup-history dt { color: var(--color-muted); font-size: 14px; }
+.lookup-history dd { margin: 8px 0 0; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+@media (max-width: 640px) { .lookup-page { padding: 16px; } .lookup-page h1 { font-size: 24px; } .lookup-history dl { grid-template-columns: minmax(0, 1fr); } }
+@media (prefers-reduced-motion: reduce) { .lookup-button:active { transform: none; } }
+
+.dash-canvas:has(.lookup-page) { min-width: 0; }
+.lookup-page :is(input,select) { border-color: var(--color-muted); }
+.lookup-page :is(h1,h2,strong) { font-weight: 600; text-wrap: balance; }
+
+.lookup-table a { display: inline-flex; align-items: center; min-height: 44px; }
+.lookup-table-hint { color: var(--color-muted); font-size: 14px; }
