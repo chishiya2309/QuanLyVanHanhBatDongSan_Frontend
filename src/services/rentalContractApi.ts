@@ -15,6 +15,12 @@ import type {
   ExpiringRentalContract,
   PageResponse,
 } from '../types/rentalContract';
+import type {
+  HandoverType,
+  HandoverTemplate,
+  HandoverReport,
+  CreateHandoverReportInput,
+} from '../types/handover';
 
 const API_BASE_URL = (import.meta.env.VITE_API_URL || '/api/v1').replace(/\/+$/, '');
 
@@ -244,4 +250,44 @@ export const rentalContractApi = {
       method: 'GET',
     });
   },
+
+  // UC32: Bàn giao nhận phòng (Move-in Handover)
+  getHandoverTemplate: (id: string, type: HandoverType = 'MOVE_IN'): Promise<HandoverTemplate> => {
+    return request<HandoverTemplate>(`/rental-contracts/${encodeURIComponent(id)}/handover-template?type=${type}`, {
+      method: 'GET',
+    });
+  },
+
+  createHandoverReport: (id: string, input: CreateHandoverReportInput): Promise<HandoverReport> => {
+    return mutate<HandoverReport>(`/rental-contracts/${encodeURIComponent(id)}/handover`, 'POST', input);
+  },
+
+  updateDraftHandoverReport: (id: string, reportId: string, input: CreateHandoverReportInput): Promise<HandoverReport> => {
+    return mutate<HandoverReport>(`/rental-contracts/${encodeURIComponent(id)}/handover/${encodeURIComponent(reportId)}`, 'PUT', input);
+  },
+
+  confirmHandoverReport: (id: string, reportId: string): Promise<HandoverReport> => {
+    return mutate<HandoverReport>(`/rental-contracts/${encodeURIComponent(id)}/handover/${encodeURIComponent(reportId)}/confirm`, 'POST');
+  },
+
+  getHandoverReports: (id: string): Promise<HandoverReport[]> => {
+    return request<HandoverReport[]>(`/rental-contracts/${encodeURIComponent(id)}/handovers`, {
+      method: 'GET',
+    });
+  },
+
+  getHandoverReportDetail: (id: string, reportId: string): Promise<HandoverReport> => {
+    return request<HandoverReport>(`/rental-contracts/${encodeURIComponent(id)}/handovers/${encodeURIComponent(reportId)}`, {
+      method: 'GET',
+    });
+  },
+};
+
+export const handoverApi = {
+  getTemplate: rentalContractApi.getHandoverTemplate,
+  create: rentalContractApi.createHandoverReport,
+  updateDraft: rentalContractApi.updateDraftHandoverReport,
+  confirm: rentalContractApi.confirmHandoverReport,
+  getList: rentalContractApi.getHandoverReports,
+  getDetail: rentalContractApi.getHandoverReportDetail,
 };
