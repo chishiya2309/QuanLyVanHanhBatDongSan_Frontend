@@ -12,6 +12,7 @@ interface RentalContractDetailDrawerProps {
   onTransfer?: (contract: RentalContract) => void;
   onTerminate?: (contract: RentalContract) => void;
   onHandover?: (contract: RentalContract) => void;
+  onMoveOutHandover?: (contract: RentalContract) => void;
 }
 
 const renderStatusBadge = (status: RentalStatus) => {
@@ -36,6 +37,7 @@ export const RentalContractDetailDrawer: React.FC<RentalContractDetailDrawerProp
   onTransfer,
   onTerminate,
   onHandover,
+  onMoveOutHandover,
 }) => {
   const [terminationRecord, setTerminationRecord] = useState<TerminationRecord | null>(null);
   const [loadingTermination, setLoadingTermination] = useState(false);
@@ -430,6 +432,26 @@ export const RentalContractDetailDrawer: React.FC<RentalContractDetailDrawerProp
               title="Ghi nhận hoặc xem biên bản bàn giao nhận phòng (UC32)"
             >
               Bàn giao nhận phòng
+            </button>
+          )}
+
+          {contract.status === 'ACTIVE' && onMoveOutHandover && (
+            <button
+              type="button"
+              className="contract-action-btn"
+              style={{
+                color: '#d97706',
+                borderColor: '#fde68a',
+                background: '#fffbeb',
+                fontWeight: 600,
+              }}
+              onClick={() => {
+                onClose();
+                onMoveOutHandover(contract);
+              }}
+              title="Ghi nhận đối soát bàn giao trả phòng (UC33)"
+            >
+              Bàn giao trả phòng
             </button>
           )}
 
