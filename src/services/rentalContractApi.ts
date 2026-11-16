@@ -4,6 +4,9 @@ import type {
   CreateRentalContractInput,
   UpdateActiveRentalContractInput,
   ExtendRentalContractInput,
+  TransferRoomInput,
+  TerminateRentalContractInput,
+  TerminationRecord,
   RentalContractFilterInput,
   RentalContract,
   Amendment,
@@ -142,6 +145,18 @@ export const rentalContractApi = {
     });
   },
 
+  // Lấy danh sách phòng khả dụng để chuyển phòng (UC30)
+  getTransferAvailableRooms: (contractId: string): Promise<AvailableRoomForRental[]> => {
+    return request<AvailableRoomForRental[]>(`/rental-contracts/${encodeURIComponent(contractId)}/transfer-available-rooms`, {
+      method: 'GET',
+    });
+  },
+
+  // Chuyển phòng thuê (UC30)
+  transferRoom: (contractId: string, input: TransferRoomInput): Promise<RentalContract> => {
+    return mutate<RentalContract>(`/rental-contracts/${encodeURIComponent(contractId)}/transfer-room`, 'POST', input);
+  },
+
   // Lấy chi tiết hợp đồng thuê
   getRentalContractDetail: (id: string): Promise<RentalContract> => {
     return request<RentalContract>(`/rental-contracts/${encodeURIComponent(id)}`, {
@@ -189,6 +204,18 @@ export const rentalContractApi = {
   // Đếm số lượng hợp đồng sắp hết hạn (UC28)
   countExpiringRentalContracts: (days = 30): Promise<number> => {
     return request<number>(`/rental-contracts/expiring-count?days=${days}`, {
+      method: 'GET',
+    });
+  },
+
+  // Thanh lý hợp đồng thuê (UC31)
+  terminateRentalContract: (id: string, input: TerminateRentalContractInput): Promise<TerminationRecord> => {
+    return mutate<TerminationRecord>(`/rental-contracts/${encodeURIComponent(id)}/terminate`, 'POST', input);
+  },
+
+  // Xem biên bản thanh lý hợp đồng thuê (UC31)
+  getTerminationRecord: (id: string): Promise<TerminationRecord> => {
+    return request<TerminationRecord>(`/rental-contracts/${encodeURIComponent(id)}/termination-record`, {
       method: 'GET',
     });
   },

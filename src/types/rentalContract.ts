@@ -1,15 +1,49 @@
 import type { ContractParties } from './depositContract';
 
 export type RentalStatus = 'DRAFT' | 'ACTIVE' | 'TERMINATED';
+export type SettlementStatus = 'CONFIRMED' | 'SETTLED' | 'CANCELLED';
+
+export interface TerminationRecord {
+  id: string;
+  rentalContractId: string;
+  contractNumber: string;
+  customerName?: string;
+  roomCode?: string;
+  roomName?: string;
+  endedAt: string;
+  depositHeld: number;
+  debtRemaining: number;
+  deductionAmount: number;
+  deductionReason?: string | null;
+  refundDue: number;
+  reason: string;
+  status: SettlementStatus;
+  recordedAt: string;
+  createdByName?: string | null;
+}
+
+export interface TerminateRentalContractInput {
+  endedAt: string;
+  debtRemaining?: number;
+  deductionAmount?: number;
+  deductionReason?: string;
+  reason: string;
+}
 
 export interface RoomTenancy {
   id: string;
   roomId: string;
   roomCode: string;
   roomName: string;
+  buildingName?: string;
   fromDate: string;
   toDate?: string;
   rent: number;
+  startElectricityIndex?: number;
+  startWaterIndex?: number;
+  endElectricityIndex?: number;
+  endWaterIndex?: number;
+  handoverNote?: string;
 }
 
 export interface Amendment {
@@ -39,6 +73,7 @@ export interface RentalContract {
   partySnapshot?: ContractParties;
   tenancies: RoomTenancy[];
   amendments?: Amendment[];
+  terminationRecord?: TerminationRecord;
   currentRoomId?: string;
   currentRoomCode?: string;
   currentRoomName?: string;
@@ -77,6 +112,17 @@ export interface UpdateActiveRentalContractInput {
 export interface ExtendRentalContractInput {
   newEndDate: string;
   reason: string;
+}
+
+export interface TransferRoomInput {
+  newRoomId: string;
+  transferDate: string;
+  newRent: number;
+  handoverNote?: string;
+  oldRoomElectricityIndex?: number;
+  oldRoomWaterIndex?: number;
+  newRoomElectricityIndex?: number;
+  newRoomWaterIndex?: number;
 }
 
 export interface RentalContractFilterInput {
