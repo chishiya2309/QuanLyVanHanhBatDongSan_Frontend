@@ -15,7 +15,9 @@ import { UpdateRentalContractModal } from './UpdateRentalContractModal';
 import { ExtendRentalContractModal } from './ExtendRentalContractModal';
 import { TransferRoomModal } from './TransferRoomModal';
 import { TerminateRentalContractModal } from './TerminateRentalContractModal';
+import { MoveInHandoverModal } from './MoveInHandoverModal';
 import { RentalContractDetailDrawer } from './RentalContractDetailDrawer';
+import type { HandoverReport } from '../../types/handover';
 import './contracts.css';
 
 interface RentalContractsPageProps {
@@ -97,6 +99,9 @@ export const RentalContractsPage: React.FC<RentalContractsPageProps> = ({
 
   const [terminateModalOpen, setTerminateModalOpen] = useState(false);
   const [contractToTerminate, setContractToTerminate] = useState<RentalContract | null>(null);
+
+  const [handoverModalOpen, setHandoverModalOpen] = useState(false);
+  const [contractForHandover, setContractForHandover] = useState<RentalContract | null>(null);
 
   const [drawerOpen, setDrawerOpen] = useState(Boolean(route.detailId));
   const [detailContract, setDetailContract] = useState<RentalContract | null>(null);
@@ -414,6 +419,34 @@ export const RentalContractsPage: React.FC<RentalContractsPageProps> = ({
     }
     if (detailContract && contractToTerminate && detailContract.id === contractToTerminate.id) {
       rentalContractApi.getRentalContractDetail(contractToTerminate.id)
+        .then((updated) => setDetailContract(updated))
+        .catch(() => {});
+    }
+    setTimeout(() => {
+      setSuccessMessage(null);
+    }, 6000);
+  };
+
+  const handleOpenHandover = async (contract: { id: string }) => {
+    try {
+      const full = await rentalContractApi.getRentalContractDetail(contract.id);
+      setContractForHandover(full);
+      setHandoverModalOpen(true);
+    } catch {
+      setLoadError('Không thể tải thông tin hợp đồng để bàn giao nhận phòng');
+    }
+  };
+
+  const handleHandoverSuccess = (report: HandoverReport) => {
+    setSuccessMessage(
+      report.confirmed
+        ? `Xác nhận biên bản bàn giao nhận phòng thành công cho hợp đồng ${report.contractNumber}!`
+        : `Lưu nháp biên bản bàn giao nhận phòng thành công cho hợp đồng ${report.contractNumber}!`
+    );
+    loadContracts();
+    if (detailContract && contractForHandover && detailContract.id === contractForHandover.id) {
+      rentalContractApi
+        .getRentalContractDetail(contractForHandover.id)
         .then((updated) => setDetailContract(updated))
         .catch(() => {});
     }
@@ -758,6 +791,26 @@ export const RentalContractsPage: React.FC<RentalContractsPageProps> = ({
                               style={{
                                 padding: '4px 10px',
                                 fontSize: '12px',
+                                color: '#0d9488',
+                                borderColor: '#99f6e4',
+                                background: '#f0fdfa',
+                                marginRight: '6px',
+                                fontWeight: 500,
+                              }}
+                              onClick={() => handleOpenHandover(c)}
+                              title="Ghi nhận hoặc xem biên bản bàn giao nhận phòng (UC32)"
+                            >
+                              Bàn giao
+                            </button>
+                          )}
+
+                          {c.status === 'ACTIVE' && (
+                            <button
+                              type="button"
+                              className="contract-action-btn"
+                              style={{
+                                padding: '4px 10px',
+                                fontSize: '12px',
                                 color: '#dc2626',
                                 borderColor: '#fecaca',
                                 background: '#fef2f2',
@@ -961,6 +1014,23 @@ export const RentalContractsPage: React.FC<RentalContractsPageProps> = ({
                             style={{
                               padding: '4px 10px',
                               fontSize: '12px',
+                              color: '#0d9488',
+                              borderColor: '#99f6e4',
+                              background: '#f0fdfa',
+                              marginRight: '6px',
+                              fontWeight: 500,
+                            }}
+                            onClick={() => handleOpenHandover(c)}
+                            title="Bàn giao nhận phòng (UC32)"
+                          >
+                            Bàn giao
+                          </button>
+                          <button
+                            type="button"
+                            className="contract-action-btn"
+                            style={{
+                              padding: '4px 10px',
+                              fontSize: '12px',
                               color: '#dc2626',
                               borderColor: '#fecaca',
                               background: '#fef2f2',
@@ -1050,6 +1120,10 @@ export const RentalContractsPage: React.FC<RentalContractsPageProps> = ({
           handleCloseDrawer();
           handleOpenTerminate(contract);
         }}
+        onHandover={(contract) => {
+          handleCloseDrawer();
+          handleOpenHandover(contract);
+        }}
         contract={detailContract}
       />
 
@@ -1086,6 +1160,18 @@ export const RentalContractsPage: React.FC<RentalContractsPageProps> = ({
         }}
         onSuccess={handleTerminateSuccess}
         contract={contractToTerminate}
+        onSessionExpired={onSessionExpired}
+      />
+
+      {/* Modal Bàn giao nhận phòng (UC32) */}
+      <MoveInHandoverModal
+        isOpen={handoverModalOpen}
+        onClose={() => {
+          setHandoverModalOpen(false);
+          setContractForHandover(null);
+        }}
+        onSuccess={handleHandoverSuccess}
+        contract={contractForHandover}
         onSessionExpired={onSessionExpired}
       />
     </div>
