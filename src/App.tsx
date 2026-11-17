@@ -26,6 +26,8 @@ import { assetRouteKey, parseAssetRoute } from './utils/assetNavigation';
 import { PropertiesPage } from './components/properties/PropertiesPage';
 import { RoomsPage } from './components/properties/RoomsPage';
 import { RoomServicesPage, RoomServicesForbidden } from './components/services/RoomServicesPage';
+import { RoomPaymentPolicyPage } from './components/payments/RoomPaymentPolicyPage';
+import { paymentMessages } from './types/roomPaymentPolicy';
 import type { PropertiesRoute, RoomsRoute } from './types/properties';
 import { parsePropertiesRoute, parseRoomsRoute } from './utils/propertyNavigation';
 import { CatalogForbidden, ServiceCatalogPage } from './components/services/ServiceCatalogPage';
@@ -321,6 +323,32 @@ function AuthenticatedDashboard({
               })
             }
           />
+        ) : roomsRoute?.paymentPolicy ? (
+          user.role !== 'HOST' ? <RoomServicesForbidden onBack={onOverview} /> : (
+            <RoomPaymentPolicyPage
+              key={`${user.accountId}:${roomsRoute.roomId}`}
+              route={{ roomId: roomsRoute.roomId || '', returnTo: roomsRoute.returnTo || '/rooms' }}
+              allowed={user.role === 'HOST'}
+              registerGuard={registerGuard}
+              onNavigate={onNavigateRooms}
+              onManageFunds={() => onNavigateFunding('/funding-sources')}
+              onSessionExpired={() =>
+                onAuthenticationEnded({
+                  kind: 'error',
+                  message: paymentMessages.session,
+                })
+              }
+              onForbidden={(msg) =>
+                onAuthenticationEnded({
+                  kind: 'error',
+                  message: msg || paymentMessages.forbidden,
+                })
+              }
+              onMissing={() => {
+                onNavigateRooms('/rooms');
+              }}
+            />
+          )
         ) : roomsRoute?.services ? (
           user.role !== 'HOST' ? <RoomServicesForbidden onBack={onOverview} /> :
           <RoomServicesPage
@@ -462,6 +490,7 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
         const customers = parseCustomerRoute(window.location.pathname, window.location.search);
         const provisional = parseProvisionalRoute(window.location.pathname, window.location.search);
         const funding = parseFundingRoute(window.location.pathname, window.location.search);
+        const rooms = parseRoomsRoute(window.location.pathname, window.location.search);
         if (!(error instanceof AuthApiError) || error.status !== 401) {
           setAuthCheck('error'); return;
         }
@@ -482,7 +511,7 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
             setRentalContractRoute(null);
             setAuthNotice({
               kind: 'error',
-              message: funding ? fundingMessages.session : provisional ? provisionalMessages.session : customers ? customerMessages.sessionInvalid : services || policy ? catalogMessages.sessionInvalid : assets ? assetMessages.sessionInvalid : hostAccountMessages.sessionInvalid,
+              message: rooms?.paymentPolicy ? paymentMessages.session : funding ? fundingMessages.session : provisional ? provisionalMessages.session : customers ? customerMessages.sessionInvalid : services || policy ? catalogMessages.sessionInvalid : assets ? assetMessages.sessionInvalid : hostAccountMessages.sessionInvalid,
             });
           }
         });

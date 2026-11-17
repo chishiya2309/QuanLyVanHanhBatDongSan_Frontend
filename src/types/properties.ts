@@ -191,6 +191,7 @@ export interface PropertiesRoute {
 
 export interface RoomsRoute {
   services?: boolean;
+  paymentPolicy?: boolean;
   returnTo?: string;
   keyword?: string;
   areaId?: string;
