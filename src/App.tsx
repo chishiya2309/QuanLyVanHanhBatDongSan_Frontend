@@ -41,6 +41,9 @@ import { parseDepositContractRoute } from './utils/depositContractNavigation';
 import { RentalContractsPage } from './components/contracts/RentalContractsPage';
 import type { RentalContractRoute } from './types/rentalContract';
 import { parseRentalContractRoute } from './utils/rentalContractNavigation';
+import { DocumentTemplatesPage } from './components/templates/DocumentTemplatesPage';
+import type { DocumentTemplateRoute } from './utils/documentTemplateNavigation';
+import { parseDocumentTemplateRoute } from './utils/documentTemplateNavigation';
 
 function isGoogleEntry(): boolean {
   return window.location.pathname === '/auth/onboarding' || window.location.pathname === '/auth/callback'
@@ -58,6 +61,7 @@ function isProtectedPath(pathname: string, search: string): boolean {
     || parseCustomerRoute(pathname, search)
     || parseDepositContractRoute(pathname, search)
     || parseRentalContractRoute(pathname, search)
+    || parseDocumentTemplateRoute(pathname, search)
   );
 }
 
@@ -78,6 +82,8 @@ function AuthenticatedDashboard({
   onNavigateContracts,
   rentalContractRoute,
   onNavigateRentalContracts,
+  templateRoute,
+  onNavigateTemplates,
   onCreatePendingChange,
   onOverview,
   catalogRoute,
@@ -105,6 +111,8 @@ function AuthenticatedDashboard({
   onNavigateContracts: (url: string) => void;
   rentalContractRoute: RentalContractRoute | null;
   onNavigateRentalContracts: (url: string) => void;
+  templateRoute: DocumentTemplateRoute | null;
+  onNavigateTemplates: (url: string) => void;
   onCreatePendingChange: (pending: boolean) => void;
   catalogRoute: CatalogRoute | null;
   onNavigateCatalog: (url: string, replace?: boolean) => void;
@@ -164,6 +172,9 @@ function AuthenticatedDashboard({
         onNavigateContracts={() => onNavigateContracts('/deposit-contracts')}
         rentalContractsActive={rentalContractRoute !== null}
         onNavigateRentalContracts={() => onNavigateRentalContracts('/rental-contracts')}
+        showDocumentTemplates={user.role === 'HOST'}
+        documentTemplatesActive={templateRoute !== null}
+        onNavigateDocumentTemplates={() => onNavigateTemplates('/document-templates')}
         showCustomers={user.role === 'HOST' && !customersDenied}
         customersActive={customerRoute !== null}
         onNavigateCustomers={() => onNavigateCustomers('/customers')}
@@ -173,7 +184,18 @@ function AuthenticatedDashboard({
         onNavigateOverview={onOverview}
         onNavigateHostAccounts={() => onNavigateHost(null)}
       >
-        {customerRoute ? (
+        {templateRoute ? (
+          <DocumentTemplatesPage
+            route={templateRoute}
+            onNavigate={onNavigateTemplates}
+            onSessionExpired={() =>
+              onAuthenticationEnded({
+                kind: 'error',
+                message: 'Phiên đăng nhập không hợp lệ hoặc đã hết hạn. Vui lòng đăng nhập lại',
+              })
+            }
+          />
+        ) : customerRoute ? (
           user.role !== 'HOST' || customersDenied ? (
             <CustomerForbidden onOverview={onOverview} />
           ) : (
@@ -317,13 +339,14 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
   const [customerRoute, setCustomerRoute] = useState<CustomerRoute | null>(() => parseCustomerRoute(window.location.pathname, window.location.search));
   const [contractRoute, setContractRoute] = useState<DepositContractRoute | null>(() => parseDepositContractRoute(window.location.pathname, window.location.search));
   const [rentalContractRoute, setRentalContractRoute] = useState<RentalContractRoute | null>(() => parseRentalContractRoute(window.location.pathname, window.location.search));
+  const [templateRoute, setTemplateRoute] = useState<DocumentTemplateRoute | null>(() => parseDocumentTemplateRoute(window.location.pathname, window.location.search));
   const navigationGuard = useRef<(() => boolean) | null>(null);
   const registerGuard = useCallback<NavigationGuardRegistration>((guard) => { navigationGuard.current = guard; }, []);
   const permitNavigation = useCallback(() => navigationGuard.current?.() !== false, []);
   const lastUrl = useRef(window.location.pathname + window.location.search);
   useLayoutEffect(() => {
     lastUrl.current = window.location.pathname + window.location.search;
-}, [hostRoute, assetRoute, propertiesRoute, roomsRoute, catalogRoute, policyRoute, customerRoute, contractRoute, rentalContractRoute]);
+}, [hostRoute, assetRoute, propertiesRoute, roomsRoute, catalogRoute, policyRoute, customerRoute, contractRoute, rentalContractRoute, templateRoute]);
 const googleEntry = useRef(isGoogleEntry());
 const [authCheck, setAuthCheck] = useState<'checking' | 'ready' | 'error'>(() => isGoogleEntry() ? 'ready' : 'checking');
 const [authRetry, setAuthRetry] = useState(0);
@@ -373,6 +396,7 @@ useEffect(() => {
         setCustomerRoute(null);
         setContractRoute(null);
         setRentalContractRoute(null);
+        setTemplateRoute(null);
         setAuthNotice({
           kind: 'error',
           message: customers ? customerMessages.sessionInvalid : services || policy ? catalogMessages.sessionInvalid : assets ? assetMessages.sessionInvalid : hostAccountMessages.sessionInvalid,
@@ -399,6 +423,7 @@ useEffect(() => {
     setCustomerRoute(parseCustomerRoute(window.location.pathname, window.location.search));
     setContractRoute(parseDepositContractRoute(window.location.pathname, window.location.search));
     setRentalContractRoute(parseRentalContractRoute(window.location.pathname, window.location.search));
+    setTemplateRoute(parseDocumentTemplateRoute(window.location.pathname, window.location.search));
 
     // Private navigation preserves the authenticated user and pending session check.
     if (!next.path && !wasRecovery) return;
@@ -441,6 +466,7 @@ const resetAuthentication = useCallback((notice: AuthNotice | null = null) => {
   navigationGuard.current = null;
   setContractRoute(null);
   setRentalContractRoute(null);
+  setTemplateRoute(null);
 }, []);
 
 useEffect(() => onSessionChange((event) => {
@@ -481,7 +507,7 @@ const navigateRecovery = (path: RecoveryEntry['path']) => {
   window.history.pushState(null, '', path || '/');
   setRecovery({ path, token: null }); setRecoveryVisit((n) => n + 1);
   setCurrentUser(null); setView('login'); setAuthNotice(null);
-  setHostRoute(null); setAssetRoute(null); setPropertiesRoute(null); setRoomsRoute(null); setCatalogRoute(null); setPolicyRoute(null); setCustomerRoute(null); setContractRoute(null); setRentalContractRoute(null); setAuthCheck('ready');
+  setHostRoute(null); setAssetRoute(null); setPropertiesRoute(null); setRoomsRoute(null); setCatalogRoute(null); setPolicyRoute(null); setCustomerRoute(null); setContractRoute(null); setRentalContractRoute(null); setTemplateRoute(null); setAuthCheck('ready');
 };
 
 const finishRecovery = (notice: AuthNotice) => {
@@ -504,6 +530,7 @@ const navigateHost = useCallback((id: string | null) => {
   setCustomerRoute(null);
   setContractRoute(null);
   setRentalContractRoute(null);
+  setTemplateRoute(null);
 }, [permitNavigation]);
 
 const navigateOverview = useCallback(() => {
@@ -518,6 +545,7 @@ const navigateOverview = useCallback(() => {
   setCustomerRoute(null);
   setContractRoute(null);
   setRentalContractRoute(null);
+  setTemplateRoute(null);
 }, [permitNavigation]);
 
 const navigateAssets = useCallback((url: string, replace = false) => {
@@ -534,6 +562,7 @@ const navigateAssets = useCallback((url: string, replace = false) => {
   setRoomsRoute(null);
   setContractRoute(null);
   setRentalContractRoute(null);
+  setTemplateRoute(null);
   setAssetRoute(next);
   setCatalogRoute(null);
   setPolicyRoute(null);
@@ -548,6 +577,7 @@ const navigateProperties = useCallback((url: string) => {
   setRoomsRoute(null);
   setContractRoute(null);
   setRentalContractRoute(null);
+  setTemplateRoute(null);
   setPropertiesRoute(parsePropertiesRoute(window.location.pathname, window.location.search));
   setCatalogRoute(null);
   setPolicyRoute(null);
@@ -562,6 +592,7 @@ const navigateRooms = useCallback((url: string) => {
   setPropertiesRoute(null);
   setContractRoute(null);
   setRentalContractRoute(null);
+  setTemplateRoute(null);
   setRoomsRoute(parseRoomsRoute(window.location.pathname, window.location.search));
   setCatalogRoute(null);
   setPolicyRoute(null);
@@ -577,7 +608,7 @@ const navigateCatalog = useCallback((url: string, replace = false) => {
     if (window.location.pathname + window.location.search !== canonical) {
       if (replace) window.history.replaceState(null, '', canonical); else window.history.pushState(null, '', canonical);
     }
-    setHostRoute(null); setAssetRoute(null); setPropertiesRoute(null); setRoomsRoute(null); setCatalogRoute(null); setCustomerRoute(null); setContractRoute(null); setRentalContractRoute(null);
+    setHostRoute(null); setAssetRoute(null); setPropertiesRoute(null); setRoomsRoute(null); setCatalogRoute(null); setCustomerRoute(null); setContractRoute(null); setRentalContractRoute(null); setTemplateRoute(null);
     setPolicyRoute(policy);
     return;
   }
@@ -587,7 +618,7 @@ const navigateCatalog = useCallback((url: string, replace = false) => {
   if (window.location.pathname + window.location.search !== canonical) {
     if (replace) window.history.replaceState(null, '', canonical); else window.history.pushState(null, '', canonical);
   }
-  setHostRoute(null); setAssetRoute(null); setPropertiesRoute(null); setRoomsRoute(null); setPolicyRoute(null); setCustomerRoute(null); setContractRoute(null); setRentalContractRoute(null);
+  setHostRoute(null); setAssetRoute(null); setPropertiesRoute(null); setRoomsRoute(null); setPolicyRoute(null); setCustomerRoute(null); setContractRoute(null); setRentalContractRoute(null); setTemplateRoute(null);
   setCatalogRoute(next);
 }, [permitNavigation]);
 
@@ -600,7 +631,7 @@ const navigatePolicy = useCallback((url: string, replace = false) => {
     if (window.location.pathname + window.location.search !== canonical) {
       if (replace) window.history.replaceState(null, '', canonical); else window.history.pushState(null, '', canonical);
     }
-    setHostRoute(null); setAssetRoute(null); setPropertiesRoute(null); setRoomsRoute(null); setPolicyRoute(null); setCustomerRoute(null); setContractRoute(null); setRentalContractRoute(null);
+    setHostRoute(null); setAssetRoute(null); setPropertiesRoute(null); setRoomsRoute(null); setPolicyRoute(null); setCustomerRoute(null); setContractRoute(null); setRentalContractRoute(null); setTemplateRoute(null);
     setCatalogRoute(catalog);
     return;
   }
@@ -610,7 +641,7 @@ const navigatePolicy = useCallback((url: string, replace = false) => {
   if (window.location.pathname + window.location.search !== canonical) {
     if (replace) window.history.replaceState(null, '', canonical); else window.history.pushState(null, '', canonical);
   }
-  setHostRoute(null); setAssetRoute(null); setPropertiesRoute(null); setRoomsRoute(null); setCatalogRoute(null); setCustomerRoute(null); setContractRoute(null); setRentalContractRoute(null);
+  setHostRoute(null); setAssetRoute(null); setPropertiesRoute(null); setRoomsRoute(null); setCatalogRoute(null); setCustomerRoute(null); setContractRoute(null); setRentalContractRoute(null); setTemplateRoute(null);
   setPolicyRoute(next);
 }, [permitNavigation]);
 
@@ -630,6 +661,7 @@ const navigateCustomers = useCallback((url: string, replace = false) => {
   setPolicyRoute(null);
   setContractRoute(null);
   setRentalContractRoute(null);
+  setTemplateRoute(null);
   setCustomerRoute(next);
 }, [permitNavigation]);
 
@@ -655,6 +687,7 @@ const navigateContracts = useCallback((url: string) => {
   setPolicyRoute(null);
   setCustomerRoute(null);
   setRentalContractRoute(null);
+  setTemplateRoute(null);
   setContractRoute(parseDepositContractRoute(window.location.pathname, window.location.search));
 }, []);
 
@@ -668,7 +701,22 @@ const navigateRentalContracts = useCallback((url: string) => {
   setPolicyRoute(null);
   setCustomerRoute(null);
   setContractRoute(null);
+  setTemplateRoute(null);
   setRentalContractRoute(parseRentalContractRoute(window.location.pathname, window.location.search));
+}, []);
+
+const navigateTemplates = useCallback((url: string) => {
+  window.history.pushState(null, '', url);
+  setHostRoute(null);
+  setAssetRoute(null);
+  setPropertiesRoute(null);
+  setRoomsRoute(null);
+  setCatalogRoute(null);
+  setPolicyRoute(null);
+  setCustomerRoute(null);
+  setContractRoute(null);
+  setRentalContractRoute(null);
+  setTemplateRoute(parseDocumentTemplateRoute(window.location.pathname, window.location.search));
 }, []);
 
 useEffect(() => {
@@ -682,7 +730,7 @@ if (recovery.path === '/reset-password') return <ResetPasswordPage key={recovery
   onLogin={() => navigateRecovery(null)} onNewRequest={() => navigateRecovery('/forgot-password')} onSuccess={finishRecovery} />;
 
 if (authCheck !== 'ready') return <main className="host-boot">
-  <h1>{customerRoute ? 'Quản lý khách thuê' : catalogRoute || policyRoute ? 'Danh mục dịch vụ' : assetRoute ? 'Quản lý tài sản' : hostRoute ? 'Quản lý tài khoản Host' : 'RentOps'}</h1>
+  <h1>{customerRoute ? 'Quản lý khách thuê' : templateRoute ? 'Mẫu tài liệu' : catalogRoute || policyRoute ? 'Danh mục dịch vụ' : assetRoute ? 'Quản lý tài sản' : hostRoute ? 'Quản lý tài khoản Host' : 'RentOps'}</h1>
   {authCheck === 'checking' ? <p role="status">Đang kiểm tra phiên đăng nhập</p> : <><p role="alert">{customerRoute ? customerMessages.listFailure : catalogRoute || policyRoute ? catalogMessages.listFailure : assetRoute ? assetMessages.listFailure : hostRoute ? hostAccountMessages.listFailure : 'Chưa thể khôi phục phiên đăng nhập. Vui lòng kiểm tra kết nối rồi thử lại.'}</p>
     <button type="button" className="host-button" onClick={() => { setAuthCheck('checking'); setAuthRetry((n) => n + 1); }}>Thử lại</button>
     <button type="button" className="host-button" onClick={() => resetAuthentication()}>Đăng nhập lại</button></>}
@@ -708,6 +756,8 @@ if (view === 'dashboard' && currentUser) {
       onNavigateContracts={navigateContracts}
       rentalContractRoute={rentalContractRoute}
       onNavigateRentalContracts={navigateRentalContracts}
+      templateRoute={templateRoute}
+      onNavigateTemplates={navigateTemplates}
       onCreatePendingChange={handleCreatePendingChange}
       onNavigateHost={navigateHost}
       onOverview={navigateOverview}
