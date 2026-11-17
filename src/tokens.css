@@ -1,3 +1,4 @@
+/* Hallmark · checked: 2026-11-13 · scope: app · theme: coral · built: the project · redesign: polish · v2.0.0 */
 :root {
   --color-prop-danger-hover: oklch(52% 0.19 27 / 0.15);
   --color-prop-segment-shadow: oklch(21% 0.012 38 / 0.08);
@@ -45,4 +46,14 @@
   --profile-dialog-width: 720px;
   --color-profile-backdrop: oklch(21% 0.012 38 / 0.48);
   --color-surface-subtle: var(--color-paper-2);
+  --color-field-border: var(--color-muted);
+  --color-status-warn-wash: var(--color-prop-warn-wash);
+  --color-status-warn-ink: var(--color-asset-repair-ink);
+  --color-status-warn-rule: color-mix(in oklab, var(--color-status-warn) 35%, var(--color-rule));
+  --color-status-info-wash: oklch(95% 0.025 230);
+  --color-status-info-ink: var(--color-status-expiring-ink);
+  --color-status-info-rule: color-mix(in oklab, var(--color-status-info) 30%, var(--color-rule));
+  --color-status-success-rule: color-mix(in oklab, var(--color-success) 30%, var(--color-rule));
+  --color-contract-shadow: oklch(21% 0.012 38 / 0.15);
+  --shadow-contract-modal: 0 16px 48px var(--color-contract-shadow);
 }
