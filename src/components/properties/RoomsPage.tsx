@@ -34,6 +34,7 @@ import { RoomDetailDrawer } from './RoomDetailDrawer';
 import './properties.css';
 import { roomsUrl } from '../../utils/propertyNavigation';
 import { roomServicesUrl } from '../../utils/roomServiceNavigation';
+import { paymentPolicyUrl } from '../../utils/roomPaymentPolicyNavigation';
 
 interface RoomsPageProps {
   route: RoomsRoute;
@@ -461,6 +462,14 @@ export const RoomsPage: React.FC<RoomsPageProps> = ({
             setFilterParams(emptyParams);
           }}
           onSelectRoom={handleSelectRoomAction}
+          onConfigurePaymentPolicy={(roomId) => {
+            const returnTo = roomsUrl({
+              ...filterParams, view: 'table', buildingId: filterParams.buildingId,
+              roomId,
+            });
+            window.history.replaceState(window.history.state, '', returnTo);
+            onNavigate(paymentPolicyUrl(roomId, returnTo));
+          }}
         />
       )}
 
@@ -515,6 +524,14 @@ export const RoomsPage: React.FC<RoomsPageProps> = ({
           // Serialize the current selection before leaving so native Back also restores it.
           window.history.replaceState(window.history.state, '', returnTo);
           onNavigate(roomServicesUrl(room.id, returnTo));
+        }}
+        onConfigurePaymentPolicy={(room) => {
+          const returnTo = roomsUrl({
+            ...filterParams, view: viewMode, buildingId: viewMode === 'matrix' ? selectedBuildingId : filterParams.buildingId,
+            roomId: room.id, action: 'detail',
+          });
+          window.history.replaceState(window.history.state, '', returnTo);
+          onNavigate(paymentPolicyUrl(room.id, returnTo));
         }}
         onSessionExpired={onSessionExpired}
       />

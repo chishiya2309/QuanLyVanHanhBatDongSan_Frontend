@@ -1,5 +1,6 @@
 import type { PropertiesRoute, RoomsRoute } from '../types/properties';
 import { parseRoomServicesRoute } from './roomServiceNavigation';
+import { parsePaymentPolicyRoute } from './roomPaymentPolicyNavigation';
 
 export function parsePropertiesRoute(pathname: string, search: string): PropertiesRoute | null {
   if (!/^\/properties\/?$/.test(pathname)) return null;
@@ -20,6 +21,8 @@ export function propertiesUrl(tab: 'areas' | 'buildings' = 'areas', create = fal
 export function parseRoomsRoute(pathname: string, search: string): RoomsRoute | null {
   const services = parseRoomServicesRoute(pathname, search);
   if (services) return { view: 'matrix', services: true, ...services };
+  const paymentPolicy = parsePaymentPolicyRoute(pathname, search);
+  if (paymentPolicy) return { view: 'matrix', paymentPolicy: true, ...paymentPolicy };
   if (!/^\/rooms\/?$/.test(pathname)) return null;
   const params = new URLSearchParams(search);
   const view = params.get('view') === 'table' ? 'table' : 'matrix';

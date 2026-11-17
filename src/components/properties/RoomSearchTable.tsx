@@ -12,6 +12,7 @@ interface RoomSearchTableProps {
   onApplyFilter: () => void;
   onResetFilter: () => void;
   onSelectRoom: (roomId: string, action: 'detail' | 'history' | 'edit') => void;
+  onConfigurePaymentPolicy?: (roomId: string) => void;
 }
 
 export const RoomSearchTable: React.FC<RoomSearchTableProps> = ({
@@ -25,6 +26,7 @@ export const RoomSearchTable: React.FC<RoomSearchTableProps> = ({
   onApplyFilter,
   onResetFilter,
   onSelectRoom,
+  onConfigurePaymentPolicy,
 }) => {
   const renderBadge = (status: string, isMaintenance: boolean) => {
     switch (status) {
@@ -185,6 +187,15 @@ export const RoomSearchTable: React.FC<RoomSearchTableProps> = ({
                       >
                         Sửa
                       </button>
+                      {onConfigurePaymentPolicy && (
+                        <button
+                          type="button"
+                          className="prop-link-action"
+                          onClick={() => onConfigurePaymentPolicy(room.id)}
+                        >
+                          Cấu hình thanh toán
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>
