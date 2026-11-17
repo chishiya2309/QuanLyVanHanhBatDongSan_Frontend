@@ -7,6 +7,8 @@ export interface AvailableAssetItem {
   assetName: string;
   currentCondition: AssetState;
   note?: string;
+  initialCondition?: AssetState;
+  initialNote?: string;
 }
 
 export interface AvailableServiceItem {
@@ -14,7 +16,7 @@ export interface AvailableServiceItem {
   serviceName: string;
   unit: string;
   systemCode?: CatalogSystemCode;
-  initialIndex: number;
+  initialIndex?: number | null;
 }
 
 export interface HandoverAssetItem {
@@ -35,6 +37,16 @@ export interface HandoverMeterItem {
   recordedAt?: string;
 }
 
+export interface MeterConsumption {
+  serviceId: string;
+  serviceName: string;
+  unit: string;
+  systemCode?: CatalogSystemCode;
+  initialIndex?: number | null;
+  finalIndex: number;
+  consumption?: number | null;
+}
+
 export interface HandoverReport {
   id: string;
   contractId: string;
@@ -51,6 +63,8 @@ export interface HandoverReport {
   createdByName?: string;
   assetItems: HandoverAssetItem[];
   meterItems: HandoverMeterItem[];
+  damagedAssetsSummary?: string;
+  meterConsumptions?: MeterConsumption[];
 }
 
 export interface HandoverTemplate {
@@ -64,6 +78,8 @@ export interface HandoverTemplate {
   startDate: string;
   endDate: string;
   hasConfirmedMoveIn: boolean;
+  hasConfirmedMoveOut?: boolean;
+  confirmedMoveInReport?: HandoverReport | null;
   draftReport?: HandoverReport | null;
   confirmedReport?: HandoverReport | null;
   availableAssets: AvailableAssetItem[];

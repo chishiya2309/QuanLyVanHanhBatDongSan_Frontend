@@ -12,6 +12,7 @@ interface TerminateRentalContractModalProps {
   onSuccess: (record: TerminationRecord) => void;
   contract: RentalContract | null;
   onSessionExpired?: () => void;
+  initialDeductionReason?: string;
 }
 
 const formatDateDisplay = (dateStr?: string): string => {
@@ -42,6 +43,7 @@ export const TerminateRentalContractModal: React.FC<TerminateRentalContractModal
   onSuccess,
   contract,
   onSessionExpired,
+  initialDeductionReason,
 }) => {
   const [endedAt, setEndedAt] = useState('');
   const [debtRemaining, setDebtRemaining] = useState<number | ''>(0);
@@ -89,13 +91,15 @@ export const TerminateRentalContractModal: React.FC<TerminateRentalContractModal
       return;
     }
 
+    setDeductionReason(initialDeductionReason || '');
+
     const today = getTodayString();
     if (minEndedDate && today < minEndedDate) {
       setEndedAt(minEndedDate);
     } else {
       setEndedAt(today);
     }
-  }, [isOpen, contract, minEndedDate]);
+  }, [isOpen, contract, minEndedDate, initialDeductionReason]);
 
   if (!isOpen || !contract) return null;
 

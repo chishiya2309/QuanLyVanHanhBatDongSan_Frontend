@@ -16,6 +16,7 @@ import { ExtendRentalContractModal } from './ExtendRentalContractModal';
 import { TransferRoomModal } from './TransferRoomModal';
 import { TerminateRentalContractModal } from './TerminateRentalContractModal';
 import { MoveInHandoverModal } from './MoveInHandoverModal';
+import { MoveOutHandoverModal } from './MoveOutHandoverModal';
 import { RentalContractDetailDrawer } from './RentalContractDetailDrawer';
 import type { HandoverReport } from '../../types/handover';
 import './contracts.css';
@@ -102,6 +103,10 @@ export const RentalContractsPage: React.FC<RentalContractsPageProps> = ({
 
   const [handoverModalOpen, setHandoverModalOpen] = useState(false);
   const [contractForHandover, setContractForHandover] = useState<RentalContract | null>(null);
+
+  const [moveOutModalOpen, setMoveOutModalOpen] = useState(false);
+  const [contractForMoveOut, setContractForMoveOut] = useState<RentalContract | null>(null);
+  const [initialDeductionReasonForTerminate, setInitialDeductionReasonForTerminate] = useState<string | undefined>(undefined);
 
   const [drawerOpen, setDrawerOpen] = useState(Boolean(route.detailId));
   const [detailContract, setDetailContract] = useState<RentalContract | null>(null);
@@ -455,6 +460,45 @@ export const RentalContractsPage: React.FC<RentalContractsPageProps> = ({
     }, 6000);
   };
 
+  const handleOpenMoveOut = async (contract: { id: string }) => {
+    try {
+      const full = await rentalContractApi.getRentalContractDetail(contract.id);
+      setContractForMoveOut(full);
+      setMoveOutModalOpen(true);
+    } catch {
+      setLoadError('Không thể tải thông tin hợp đồng để bàn giao trả phòng');
+    }
+  };
+
+  const handleMoveOutSuccess = (report: HandoverReport) => {
+    setSuccessMessage(
+      report.confirmed
+        ? `Xác nhận biên bản bàn giao trả phòng thành công cho hợp đồng ${report.contractNumber}!`
+        : `Lưu nháp biên bản bàn giao trả phòng thành công cho hợp đồng ${report.contractNumber}!`
+    );
+    loadContracts();
+    if (detailContract && contractForMoveOut && detailContract.id === contractForMoveOut.id) {
+      rentalContractApi
+        .getRentalContractDetail(contractForMoveOut.id)
+        .then((updated) => setDetailContract(updated))
+        .catch(() => {});
+    }
+    setTimeout(() => {
+      setSuccessMessage(null);
+    }, 6000);
+  };
+
+  const handleProceedFromMoveOutToTerminate = async (contract: RentalContract, deductionReason?: string) => {
+    try {
+      const full = await rentalContractApi.getRentalContractDetail(contract.id);
+      setContractToTerminate(full);
+      setInitialDeductionReasonForTerminate(deductionReason);
+      setTerminateModalOpen(true);
+    } catch {
+      setLoadError('Không thể tải thông tin hợp đồng để chuyển sang thanh lý');
+    }
+  };
+
   return (
     <div className="contracts-page">
       {/* Top tabs navigation between Deposit Contracts & Rental Contracts */}
@@ -800,7 +844,27 @@ export const RentalContractsPage: React.FC<RentalContractsPageProps> = ({
                               onClick={() => handleOpenHandover(c)}
                               title="Ghi nhận hoặc xem biên bản bàn giao nhận phòng (UC32)"
                             >
-                              Bàn giao
+                              Nhận phòng
+                            </button>
+                          )}
+
+                          {c.status === 'ACTIVE' && (
+                            <button
+                              type="button"
+                              className="contract-action-btn"
+                              style={{
+                                padding: '4px 10px',
+                                fontSize: '12px',
+                                color: '#d97706',
+                                borderColor: '#fde68a',
+                                background: '#fffbeb',
+                                marginRight: '6px',
+                                fontWeight: 500,
+                              }}
+                              onClick={() => handleOpenMoveOut(c)}
+                              title="Ghi nhận đối soát bàn giao trả phòng (UC33)"
+                            >
+                              Trả phòng
                             </button>
                           )}
 
@@ -1023,7 +1087,24 @@ export const RentalContractsPage: React.FC<RentalContractsPageProps> = ({
                             onClick={() => handleOpenHandover(c)}
                             title="Bàn giao nhận phòng (UC32)"
                           >
-                            Bàn giao
+                            Nhận phòng
+                          </button>
+                          <button
+                            type="button"
+                            className="contract-action-btn"
+                            style={{
+                              padding: '4px 10px',
+                              fontSize: '12px',
+                              color: '#d97706',
+                              borderColor: '#fde68a',
+                              background: '#fffbeb',
+                              marginRight: '6px',
+                              fontWeight: 500,
+                            }}
+                            onClick={() => handleOpenMoveOut(c)}
+                            title="Bàn giao trả phòng (UC33)"
+                          >
+                            Trả phòng
                           </button>
                           <button
                             type="button"
@@ -1124,6 +1205,10 @@ export const RentalContractsPage: React.FC<RentalContractsPageProps> = ({
           handleCloseDrawer();
           handleOpenHandover(contract);
         }}
+        onMoveOutHandover={(contract) => {
+          handleCloseDrawer();
+          handleOpenMoveOut(contract);
+        }}
         contract={detailContract}
       />
 
@@ -1157,9 +1242,11 @@ export const RentalContractsPage: React.FC<RentalContractsPageProps> = ({
         onClose={() => {
           setTerminateModalOpen(false);
           setContractToTerminate(null);
+          setInitialDeductionReasonForTerminate(undefined);
         }}
         onSuccess={handleTerminateSuccess}
         contract={contractToTerminate}
+        initialDeductionReason={initialDeductionReasonForTerminate}
         onSessionExpired={onSessionExpired}
       />
 
@@ -1173,6 +1260,19 @@ export const RentalContractsPage: React.FC<RentalContractsPageProps> = ({
         onSuccess={handleHandoverSuccess}
         contract={contractForHandover}
         onSessionExpired={onSessionExpired}
+      />
+
+      {/* Modal Bàn giao trả phòng (UC33) */}
+      <MoveOutHandoverModal
+        isOpen={moveOutModalOpen}
+        onClose={() => {
+          setMoveOutModalOpen(false);
+          setContractForMoveOut(null);
+        }}
+        onSuccess={handleMoveOutSuccess}
+        contract={contractForMoveOut}
+        onSessionExpired={onSessionExpired}
+        onProceedToTerminate={handleProceedFromMoveOutToTerminate}
       />
     </div>
   );
