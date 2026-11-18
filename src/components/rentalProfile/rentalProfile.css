@@ -1,0 +1,95 @@
+/* Hallmark · checked: 2026-11-18 · genre: modern-minimal · scope: app · theme: coral · built: RentOps UC23 · v2.0.0 */
+/* Hallmark · pre-emit critique: retain the RentOps shell and prioritize legibility of long personal and room values. */
+.rp-page {
+  display: grid;
+  gap: var(--space-lg);
+  max-width: var(--container);
+  min-width: 0;
+  margin-inline: auto;
+  color: var(--color-ink);
+  font-family: var(--font-body);
+  overflow-wrap: anywhere;
+}
+
+.rp-page h1, .rp-page h2 { min-width: 0; margin: 0; overflow-wrap: break-word; text-wrap: balance; }
+.rp-page h1 { font-size: var(--text-2xl); }
+.rp-page h2 { font-size: var(--text-lg); }
+.dash-nav-item.rp-nav-item { height: auto; min-height: 44px; padding: var(--space-2xs) var(--space-sm); line-height: 1.4; }
+.rp-nav-item span { min-width: 0; white-space: normal; overflow-wrap: anywhere; }
+.rp-nav-item:focus-visible { outline: 2px solid var(--color-focus); outline-offset: 2px; }
+.rp-nav-item:active { background: var(--color-paper-3); }
+.rp-section {
+  display: grid;
+  gap: var(--space-md);
+  padding: var(--space-lg);
+  border: 1px solid var(--color-rule);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  min-width: 0;
+}
+
+.rp-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-md) var(--space-lg);
+  margin: 0;
+}
+.rp-fields > div { padding-block-start: var(--space-sm); border-block-start: 1px solid var(--color-rule); }
+.rp-fields dt { color: var(--color-muted); font-size: var(--text-sm); }
+.rp-fields dd { margin: var(--space-2xs) 0 0; }
+
+.rp-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+.rp-table th, .rp-table td {
+  text-align: start;
+  vertical-align: top;
+  padding: var(--space-sm);
+  border-block-end: 1px solid var(--color-rule);
+}
+.rp-table th { background: var(--color-paper-2); font-size: var(--text-sm); font-weight: 600; }
+.rp-table td:first-child { font-weight: 600; }
+.rp-room-list { display: none; }
+
+.rp-loading, .rp-empty { margin: 0; color: var(--color-muted); }
+.rp-skeleton { display: grid; gap: var(--space-sm); }
+.rp-skeleton span { display: block; width: 70%; height: var(--space-md); background: var(--color-paper-2); border-radius: var(--radius-input); }
+.rp-skeleton span:nth-child(2) { width: 55%; }
+.rp-skeleton span:nth-child(3) { width: 62%; }
+
+.rp-notice {
+  display: grid;
+  justify-items: start;
+  gap: var(--space-xs);
+  margin: 0;
+  padding: var(--space-md);
+  border: 1px solid var(--color-error-ring);
+  border-radius: var(--radius-input);
+  background: var(--color-error-wash);
+}
+.rp-notice p { margin: 0; }
+.rp-retry {
+  min-height: 44px;
+  padding: var(--space-xs) var(--space-md);
+  border: 1px solid var(--color-accent-primary);
+  border-radius: var(--radius-input);
+  background: var(--color-accent-primary);
+  color: var(--color-white);
+  font: inherit;
+  cursor: pointer;
+}
+.rp-retry:hover:not(:disabled) { background: var(--color-accent-hover); }
+.rp-retry:active:not(:disabled) { background: var(--color-ink); }
+.rp-retry:focus-visible { outline: 2px solid var(--color-focus); outline-offset: 3px; }
+.rp-retry:disabled { opacity: 0.65; cursor: wait; }
+
+@media (max-width: 767px) {
+  .rp-section { padding: var(--space-md); }
+  .rp-page h1 { font-size: var(--text-xl); }
+  .rp-table { display: none; }
+  .rp-room-list { display: grid; gap: var(--space-md); list-style: none; padding: 0; margin: 0; }
+  .rp-room-list li + li { border-block-start: 2px solid var(--color-rule-2); padding-block-start: var(--space-md); }
+  .rp-fields > div:last-child { grid-column: 1 / -1; }
+}
+
+@media (max-width: 340px) {
+  .rp-fields { grid-template-columns: minmax(0, 1fr); }
+}
