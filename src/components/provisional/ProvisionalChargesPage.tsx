@@ -1,4 +1,5 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { invoicePath, invoiceRequest } from '../../services/invoiceApi';
 import type { AuthenticatedUserResponse } from '../../types/auth';
 import type { ProvisionalRoute } from '../../types/provisionalCharge';
 import { provisionalMessages as m } from '../../types/provisionalCharge';
@@ -92,6 +93,7 @@ function AuthorizedPage({ user, route, onNavigate, onSessionExpired, onBack }: P
     </div>}
     {v.detail && <div className="pc-result" aria-busy={v.refreshing}>
       <PeriodResult detail={v.detail} stale={v.stale} checkedAt={v.checkedAt} />
+      {route.role === 'HOST' && <InvoiceDraftAction key={v.detail.periodId} periodId={v.detail.periodId} disabled={busy || v.stale} />}
       <ChargeItemsTable items={v.detail.items} />
       <div className={`pc-total pc-total--${v.detail.summary.status.toLowerCase()}`}>
         <div><h2>{v.detail.summary.displayLabel}</h2>
@@ -102,6 +104,30 @@ function AuthorizedPage({ user, route, onNavigate, onSessionExpired, onBack }: P
       </div>
     </div>}
   </section>;
+}
+
+function InvoiceDraftAction({ periodId, disabled }: { periodId: string; disabled: boolean }) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  async function openDraft() {
+    if (busy) return;
+    setBusy(true);
+    setError('');
+    try {
+      const path = invoicePath('host');
+      const { invoiceId } = await invoiceRequest<{ invoiceId: string }>(path + '/drafts', undefined, { periodId });
+      window.location.assign(path + '/' + encodeURIComponent(invoiceId));
+    } catch (e) {
+      if (e instanceof DOMException && e.name === 'AbortError') return;
+      setError(e instanceof Error ? e.message : 'Chưa thể tạo hóa đơn nháp.');
+    } finally { setBusy(false); }
+  }
+  return <div>
+    <button type="button" className="pc-button" disabled={disabled || busy} onClick={() => void openDraft()}>
+      {busy ? 'Đang mở hóa đơn…' : 'Mở hoặc tạo hóa đơn nháp'}
+    </button>
+    {error && <p role="alert">{error}</p>}
+  </div>;
 }
 
 function SummaryAmount({ value }: { value: string | null }) {

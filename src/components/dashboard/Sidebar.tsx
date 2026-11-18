@@ -5,6 +5,7 @@ interface SidebarProps {
   showFundingSources?: boolean; fundingSourcesActive?: boolean; onNavigateFundingSources?: () => void;
   showRentalProfile?: boolean; rentalProfileActive?: boolean; onNavigateRentalProfile?: () => void;
   showProvisionalCharges?: boolean; provisionalChargesActive?: boolean; onNavigateProvisionalCharges?: () => void;
+  invoiceLink?: { path: string; label: string; active: boolean };
   showMeterReadings?: boolean; meterReadingsActive?: boolean; onNavigateMeterReadings?: () => void;
   showPeriodUsages?: boolean; periodUsagesActive?: boolean; onNavigatePeriodUsages?: () => void;
   showServices?: boolean; servicesActive?: boolean; onNavigateServices?: () => void; mobileOpen?: boolean; markCurrent?: boolean;
@@ -21,6 +22,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   showFundingSources = false, fundingSourcesActive = false, onNavigateFundingSources,
   showRentalProfile = false, rentalProfileActive = false, onNavigateRentalProfile,
   showProvisionalCharges = false, provisionalChargesActive = false, onNavigateProvisionalCharges,
+  invoiceLink,
   showMeterReadings = false, meterReadingsActive = false, onNavigateMeterReadings,
   showPeriodUsages = false, periodUsagesActive = false, onNavigatePeriodUsages,
   showServices = false, servicesActive = false, onNavigateServices, mobileOpen = false, markCurrent = true,
@@ -46,7 +48,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onNavigateOverview,
   onNavigateHostAccounts,
 }) => {
-  const isOverviewActive = !rentalProfileActive && !fundingSourcesActive && !provisionalChargesActive && !meterReadingsActive && !periodUsagesActive && !hostAccountsActive && !assetsActive && !propertiesActive && !roomsActive && !servicesActive && !customersActive && !contractsActive && !rentalContractsActive;
+  const isOverviewActive = !invoiceLink?.active && !rentalProfileActive && !fundingSourcesActive && !provisionalChargesActive && !meterReadingsActive && !periodUsagesActive && !hostAccountsActive && !assetsActive && !propertiesActive && !roomsActive && !servicesActive && !customersActive && !contractsActive && !rentalContractsActive;
   return (
     <aside id="rentops-navigation" className={`dash-sidebar${mobileOpen ? ' is-mobile-open' : ''}`} aria-label="Thanh điều hướng chính">
       <div className="dash-nav-group">
@@ -203,6 +205,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="M5 3h14v18H5zM8 7h8M8 11h8M8 15h3M14 15h2" /></svg>
           <span>Tạm tính dịch vụ</span>
         </button>}
+        {invoiceLink && <a href={invoiceLink.path} className={`dash-nav-item${invoiceLink.active ? ' is-active' : ''}`}
+          aria-current={invoiceLink.active && markCurrent ? 'page' : undefined}>{invoiceLink.label}</a>}
 
         <button type="button" className="dash-nav-item">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -227,7 +231,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </button>
         </>}
       </div>
-        {!rentalProfileActive && !fundingSourcesActive && !provisionalChargesActive && !hostAccountsActive && !assetsActive && !propertiesActive && !roomsActive && !servicesActive && !customersActive && !contractsActive && !rentalContractsActive && (
+        {!invoiceLink?.active && !rentalProfileActive && !fundingSourcesActive && !provisionalChargesActive && !hostAccountsActive && !assetsActive && !propertiesActive && !roomsActive && !servicesActive && !customersActive && !contractsActive && !rentalContractsActive && (
       <div className="dash-sidebar-footer">
         <div className="system-status-box">
           <div>
