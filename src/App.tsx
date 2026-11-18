@@ -53,6 +53,8 @@ import { PeriodUsagePage, UsageForbidden } from './components/usage/PeriodUsageP
 import type { PeriodUsageRoute } from './types/periodUsage';
 import { parsePeriodUsageRoute, periodUsageUrl } from './utils/periodUsageNavigation';
 import { ProvisionalChargesPage } from './components/provisional/ProvisionalChargesPage';
+import { InvoicePage } from './components/invoice/InvoicePage';
+import { invoicePath, isInvoicePath } from './services/invoiceApi';
 import type { ProvisionalRoute } from './types/provisionalCharge';
 import { provisionalMessages } from './types/provisionalCharge';
 import { parseProvisionalRoute, provisionalPath, provisionalUrl } from './utils/provisionalChargeNavigation';
@@ -73,7 +75,8 @@ function isGoogleEntry(): boolean {
 
 function isProtectedPath(pathname: string, search: string): boolean {
   return Boolean(
-    isRentalProfilePath(pathname)
+    isInvoicePath(pathname)
+    || isRentalProfilePath(pathname)
     || parseFundingRoute(pathname, search)
     || parseProvisionalRoute(pathname, search)
     || parsePeriodUsageRoute(pathname, search)
@@ -228,6 +231,11 @@ function AuthenticatedDashboard({
         showRentalProfile={user.role === 'CUSTOMER'}
         rentalProfileActive={rentalProfileActive}
         onNavigateRentalProfile={onNavigateRentalProfile}
+        invoiceLink={user.role === 'HOST' || user.role === 'CUSTOMER' ? {
+          path: invoicePath(user.role === 'HOST' ? 'host' : 'customer'),
+          label: user.role === 'HOST' ? 'Quản lý hóa đơn' : 'Hóa đơn của tôi',
+          active: isInvoicePath(window.location.pathname),
+        } : undefined}
         showProvisionalCharges={user.role === 'HOST' || user.role === 'CUSTOMER'}
         provisionalChargesActive={provisionalRoute !== null}
         provisionalChargesPath={provisionalPath(user.role === 'CUSTOMER' ? 'CUSTOMER' : 'HOST')}
@@ -240,7 +248,9 @@ function AuthenticatedDashboard({
         onNavigateOverview={onOverview}
         onNavigateHostAccounts={() => onNavigateHost(null)}
       >
-        {fundingRoute ? (
+        {isInvoicePath(window.location.pathname) ? (
+          <InvoicePage key={window.location.href} accountRole={user.role} pathname={window.location.pathname} search={window.location.search} />
+        ) : fundingRoute ? (
           fundingDenied ? <FundingForbidden onBack={onOverview} /> : <FundingSourcesPage user={user} route={fundingRoute} onNavigate={onNavigateFunding} onBack={onOverview}
             onSessionExpired={() => onAuthenticationEnded({ kind: 'error', message: fundingMessages.session })} onForbidden={denyFunding} registerGuard={registerGuard} />
         ) : rentalProfileActive ? (

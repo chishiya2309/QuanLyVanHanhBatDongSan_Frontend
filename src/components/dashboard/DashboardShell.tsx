@@ -20,6 +20,7 @@ interface DashboardShellProps {
   showFundingSources?: boolean; fundingSourcesActive?: boolean; onNavigateFundingSources?: () => void;
   showRentalProfile?: boolean; rentalProfileActive?: boolean; onNavigateRentalProfile?: () => void;
   showProvisionalCharges?: boolean; provisionalChargesActive?: boolean; provisionalChargesPath?: string; onNavigateProvisionalCharges?: () => void;
+  invoiceLink?: { path: string; label: string; active: boolean };
   showPeriodUsages?: boolean; periodUsagesActive?: boolean; onNavigatePeriodUsages?: () => void;
   showMeterReadings?: boolean; meterReadingsActive?: boolean; onNavigateMeterReadings?: () => void;
   showServices?: boolean; servicesActive?: boolean; onNavigateServices?: () => void;
@@ -54,6 +55,7 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
   showFundingSources = false, fundingSourcesActive = false, onNavigateFundingSources,
   showRentalProfile = false, rentalProfileActive = false, onNavigateRentalProfile,
   showProvisionalCharges = false, provisionalChargesActive = false, provisionalChargesPath = '/provisional-charges', onNavigateProvisionalCharges,
+  invoiceLink,
   showPeriodUsages = false, periodUsagesActive = false, onNavigatePeriodUsages,
   showMeterReadings = false, meterReadingsActive = false, onNavigateMeterReadings,
   showServices = false, servicesActive = false, onNavigateServices,
@@ -198,7 +200,7 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
     setTimeout(() => setToastMessage(null), 3000);
   };
 
-  const isCustomView = rentalProfileActive || fundingSourcesActive || provisionalChargesActive || meterReadingsActive || hostAccountsActive || assetsActive || propertiesActive || roomsActive || servicesActive || customersActive;
+  const isCustomView = invoiceLink?.active || rentalProfileActive || fundingSourcesActive || provisionalChargesActive || meterReadingsActive || hostAccountsActive || assetsActive || propertiesActive || roomsActive || servicesActive || customersActive;
 
   return (
     <div className={`dashboard-root${hostAccountsActive ? ' dashboard-root--admin' : ''}${assetsActive ? ' dashboard-root--assets' : ''}`}>
@@ -226,13 +228,14 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
           { label: 'Quản lý nguồn tiền', path: '/funding-sources', active: fundingSourcesActive, action: onNavigateFundingSources, show: showFundingSources },
           { label: rentalProfileTitle, path: rentalProfilePath, active: rentalProfileActive, action: onNavigateRentalProfile, show: showRentalProfile },
           { label: 'Tạm tính dịch vụ', path: provisionalChargesPath, active: provisionalChargesActive, action: onNavigateProvisionalCharges, show: showProvisionalCharges },
+          ...(invoiceLink ? [{ ...invoiceLink, show: true }] : []),
           { label: 'Danh mục dịch vụ', path: '/services', active: servicesActive, action: onNavigateServices, show: showServices },
           { label: 'Cơ sở & Tòa nhà', path: '/properties', active: propertiesActive, action: onNavigateProperties, show: propertiesActive },
           { label: 'Mặt bằng & Phòng', path: '/rooms', active: roomsActive, action: onNavigateRooms, show: roomsActive },
           { label: 'Hợp đồng cọc', path: '/deposit-contracts', active: contractsActive, action: onNavigateContracts, show: showContracts },
           { label: 'Hợp đồng thuê', path: '/rental-contracts', active: rentalContractsActive, action: onNavigateRentalContracts, show: showContracts },
           { label: 'Tài khoản Host', path: '/admin/host-accounts', active: hostAccountsActive, action: onNavigateHostAccounts, show: hostAccountsActive },
-        ].filter((item) => item.show).map((item) => <a key={item.path} href={item.path} aria-current={smallScreen && item.active ? 'page' : undefined} onClick={(event) => { event.preventDefault(); item.action?.(); }}>{item.label}</a>)}
+        ].filter((item) => item.show).map((item) => <a key={item.path} href={item.path} aria-current={smallScreen && item.active ? 'page' : undefined} onClick={(event) => { if (item.action) { event.preventDefault(); item.action(); } }}>{item.label}</a>)}
       </nav>}
       <div className="dashboard-layout">
         <Sidebar
@@ -243,6 +246,7 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
           rentalProfileActive={rentalProfileActive}
           onNavigateRentalProfile={mobileNavigate(onNavigateRentalProfile)}
           showProvisionalCharges={showProvisionalCharges}
+          invoiceLink={invoiceLink}
           provisionalChargesActive={provisionalChargesActive}
           onNavigateProvisionalCharges={mobileNavigate(onNavigateProvisionalCharges)}
           showMeterReadings={showMeterReadings}
