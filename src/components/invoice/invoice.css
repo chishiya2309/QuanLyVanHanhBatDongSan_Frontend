@@ -17,3 +17,28 @@
 .invoice-transfer { display: flex; flex-wrap: wrap; gap: 1.25rem; }
 .invoice-transfer img { display: block; max-width: 100%; object-fit: contain; }
 .invoice-transfer dl { grid-template-columns: 1fr; }
+
+.invoice-success-live {
+  position: fixed;
+  z-index: var(--z-toast);
+  inset-block-start: var(--space-md);
+  inset-inline-end: var(--space-md);
+  inline-size: min(24rem, calc(100% - 2 * var(--space-md)));
+  pointer-events: none;
+}
+.invoice-success-toast {
+  display: flex;
+  align-items: start;
+  gap: var(--space-sm);
+  padding: var(--space-md);
+  background: var(--color-surface);
+  color: var(--color-ink);
+  border: 1px solid var(--color-status-success-rule);
+  border-inline-start: 4px solid var(--color-success);
+  border-radius: var(--radius-input);
+  box-shadow: var(--shadow-card);
+  overflow-wrap: anywhere;
+}
+.invoice-success-icon { color: var(--color-success); font-weight: 700; }
+.invoice-success-toast strong { display: block; margin-block-end: var(--space-xs); }
+@media print { .invoice-success-live { display: none; } }

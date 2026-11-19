@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, expect, it, vi } from 'vitest';
 import { InvoicePage } from '../src/components/invoice/InvoicePage';
 import { invoiceRequest } from '../src/services/invoiceApi';
@@ -50,4 +50,74 @@ it('shows and downloads the QR for the remaining amount with copyable transfer f
     if (previous) Object.defineProperty(navigator, 'clipboard', previous);
     else Reflect.deleteProperty(navigator, 'clipboard');
   }
+});
+
+it('records a cash payment from the Host list and prints the confirmed receipt', async () => {
+  const print = vi.spyOn(window, 'print').mockImplementation(() => {});
+  const show = vi.spyOn(HTMLDialogElement.prototype, 'showModal').mockImplementation(function (this: HTMLDialogElement) { this.open = true; });
+  const close = vi.spyOn(HTMLDialogElement.prototype, 'close').mockImplementation(function (this: HTMLDialogElement) { this.open = false; });
+  vi.mocked(invoiceRequest).mockImplementation(async path => {
+    if (path.endsWith('/cash-payment-context')) return {
+      invoiceNumber: 'HD001', roomCode: 'P101', total: '3500000', paidAmount: '1000000', remaining: '2500000',
+      defaultFundingSourceId: 'cash', paidAt: '2025-01-01T01:30:00Z',
+    } as never;
+    if (path.startsWith('/funding-sources')) return [{ id: 'cash', name: 'Quỹ mặc định' }] as never;
+    if (path.endsWith('/cash-payments')) return { paymentId: 'payment', cashEntryId: 'entry',
+      amount: '2500000', paidAt: '2025-01-01T01:30:00Z', paidAmount: '3500000', remaining: '0', paymentStatus: 'PAID' } as never;
+    if (path.endsWith('/locations')) return [] as never;
+    return { items: [invoice], page: 0, hasNext: false } as never;
+  });
+  try {
+    render(<InvoicePage accountRole="HOST" pathname="/invoices/host" search="" />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Ghi nhận thanh toán tiền mặt' }));
+    expect((await screen.findByLabelText('Số tiền thanh toán (VND)') as HTMLInputElement).value).toBe('2500000');
+    expect((screen.getByLabelText('Ngày giờ thanh toán (giờ Việt Nam)') as HTMLInputElement).value).toBe('2025-01-01T08:30');
+    vi.useFakeTimers();
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Xác nhận thanh toán' }));
+    });
+    expect(screen.getByRole('status').textContent).toContain('Ghi nhận thanh toán thành công');
+    fireEvent.click(screen.getByRole('button', { name: 'In/Xuất phiếu thu' }));
+    act(() => vi.advanceTimersByTime(5000));
+    expect(screen.queryByText('Ghi nhận thanh toán thành công')).toBeNull();
+    expect(screen.getByRole('button', { name: 'In/Xuất phiếu thu' })).toBeTruthy();
+    expect(print).toHaveBeenCalledOnce();
+    expect(invoiceRequest).toHaveBeenCalledWith('/invoices/host/example/cash-payments', undefined,
+      expect.objectContaining({ fundingSourceId: 'cash', paidAt: '2025-01-01T01:30:00.000Z' }), expect.any(String));
+  } finally { vi.useRealTimers(); print.mockRestore(); show.mockRestore(); close.mockRestore(); }
+});
+
+it('retries the identical cash command from detail when the first response is lost', async () => {
+  const show = vi.spyOn(HTMLDialogElement.prototype, 'showModal').mockImplementation(function (this: HTMLDialogElement) { this.open = true; });
+  const close = vi.spyOn(HTMLDialogElement.prototype, 'close').mockImplementation(function (this: HTMLDialogElement) { this.open = false; });
+  let sent = 0;
+  vi.mocked(invoiceRequest).mockImplementation(async path => {
+    if (path.endsWith('/cash-payment-context')) return {
+      invoiceNumber: 'HD001', roomCode: 'P101', total: '3500000', paidAmount: '1000000', remaining: '2500000',
+      defaultFundingSourceId: null, paidAt: '2025-01-01T01:30:00Z',
+    } as never;
+    if (path.startsWith('/funding-sources')) return [{ id: 'other', name: 'Quỹ khác' }] as never;
+    if (path.endsWith('/cash-payments')) {
+      if (++sent === 1) throw new TypeError('Connection lost');
+      return { paymentId: 'payment', cashEntryId: 'entry', amount: '1000000',
+        paidAt: '2025-01-01T01:30:00Z', paidAmount: '2000000', remaining: '1500000', paymentStatus: 'PARTIALLY_PAID' } as never;
+    }
+    if (sent === 2) return new Promise(() => {});
+    return detail as never;
+  });
+  try {
+    render(<InvoicePage accountRole="HOST" pathname="/invoices/host/example" search="" />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Ghi nhận thanh toán tiền mặt' }));
+    const amount = await screen.findByLabelText('Số tiền thanh toán (VND)');
+    fireEvent.change(amount, { target: { value: '1000000' } });
+    fireEvent.change(screen.getByLabelText('Nguồn tiền mặt'), { target: { value: 'other' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Xác nhận thanh toán' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Thử lại cùng yêu cầu' }));
+    await screen.findByText(/Đã ghi nhận thanh toán tiền mặt/);
+    const writes = vi.mocked(invoiceRequest).mock.calls.filter(([path]) => path.endsWith('/cash-payments'));
+    expect(writes).toHaveLength(2);
+    expect(writes[0]).toEqual(writes[1]);
+    expect(screen.getByText('entry')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'In/Xuất phiếu thu' })).toBeNull();
+  } finally { show.mockRestore(); close.mockRestore(); }
 });
