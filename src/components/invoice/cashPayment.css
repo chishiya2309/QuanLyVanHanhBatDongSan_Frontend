@@ -1,0 +1,22 @@
+/* Hallmark v2.0.0 | shape: app screen | system: RentOps | signature: dư nợ hóa đơn */
+/* Critique: dư nợ đứng trước số tiền nhập để Host đối chiếu ngay tại biểu mẫu. */
+.cash-payment { inline-size: min(37rem, calc(100% - 2rem)); max-block-size: calc(100dvh - 2rem); overflow: auto; box-sizing: border-box; padding: var(--space-lg); border: 1px solid var(--color-rule-2); border-radius: var(--radius-card); background: var(--color-surface); color: var(--color-ink); font-family: var(--font-body); }
+.cash-payment::backdrop { background: var(--color-profile-backdrop); }
+.cash-payment h2 { min-width: 0; overflow-wrap: break-word; text-wrap: balance; margin: 0; }
+.cash-payment form, .cash-payment fieldset, .cash-payment label { display: grid; gap: .65rem; min-inline-size: 0; }
+.cash-payment fieldset { padding: 0; border: 0; margin: 0 0 .5rem; }
+.cash-payment :is(input, select, textarea) { box-sizing: border-box; width: 100%; min-block-size: 44px; padding: .5rem; border: 1px solid var(--color-muted); border-radius: var(--radius-input); font: inherit; color: var(--color-ink); background: var(--color-surface); }
+.cash-payment :focus-visible { outline: 2px solid var(--color-focus); outline-offset: 2px; }
+.cash-payment [aria-invalid="true"] { border-color: var(--color-error); }
+.cash-payment [role="alert"] { color: var(--color-error); }
+.cash-payment-facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 8rem), 1fr)); gap: .75rem; margin: 0; }
+.cash-payment-facts dd { margin: 0; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.cash-payment-facts div:first-child dd { font-size: var(--text-lg); font-weight: 700; }
+
+.cash-payment-receipt { display: none; }
+@media print {
+  body:has(> .cash-payment-receipt) > :not(.cash-payment-receipt) { display: none; }
+  .cash-payment-receipt { display: block; padding: var(--space-lg); }
+  .cash-payment-receipt dd { margin: 0 0 var(--space-sm); }
+}
+.cash-payment button:enabled:active { box-shadow: inset 0 0 0 1px var(--color-focus); }

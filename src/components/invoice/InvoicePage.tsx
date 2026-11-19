@@ -1,7 +1,9 @@
+import { createPortal } from 'react-dom';
 import { useEffect, useState, type FormEvent } from 'react';
 import { invoicePath, invoiceRequest, type InvoiceRole } from '../../services/invoiceApi';
 import '../provisional/provisionalCharges.css';
 import './invoice.css';
+import { CashPayment, type CashResult } from './CashPayment';
 
 type Invoice = {
   id: string; number: string | null; lifecycle: 'DRAFT' | 'ISSUED';
@@ -41,8 +43,79 @@ export function InvoicePage({ accountRole, pathname, search }: { accountRole: st
   </section>;
 }
 
+function useCashPayment() {
+  const [target, setTarget] = useState<{id: string; opener: HTMLElement}>();
+  const [result, setResult] = useState<CashResult>();
+  const [revision, setRevision] = useState(0);
+  function open(invoice: Invoice, opener: HTMLElement) {
+    setTarget({ id: invoice.id, opener });
+  }
+  function close() { setTarget(undefined); }
+  function success(result: CashResult) {
+    setResult(result);
+    close();
+    setRevision(value => value + 1);
+  }
+  return { target, result, revision, open, close, success, refresh: () => setRevision(value => value + 1) };
+}
+
+function applyCash(invoice: Invoice, result: CashResult): Invoice {
+  return { ...invoice, paid_amount: result.paidAmount, remaining: result.remaining,
+    payment_status: result.paymentStatus, is_overdue: result.paymentStatus !== 'PAID' && invoice.is_overdue };
+}
+
+function mayTakeCash(invoice: Invoice) {
+  return invoice.lifecycle === 'ISSUED' && invoice.payment_status !== 'PAID'
+    && invoice.remaining != null && /^\d+$/.test(invoice.remaining) && BigInt(invoice.remaining) > 0n;
+}
+
+function CashSuccessToast({ result }: { result: CashResult }) {
+  const [visible, setVisible] = useState(true);
+  useEffect(() => {
+    const timer = window.setTimeout(() => setVisible(false), 5000);
+    return () => window.clearTimeout(timer);
+  }, []);
+
+  return visible && <div className="invoice-success-toast">
+      <span className="invoice-success-icon" aria-hidden="true">✓</span>
+      <div>
+        <strong>Ghi nhận thanh toán thành công</strong>
+        <div>{result.paymentStatus === 'PAID'
+          ? 'Hóa đơn đã tất toán.'
+          : 'Thanh toán một phần. Còn phải trả ' + money(result.remaining) + '.'}</div>
+      </div>
+  </div>;
+}
+
+function CashFeedback({ result }: { result?: CashResult }) {
+  return <>
+    {createPortal(<div role="status" className="invoice-success-live">
+      {result && <CashSuccessToast key={result.paymentId} result={result} />}
+    </div>, document.body)}
+    {result && <div className="pc-notice">
+    <p>Đã ghi nhận thanh toán tiền mặt. {statuses[result.paymentStatus]}.
+      {result.paymentStatus === 'PARTIALLY_PAID' && <> Còn phải trả {money(result.remaining)}.</>}
+    </p>
+    {result.paymentStatus === 'PAID' && <>
+      <button className="pc-button" type="button" onClick={() => window.print()}>In/Xuất phiếu thu</button>
+      {createPortal(<article className="cash-payment-receipt" aria-label="Phiếu thu">
+        <h1>Phiếu thu tiền mặt</h1>
+        <dl>
+          <dt>Mã khoản thu</dt><dd>{result.cashEntryId}</dd>
+          <dt>Hóa đơn</dt><dd>{result.invoiceNumber}</dd>
+          <dt>Số tiền thực nhận</dt><dd>{money(result.amount)}</dd>
+          <dt>Thời gian thanh toán</dt><dd>{timestamp(result.paidAt)}</dd>
+          <dt>Nguồn tiền mặt</dt><dd>{result.fundName}</dd>
+        </dl>
+      </article>, document.body)}
+    </>}
+    </div>}
+  </>;
+}
+
 function InvoiceList({ role, search }: { role: InvoiceRole; search: string }) {
   const path = invoicePath(role);
+  const cash = useCashPayment();
   const [page, setPage] = useState<Page>();
   const [locations, setLocations] = useState<Location[]>([]);
   const [error, setError] = useState('');
@@ -53,7 +126,7 @@ function InvoiceList({ role, search }: { role: InvoiceRole; search: string }) {
 
   useEffect(() => {
     const request = new AbortController();
-    invoiceRequest<Page>(path + search, request.signal).then(setPage, e => {
+    invoiceRequest<Page>(path + search, request.signal).then(value => { if (!request.signal.aborted) { setPage(value); setError(''); } }, e => {
       if (!request.signal.aborted) setError(message(e));
     });
     if (role === 'host') {
@@ -62,7 +135,7 @@ function InvoiceList({ role, search }: { role: InvoiceRole; search: string }) {
       });
     }
     return () => request.abort();
-  }, [path, role, search]);
+  }, [path, role, search, cash.revision]);
 
   const go = (index: number) => {
     const next = new URLSearchParams(search);
@@ -103,15 +176,25 @@ function InvoiceList({ role, search }: { role: InvoiceRole; search: string }) {
         <div className="invoice-actions"><button className="pc-button">Lọc</button><a href={path}>Đặt lại bộ lọc</a></div>
       </div>
     </form>}
+    <CashFeedback result={cash.result} />
+    {cash.target && <CashPayment endpoint={path + '/' + encodeURIComponent(cash.target.id)}
+      opener={cash.target.opener} onClose={cash.close} onRefresh={cash.refresh} onSuccess={result => {
+        const id = cash.target?.id;
+        setPage(current => current && ({ ...current, items: current.items.map(item => item.id === id ? applyCash(item, result) : item) }));
+        cash.success(result);
+      }} />}
     {locationError && <p role="alert">{locationError}</p>}
-    {error ? <p className="pc-state" role="alert">{error}</p> : !page ? <p role="status">Đang tải hóa đơn…</p>
+    {error && <p className="pc-state" role="alert">{error} <button type="button" onClick={() => window.location.reload()}>Tải lại</button></p>}
+    {!page ? !error && <p role="status">Đang tải hóa đơn…</p>
       : !page.items.length ? <p className="pc-state">Không tìm thấy hóa đơn phù hợp.</p>
         : <div className="invoice-table"><table>
-          <thead><tr><th>Số hóa đơn</th><th>Phòng</th><th>Kỳ tính tiền</th><th>Tổng tiền</th><th>Hạn thanh toán</th><th>Trạng thái</th></tr></thead>
+          <thead><tr><th>Số hóa đơn</th><th>Phòng</th><th>Kỳ tính tiền</th><th>Tổng tiền</th><th>Hạn thanh toán</th><th>Trạng thái</th>{role === 'host' && <th>Thao tác</th>}</tr></thead>
           <tbody>{page.items.map(item => <tr key={item.id}>
             <td><a href={path + '/' + item.id + search}>{item.number || 'Xem hóa đơn'}</a></td>
             <td>{item.room_code} · {item.building_name}</td><td>{date(item.from_date)} – {date(item.to_date)}</td>
             <td>{money(item.total)}</td><td>{date(item.due_date)}</td><td>{status(item)}{item.is_overdue && <strong className="invoice-overdue">Quá hạn</strong>}</td>
+            {role === 'host' && <td>{mayTakeCash(item) && <button type="button" className="pc-button"
+              onClick={event => cash.open(item, event.currentTarget)}>Ghi nhận thanh toán tiền mặt</button>}</td>}
           </tr>)}</tbody>
         </table></div>}
     {page && (page.page > 0 || page.hasNext) && <nav aria-label="Trang hóa đơn" className="invoice-actions">
@@ -124,6 +207,7 @@ function InvoiceList({ role, search }: { role: InvoiceRole; search: string }) {
 function InvoiceDetail({ role, id, search }: { role: InvoiceRole; id: string; search: string }) {
   const path = invoicePath(role);
   const endpoint = path + '/' + encodeURIComponent(id);
+  const cash = useCashPayment();
   const [detail, setDetail] = useState<Detail>();
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -131,11 +215,11 @@ function InvoiceDetail({ role, id, search }: { role: InvoiceRole; id: string; se
 
   useEffect(() => {
     const request = new AbortController();
-    invoiceRequest<Detail>(endpoint, request.signal).then(setDetail, e => {
+    invoiceRequest<Detail>(endpoint, request.signal).then(value => { if (!request.signal.aborted) { setDetail(value); setError(''); } }, e => {
       if (!request.signal.aborted) setError(message(e));
     });
     return () => request.abort();
-  }, [endpoint, loadVersion]);
+  }, [endpoint, loadVersion, cash.revision]);
 
   async function issue(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -154,6 +238,16 @@ function InvoiceDetail({ role, id, search }: { role: InvoiceRole; id: string; se
       <a href={path + search}>Về danh sách</a>
       <button className="pc-button" type="button" disabled={busy} onClick={() => { setError(''); setDetail(undefined); setLoadVersion(v => v + 1); }}>Tải lại</button>
     </div>
+    <CashFeedback result={cash.result} />
+    {cash.target && <CashPayment endpoint={endpoint} opener={cash.target.opener} onClose={cash.close} onRefresh={cash.refresh}
+      onSuccess={result => {
+        setDetail(current => current && ({
+          ...current, invoice: applyCash(current.invoice, result),
+          payments: [{ id: result.paymentId, amount: result.amount, paid_at: result.paidAt, method: 'CASH',
+            status: 'CONFIRMED', receipt_id: result.cashEntryId }, ...current.payments.filter(payment => payment.id !== result.paymentId)],
+        }));
+        cash.success(result);
+      }} />}
     {error && <p role="alert" className="pc-notice">{error}</p>}
     {!invoice || !detail ? !error && <p role="status">Đang tải chi tiết hóa đơn…</p> : <>
       <section className="pc-state">
@@ -169,6 +263,8 @@ function InvoiceDetail({ role, id, search }: { role: InvoiceRole; id: string; se
             <div><dt>Còn phải trả</dt><dd>{money(invoice.remaining)}</dd></div>
           </>}
         </dl>
+        {role === 'host' && mayTakeCash(invoice) && <button type="button" className="pc-button"
+          onClick={event => cash.open(invoice, event.currentTarget)}>Ghi nhận thanh toán tiền mặt</button>}
         {role === 'host' && invoice.lifecycle === 'DRAFT' && <form onSubmit={issue} className="invoice-actions">
           <label>Hạn thanh toán <input required type="date" name="dueDate" min={vietnamToday()} /></label>
           <button className="pc-button" disabled={busy}>{busy ? 'Đang phát hành…' : 'Phát hành hóa đơn'}</button>
