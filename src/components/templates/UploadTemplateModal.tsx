@@ -231,21 +231,6 @@ export const UploadTemplateModal: React.FC<UploadTemplateModalProps> = ({ onSucc
                   </div>
                 )}
 
-                {validationResult.missingRequiredVariables.length > 0 && (
-                  <div style={{ marginTop: '8px' }}>
-                    <div style={{ color: '#b45309', fontSize: '12px', fontWeight: 600, marginBottom: '4px' }}>
-                      ℹ Các biến khuyến nghị chưa có trong mẫu:
-                    </div>
-                    <div className="validation-tags">
-                      {validationResult.missingRequiredVariables.map((v) => (
-                        <span key={v} className="variable-tag missing">
-                          {v}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
                 {validationResult.unsupportedVariables.length === 0 && (
                   <div style={{ color: '#15803d', fontSize: '12px', marginTop: '6px' }}>
                     Tất cả các biến trong tệp mẫu đều hợp lệ và tương thích.

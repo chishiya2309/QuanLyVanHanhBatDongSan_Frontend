@@ -112,7 +112,6 @@ export const SupportedVariablesModal: React.FC<SupportedVariablesModalProps> = (
                   <tr>
                     <th style={{ width: '220px' }}>Mã biến (Click sao chép)</th>
                     <th>Ý nghĩa & Mô tả</th>
-                    <th style={{ width: '100px' }}>Bắt buộc</th>
                     <th style={{ width: '180px' }}>Giá trị mẫu</th>
                   </tr>
                 </thead>
@@ -130,13 +129,6 @@ export const SupportedVariablesModal: React.FC<SupportedVariablesModalProps> = (
                         </button>
                       </td>
                       <td>{v.description}</td>
-                      <td>
-                        {v.required ? (
-                          <span style={{ color: '#dc2626', fontWeight: 600 }}>Bắt buộc</span>
-                        ) : (
-                          <span style={{ color: '#6b7280' }}>Tùy chọn</span>
-                        )}
-                      </td>
                       <td style={{ color: '#475569', fontStyle: 'italic' }}>{v.sampleValue || '---'}</td>
                     </tr>
                   ))}

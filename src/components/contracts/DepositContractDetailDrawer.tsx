@@ -8,6 +8,7 @@ interface DepositContractDetailDrawerProps {
   onEdit: (contract: DepositContract) => void;
   onCancel?: (contract: DepositContract) => void;
   onConvert?: (contract: DepositContract) => void;
+  onExport?: (contract: DepositContract) => void;
 }
 
 const renderStatusBadge = (status: DepositStatus) => {
@@ -32,6 +33,7 @@ export const DepositContractDetailDrawer: React.FC<DepositContractDetailDrawerPr
   onEdit,
   onCancel,
   onConvert,
+  onExport,
 }) => {
   if (!isOpen || !contract) return null;
 
@@ -47,9 +49,29 @@ export const DepositContractDetailDrawer: React.FC<DepositContractDetailDrawerPr
               Mã: <strong style={{ color: 'var(--color-accent-primary)' }}>{contract.contractNumber}</strong>
             </div>
           </div>
-          <button type="button" className="contract-modal-close" onClick={onClose} aria-label="Đóng">
-            &times;
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            {onExport && (
+              <button
+                type="button"
+                className="contract-action-btn"
+                style={{
+                  color: '#0284c7',
+                  borderColor: '#38bdf8',
+                  background: '#f0f9ff',
+                  fontWeight: 600,
+                  fontSize: '13px',
+                  padding: '6px 12px',
+                }}
+                onClick={() => onExport(contract)}
+                title="Xuất hợp đồng đặt cọc (UC34)"
+              >
+                📥 Xuất hợp đồng cọc
+              </button>
+            )}
+            <button type="button" className="contract-modal-close" onClick={onClose} aria-label="Đóng">
+              &times;
+            </button>
+          </div>
         </div>
 
         <div className="contract-drawer-body">
@@ -173,10 +195,20 @@ export const DepositContractDetailDrawer: React.FC<DepositContractDetailDrawerPr
           </div>
         </div>
 
-        <div className="contract-modal-footer">
+        <div className="contract-drawer-footer">
           <button type="button" className="contract-action-btn" onClick={onClose}>
             Đóng
           </button>
+          {onExport && (
+            <button
+              type="button"
+              className="contract-action-btn"
+              style={{ color: '#0284c7', borderColor: '#bae6fd', background: '#f0f9ff', fontWeight: 600 }}
+              onClick={() => onExport(contract)}
+            >
+              📥 Xuất hợp đồng cọc
+            </button>
+          )}
           {canEdit && onCancel && (
             <button
               type="button"

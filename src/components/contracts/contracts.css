@@ -404,20 +404,23 @@
 .contract-drawer {
   background: white;
   width: 100%;
-  max-width: 520px;
+  max-width: 680px;
   height: 100%;
   display: flex;
   flex-direction: column;
-  box-shadow: -4px 0 20px rgba(0, 0, 0, 0.1);
-  overflow-y: auto;
+  box-shadow: -4px 0 24px rgba(0, 0, 0, 0.18);
+  overflow: hidden;
 }
 
 .contract-drawer-header {
-  padding: 20px;
+  padding: 16px 20px;
   border-bottom: 1px solid var(--color-rule);
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-shrink: 0;
+  background: white;
+  z-index: 10;
 }
 
 .contract-drawer-body {
@@ -426,6 +429,21 @@
   flex-direction: column;
   gap: 20px;
   flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.contract-drawer-footer {
+  padding: 12px 18px;
+  border-top: 1px solid var(--color-rule);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  background: white;
+  z-index: 10;
 }
 
 .drawer-section {

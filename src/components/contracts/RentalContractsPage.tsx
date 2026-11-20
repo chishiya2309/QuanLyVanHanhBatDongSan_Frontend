@@ -18,6 +18,7 @@ import { TerminateRentalContractModal } from './TerminateRentalContractModal';
 import { MoveInHandoverModal } from './MoveInHandoverModal';
 import { MoveOutHandoverModal } from './MoveOutHandoverModal';
 import { RentalContractDetailDrawer } from './RentalContractDetailDrawer';
+import { DocumentExportModal } from './DocumentExportModal';
 import type { HandoverReport } from '../../types/handover';
 import './contracts.css';
 
@@ -110,6 +111,9 @@ export const RentalContractsPage: React.FC<RentalContractsPageProps> = ({
 
   const [drawerOpen, setDrawerOpen] = useState(Boolean(route.detailId));
   const [detailContract, setDetailContract] = useState<RentalContract | null>(null);
+
+  const [exportModalOpen, setExportModalOpen] = useState(false);
+  const [contractToExport, setContractToExport] = useState<{ id: string } | null>(null);
 
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -409,10 +413,9 @@ export const RentalContractsPage: React.FC<RentalContractsPageProps> = ({
 
   const handleTerminateSuccess = (record: { contractNumber: string; refundDue: number }) => {
     setSuccessMessage(
-      `Thanh lý hợp đồng ${record.contractNumber} thành công! ${
-        record.refundDue > 0
-          ? `Số tiền hoàn cọc: ${new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(record.refundDue)}`
-          : record.refundDue < 0
+      `Thanh lý hợp đồng ${record.contractNumber} thành công! ${record.refundDue > 0
+        ? `Số tiền hoàn cọc: ${new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(record.refundDue)}`
+        : record.refundDue < 0
           ? `Số tiền khách nộp bù: ${new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(Math.abs(record.refundDue))}`
           : 'Hai bên đã tất toán đủ tiền cọc và công nợ'
       }`
@@ -425,7 +428,7 @@ export const RentalContractsPage: React.FC<RentalContractsPageProps> = ({
     if (detailContract && contractToTerminate && detailContract.id === contractToTerminate.id) {
       rentalContractApi.getRentalContractDetail(contractToTerminate.id)
         .then((updated) => setDetailContract(updated))
-        .catch(() => {});
+        .catch(() => { });
     }
     setTimeout(() => {
       setSuccessMessage(null);
@@ -453,7 +456,7 @@ export const RentalContractsPage: React.FC<RentalContractsPageProps> = ({
       rentalContractApi
         .getRentalContractDetail(contractForHandover.id)
         .then((updated) => setDetailContract(updated))
-        .catch(() => {});
+        .catch(() => { });
     }
     setTimeout(() => {
       setSuccessMessage(null);
@@ -481,7 +484,7 @@ export const RentalContractsPage: React.FC<RentalContractsPageProps> = ({
       rentalContractApi
         .getRentalContractDetail(contractForMoveOut.id)
         .then((updated) => setDetailContract(updated))
-        .catch(() => {});
+        .catch(() => { });
     }
     setTimeout(() => {
       setSuccessMessage(null);
@@ -787,6 +790,26 @@ export const RentalContractsPage: React.FC<RentalContractsPageProps> = ({
                           >
                             Chi tiết
                           </button>
+                          <button
+                            type="button"
+                            className="contract-action-btn"
+                            style={{
+                              padding: '4px 10px',
+                              fontSize: '12px',
+                              color: '#0284c7',
+                              borderColor: '#38bdf8',
+                              background: '#f0f9ff',
+                              marginRight: '6px',
+                              fontWeight: 600,
+                            }}
+                            onClick={() => {
+                              setContractToExport(c);
+                              setExportModalOpen(true);
+                            }}
+                            title="Xuất hợp đồng thuê (UC34)"
+                          >
+                            📄 Xuất HĐ
+                          </button>
 
                           {c.status === 'ACTIVE' && (
                             <button
@@ -1061,6 +1084,26 @@ export const RentalContractsPage: React.FC<RentalContractsPageProps> = ({
                             style={{
                               padding: '4px 10px',
                               fontSize: '12px',
+                              color: '#0284c7',
+                              borderColor: '#38bdf8',
+                              background: '#f0f9ff',
+                              marginRight: '6px',
+                              fontWeight: 600,
+                            }}
+                            onClick={() => {
+                              setContractToExport(c);
+                              setExportModalOpen(true);
+                            }}
+                            title="Xuất hợp đồng thuê (UC34)"
+                          >
+                            📄 Xuất HĐ
+                          </button>
+                          <button
+                            type="button"
+                            className="contract-action-btn"
+                            style={{
+                              padding: '4px 10px',
+                              fontSize: '12px',
                               color: '#16a34a',
                               borderColor: '#bbf7d0',
                               background: '#f0fdf4',
@@ -1209,6 +1252,10 @@ export const RentalContractsPage: React.FC<RentalContractsPageProps> = ({
           handleCloseDrawer();
           handleOpenMoveOut(contract);
         }}
+        onExport={(contract) => {
+          setContractToExport(contract);
+          setExportModalOpen(true);
+        }}
         contract={detailContract}
       />
 
@@ -1273,6 +1320,17 @@ export const RentalContractsPage: React.FC<RentalContractsPageProps> = ({
         contract={contractForMoveOut}
         onSessionExpired={onSessionExpired}
         onProceedToTerminate={handleProceedFromMoveOutToTerminate}
+      />
+
+      {/* Modal Xuất hợp đồng thuê (UC34, UC78, UC79) */}
+      <DocumentExportModal
+        isOpen={exportModalOpen}
+        onClose={() => {
+          setExportModalOpen(false);
+          setContractToExport(null);
+        }}
+        sourceType="RENTAL"
+        sourceId={contractToExport?.id || ''}
       />
     </div>
   );
