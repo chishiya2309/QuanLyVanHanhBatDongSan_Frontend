@@ -4,6 +4,7 @@ import { getDepositContracts, getDepositContractDetail, DepositContractApiError 
 import { buildDepositContractUrl } from '../../utils/depositContractNavigation';
 import { DepositContractModal } from './DepositContractModal';
 import { DepositContractDetailDrawer } from './DepositContractDetailDrawer';
+import { DocumentExportModal } from './DocumentExportModal';
 import { CancelDepositModal } from './CancelDepositModal';
 import { ConvertDepositToRentalModal } from './ConvertDepositToRentalModal';
 import type { RentalContract } from '../../types/rentalContract';
@@ -49,6 +50,9 @@ export const DepositContractsPage: React.FC<DepositContractsPageProps> = ({
 
   const [drawerOpen, setDrawerOpen] = useState(Boolean(route.detailId));
   const [detailContract, setDetailContract] = useState<DepositContract | null>(null);
+
+  const [exportModalOpen, setExportModalOpen] = useState(false);
+  const [contractToExport, setContractToExport] = useState<{ id: string } | null>(null);
 
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
   const [contractToCancel, setContractToCancel] = useState<DepositContract | null>(null);
@@ -399,6 +403,26 @@ export const DepositContractsPage: React.FC<DepositContractsPageProps> = ({
                         >
                           Chi tiết
                         </button>
+                        <button
+                          type="button"
+                          className="contract-action-btn"
+                          style={{
+                            padding: '4px 10px',
+                            fontSize: '12px',
+                            color: '#0284c7',
+                            borderColor: '#38bdf8',
+                            background: '#f0f9ff',
+                            marginRight: '6px',
+                            fontWeight: 600,
+                          }}
+                          onClick={() => {
+                            setContractToExport(c);
+                            setExportModalOpen(true);
+                          }}
+                          title="Xuất hợp đồng đặt cọc (UC34)"
+                        >
+                          📄 Xuất HĐ
+                        </button>
                         {c.status === 'RESERVED' && (
                           <button
                             type="button"
@@ -496,6 +520,10 @@ export const DepositContractsPage: React.FC<DepositContractsPageProps> = ({
           handleCloseDetail();
           handleOpenConvert(c);
         }}
+        onExport={(c) => {
+          setContractToExport(c);
+          setExportModalOpen(true);
+        }}
       />
 
       {/* Modal xác nhận hủy cọc (UC25) */}
@@ -514,6 +542,17 @@ export const DepositContractsPage: React.FC<DepositContractsPageProps> = ({
         onClose={handleCloseConvert}
         onSuccess={handleConvertSuccess}
         onSessionExpired={onSessionExpired}
+      />
+
+      {/* Modal Xuất hợp đồng cọc (UC34, UC78, UC79) */}
+      <DocumentExportModal
+        isOpen={exportModalOpen}
+        onClose={() => {
+          setExportModalOpen(false);
+          setContractToExport(null);
+        }}
+        sourceType="DEPOSIT"
+        sourceId={contractToExport?.id || ''}
       />
     </div>
   );

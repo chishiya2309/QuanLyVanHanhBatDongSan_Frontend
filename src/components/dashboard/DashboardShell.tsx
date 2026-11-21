@@ -47,6 +47,9 @@ interface DashboardShellProps {
   onNavigateContracts?: () => void;
   rentalContractsActive?: boolean;
   onNavigateRentalContracts?: () => void;
+  showDocumentTemplates?: boolean;
+  documentTemplatesActive?: boolean;
+  onNavigateDocumentTemplates?: () => void;
   onNavigateOverview?: () => void;
   onNavigateHostAccounts?: () => void;
 }
@@ -80,6 +83,9 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
   showContracts = false,
   contractsActive = false,
   rentalContractsActive = false,
+  showDocumentTemplates = false,
+  documentTemplatesActive = false,
+  onNavigateDocumentTemplates,
   onNavigateContracts,
   onNavigateRentalContracts,
   onNavigateOverview,
@@ -201,6 +207,7 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
   };
 
   const isCustomView = invoiceLink?.active || rentalProfileActive || fundingSourcesActive || provisionalChargesActive || meterReadingsActive || hostAccountsActive || assetsActive || propertiesActive || roomsActive || servicesActive || customersActive;
+  const isCustomView = hostAccountsActive || assetsActive || propertiesActive || roomsActive || servicesActive || customersActive || documentTemplatesActive;
 
   return (
     <div className={`dashboard-root${hostAccountsActive ? ' dashboard-root--admin' : ''}${assetsActive ? ' dashboard-root--assets' : ''}`}>
@@ -234,6 +241,7 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
           { label: 'Mặt bằng & Phòng', path: '/rooms', active: roomsActive, action: onNavigateRooms, show: roomsActive },
           { label: 'Hợp đồng cọc', path: '/deposit-contracts', active: contractsActive, action: onNavigateContracts, show: showContracts },
           { label: 'Hợp đồng thuê', path: '/rental-contracts', active: rentalContractsActive, action: onNavigateRentalContracts, show: showContracts },
+          { label: 'Mẫu tài liệu', path: '/document-templates', active: documentTemplatesActive, action: onNavigateDocumentTemplates, show: showDocumentTemplates },
           { label: 'Tài khoản Host', path: '/admin/host-accounts', active: hostAccountsActive, action: onNavigateHostAccounts, show: hostAccountsActive },
         ].filter((item) => item.show).map((item) => <a key={item.path} href={item.path} aria-current={smallScreen && item.active ? 'page' : undefined} onClick={(event) => { if (item.action) { event.preventDefault(); item.action(); } }}>{item.label}</a>)}
       </nav>}
@@ -277,6 +285,9 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
           showContracts={showContracts}
           contractsActive={contractsActive}
           rentalContractsActive={rentalContractsActive}
+          showDocumentTemplates={showDocumentTemplates}
+          documentTemplatesActive={documentTemplatesActive}
+          onNavigateDocumentTemplates={mobileNavigate(onNavigateDocumentTemplates)}
           onNavigateContracts={mobileNavigate(onNavigateContracts)}
           onNavigateRentalContracts={mobileNavigate(onNavigateRentalContracts)}
           onNavigateOverview={mobileNavigate(onNavigateOverview)}

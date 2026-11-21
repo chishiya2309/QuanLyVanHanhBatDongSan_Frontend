@@ -13,6 +13,7 @@ interface RentalContractDetailDrawerProps {
   onTerminate?: (contract: RentalContract) => void;
   onHandover?: (contract: RentalContract) => void;
   onMoveOutHandover?: (contract: RentalContract) => void;
+  onExport?: (contract: RentalContract) => void;
 }
 
 const renderStatusBadge = (status: RentalStatus) => {
@@ -38,6 +39,7 @@ export const RentalContractDetailDrawer: React.FC<RentalContractDetailDrawerProp
   onTerminate,
   onHandover,
   onMoveOutHandover,
+  onExport,
 }) => {
   const [terminationRecord, setTerminationRecord] = useState<TerminationRecord | null>(null);
   const [loadingTermination, setLoadingTermination] = useState(false);
@@ -69,9 +71,29 @@ export const RentalContractDetailDrawer: React.FC<RentalContractDetailDrawerProp
               Mã: <strong style={{ color: 'var(--color-accent-primary, #b91c1c)' }}>{contract.contractNumber}</strong>
             </div>
           </div>
-          <button type="button" className="contract-modal-close" onClick={onClose} aria-label="Đóng">
-            &times;
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            {onExport && (
+              <button
+                type="button"
+                className="contract-action-btn"
+                style={{
+                  color: '#0284c7',
+                  borderColor: '#38bdf8',
+                  background: '#f0f9ff',
+                  fontWeight: 600,
+                  fontSize: '13px',
+                  padding: '6px 12px',
+                }}
+                onClick={() => onExport(contract)}
+                title="Xuất hợp đồng thuê (UC34)"
+              >
+                📥 Xuất hợp đồng
+              </button>
+            )}
+            <button type="button" className="contract-modal-close" onClick={onClose} aria-label="Đóng">
+              &times;
+            </button>
+          </div>
         </div>
 
         <div className="contract-drawer-body">
@@ -397,16 +419,7 @@ export const RentalContractDetailDrawer: React.FC<RentalContractDetailDrawerProp
         </div>
 
         {/* Drawer footer actions */}
-        <div
-          style={{
-            padding: '16px 20px',
-            borderTop: '1px solid var(--color-rule)',
-            display: 'flex',
-            justifyContent: 'flex-end',
-            gap: '12px',
-            background: 'white',
-          }}
-        >
+        <div className="contract-drawer-footer">
           <button
             type="button"
             className="contract-action-btn btn-secondary"
@@ -414,6 +427,22 @@ export const RentalContractDetailDrawer: React.FC<RentalContractDetailDrawerProp
           >
             Đóng
           </button>
+
+          {onExport && (
+            <button
+              type="button"
+              className="contract-action-btn"
+              style={{
+                color: '#0284c7',
+                borderColor: '#bae6fd',
+                background: '#f0f9ff',
+                fontWeight: 600,
+              }}
+              onClick={() => onExport(contract)}
+            >
+              📥 Xuất hợp đồng
+            </button>
+          )}
 
           {contract.status === 'ACTIVE' && onHandover && (
             <button

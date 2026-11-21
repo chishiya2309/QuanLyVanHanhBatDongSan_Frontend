@@ -16,6 +16,7 @@ interface SidebarProps {
   showCustomers?: boolean; customersActive?: boolean; onNavigateCustomers?: () => void;
   showContracts?: boolean; contractsActive?: boolean; onNavigateContracts?: () => void;
   rentalContractsActive?: boolean; onNavigateRentalContracts?: () => void;
+  showDocumentTemplates?: boolean; documentTemplatesActive?: boolean; onNavigateDocumentTemplates?: () => void;
   onNavigateOverview?: () => void; onNavigateHostAccounts?: () => void;
 }
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -40,6 +41,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
   showContracts = false,
   contractsActive = false,
   rentalContractsActive = false,
+  showDocumentTemplates = false,
+  documentTemplatesActive = false,
+  onNavigateDocumentTemplates,
   onNavigateContracts,
   onNavigateRentalContracts,
   onNavigateAssets,
@@ -49,6 +53,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onNavigateHostAccounts,
 }) => {
   const isOverviewActive = !invoiceLink?.active && !rentalProfileActive && !fundingSourcesActive && !provisionalChargesActive && !meterReadingsActive && !periodUsagesActive && !hostAccountsActive && !assetsActive && !propertiesActive && !roomsActive && !servicesActive && !customersActive && !contractsActive && !rentalContractsActive;
+  const isOverviewActive = !hostAccountsActive && !assetsActive && !propertiesActive && !roomsActive && !servicesActive && !customersActive && !contractsActive && !rentalContractsActive && !documentTemplatesActive;
   return (
     <aside id="rentops-navigation" className={`dash-sidebar${mobileOpen ? ' is-mobile-open' : ''}`} aria-label="Thanh điều hướng chính">
       <div className="dash-nav-group">
@@ -223,6 +228,23 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </svg>
           <span>Cấu hình hệ thống</span>
         </button>
+        {showDocumentTemplates && (
+          <button
+            type="button"
+            className={`dash-nav-item${documentTemplatesActive ? ' is-active' : ''}`}
+            aria-current={documentTemplatesActive && markCurrent ? 'page' : undefined}
+            onClick={onNavigateDocumentTemplates}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+              <line x1="16" y1="13" x2="8" y2="13"></line>
+              <line x1="16" y1="17" x2="8" y2="17"></line>
+              <polyline points="10 9 9 9 8 9"></polyline>
+            </svg>
+            <span>Mẫu biểu</span>
+          </button>
+        )}
         {showHostAccounts && <>
           <span className="dash-nav-header">Tài khoản</span>
           <button type="button" className={`dash-nav-item${hostAccountsActive ? ' is-active' : ''}`} aria-current={hostAccountsActive && markCurrent ? 'page' : undefined} onClick={onNavigateHostAccounts}>
@@ -232,6 +254,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </>}
       </div>
         {!invoiceLink?.active && !rentalProfileActive && !fundingSourcesActive && !provisionalChargesActive && !hostAccountsActive && !assetsActive && !propertiesActive && !roomsActive && !servicesActive && !customersActive && !contractsActive && !rentalContractsActive && (
+        {!hostAccountsActive && !assetsActive && !propertiesActive && !roomsActive && !servicesActive && !customersActive && !contractsActive && !rentalContractsActive && !documentTemplatesActive && (
       <div className="dash-sidebar-footer">
         <div className="system-status-box">
           <div>
