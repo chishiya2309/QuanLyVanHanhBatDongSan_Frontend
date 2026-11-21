@@ -10,6 +10,7 @@ import {
   rentalContractApi,
   RentalContractApiError,
 } from '../../services/rentalContractApi';
+import { DocumentExportModal } from './DocumentExportModal';
 import './contracts.css';
 
 interface MoveOutHandoverModalProps {
@@ -106,6 +107,7 @@ export const MoveOutHandoverModal: React.FC<MoveOutHandoverModalProps> = ({
   const [isDraft, setIsDraft] = useState(false);
   const [isReadOnly, setIsReadOnly] = useState(false);
   const [currentReportId, setCurrentReportId] = useState<string | null>(null);
+  const [exportModalOpen, setExportModalOpen] = useState(false);
   const [showConfirmPopup, setShowConfirmPopup] = useState(false);
 
   // Success dialog state after confirming move-out
@@ -858,6 +860,25 @@ export const MoveOutHandoverModal: React.FC<MoveOutHandoverModalProps> = ({
             {isReadOnly ? 'Đóng' : 'Hủy bỏ'}
           </button>
 
+          {isReadOnly && currentReportId && (
+            <button
+              type="button"
+              className="contract-action-btn"
+              style={{
+                minWidth: '140px',
+                color: '#0284c7',
+                borderColor: '#bae6fd',
+                background: '#f0f9ff',
+                fontWeight: 600,
+                padding: '8px 16px',
+              }}
+              onClick={() => setExportModalOpen(true)}
+              title="Xuất biên bản bàn giao trả phòng (UC35)"
+            >
+              📥 Xuất biên bản
+            </button>
+          )}
+
           {!isReadOnly && (
             <>
               <button
@@ -1055,6 +1076,17 @@ export const MoveOutHandoverModal: React.FC<MoveOutHandoverModalProps> = ({
             </div>
           </div>
         </div>
+      )}
+
+      {/* Modal Xuất biên bản trả phòng (UC35, UC78, UC79) */}
+      {contract && currentReportId && (
+        <DocumentExportModal
+          isOpen={exportModalOpen}
+          onClose={() => setExportModalOpen(false)}
+          sourceType="HANDOVER"
+          sourceId={contract.id}
+          handoverReportId={currentReportId}
+        />
       )}
     </div>
   );

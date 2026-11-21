@@ -1,11 +1,12 @@
 import { useLayoutEffect, useRef, type ReactNode } from 'react';
 
-export function PropertyDialog({ children, labelledBy, onClose, pending = false, drawer = false }: {
+export function PropertyDialog({ children, labelledBy, onClose, pending = false, drawer = false, className }: {
   children: ReactNode;
   labelledBy: string;
   onClose: () => void;
   pending?: boolean;
   drawer?: boolean;
+  className?: string;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
 
@@ -23,7 +24,7 @@ export function PropertyDialog({ children, labelledBy, onClose, pending = false,
     };
   }, []);
 
-  return <dialog ref={ref} className={drawer ? 'prop-drawer' : 'prop-dialog'} aria-labelledby={labelledBy}
+  return <dialog ref={ref} className={className ?? (drawer ? 'prop-drawer' : 'prop-dialog')} aria-labelledby={labelledBy}
     aria-busy={pending || undefined}
     onKeyDown={(event) => {
       if (event.key !== 'Tab') return;

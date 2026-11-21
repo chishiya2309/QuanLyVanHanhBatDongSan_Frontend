@@ -65,6 +65,8 @@ import { parseFundingRoute, fundingUrl } from './utils/fundingNavigation';
 
 import { RentalProfilePage } from './components/rentalProfile/RentalProfilePage';
 import { isRentalProfilePath, rentalProfilePath, rentalProfileTitle, rentalProfileMessages } from './types/rentalProfile';
+import { DocumentTemplatesPage } from './components/templates/DocumentTemplatesPage';
+import { parseDocumentTemplateRoute, type DocumentTemplateRoute } from './utils/documentTemplateNavigation';
 
 const SESSION_SPLASH_MIN_MS = 800;
 
@@ -90,6 +92,7 @@ function isProtectedPath(pathname: string, search: string): boolean {
     || parseCustomerRoute(pathname, search)
     || parseDepositContractRoute(pathname, search)
     || parseRentalContractRoute(pathname, search)
+    || parseDocumentTemplateRoute(pathname, search)
   );
 }
 
@@ -110,6 +113,8 @@ function AuthenticatedDashboard({
   onNavigateContracts,
   rentalContractRoute,
   onNavigateRentalContracts,
+  templateRoute,
+  onNavigateTemplates,
   onCreatePendingChange,
   onOverview,
   catalogRoute,
@@ -147,6 +152,8 @@ function AuthenticatedDashboard({
   onNavigateContracts: (url: string) => void;
   rentalContractRoute: RentalContractRoute | null;
   onNavigateRentalContracts: (url: string) => void;
+  templateRoute: DocumentTemplateRoute | null;
+  onNavigateTemplates: (url: string) => void;
   onCreatePendingChange: (pending: boolean) => void;
   catalogRoute: CatalogRoute | null;
   onNavigateCatalog: (url: string, replace?: boolean) => void;
@@ -218,6 +225,9 @@ function AuthenticatedDashboard({
         onNavigateContracts={() => onNavigateContracts('/deposit-contracts')}
         rentalContractsActive={rentalContractRoute !== null}
         onNavigateRentalContracts={() => onNavigateRentalContracts('/rental-contracts')}
+        showDocumentTemplates={user.role === 'HOST'}
+        documentTemplatesActive={templateRoute !== null}
+        onNavigateDocumentTemplates={() => onNavigateTemplates('/document-templates')}
         showCustomers={user.role === 'HOST' && !customersDenied}
         showMeterReadings={user.role === 'HOST'}
         meterReadingsActive={meterRoute !== null}
@@ -250,6 +260,16 @@ function AuthenticatedDashboard({
       >
         {isInvoicePath(window.location.pathname) ? (
           <InvoicePage key={window.location.href} accountRole={user.role} pathname={window.location.pathname} search={window.location.search} />
+        ) : templateRoute ? (
+          user.role !== 'HOST' ? (
+            <section className="templates-page">
+              <h1>Mẫu tài liệu</h1>
+              <p role="alert">Bạn không có quyền quản lý mẫu tài liệu.</p>
+              <button type="button" className="contract-action-btn" onClick={onOverview}>Về tổng quan</button>
+            </section>
+          ) : (
+            <DocumentTemplatesPage route={templateRoute} onNavigate={onNavigateTemplates} onSessionExpired={onSessionExpired} />
+          )
         ) : fundingRoute ? (
           fundingDenied ? <FundingForbidden onBack={onOverview} /> : <FundingSourcesPage user={user} route={fundingRoute} onNavigate={onNavigateFunding} onBack={onOverview}
             onSessionExpired={() => onAuthenticationEnded({ kind: 'error', message: fundingMessages.session })} onForbidden={denyFunding} registerGuard={registerGuard} />
@@ -460,13 +480,14 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
   const [customerRoute, setCustomerRoute] = useState<CustomerRoute | null>(() => parseCustomerRoute(window.location.pathname, window.location.search));
   const [contractRoute, setContractRoute] = useState<DepositContractRoute | null>(() => parseDepositContractRoute(window.location.pathname, window.location.search));
   const [rentalContractRoute, setRentalContractRoute] = useState<RentalContractRoute | null>(() => parseRentalContractRoute(window.location.pathname, window.location.search));
+  const [templateRoute, setTemplateRoute] = useState<DocumentTemplateRoute | null>(() => parseDocumentTemplateRoute(window.location.pathname, window.location.search));
   const navigationGuard = useRef<(() => boolean) | null>(null);
   const registerGuard = useCallback<NavigationGuardRegistration>((guard) => { navigationGuard.current = guard; }, []);
   const permitNavigation = useCallback(() => navigationGuard.current?.() !== false, []);
   const lastUrl = useRef(window.location.pathname + window.location.search);
   useLayoutEffect(() => {
     lastUrl.current = window.location.pathname + window.location.search;
-  }, [hostRoute, assetRoute, propertiesRoute, roomsRoute, catalogRoute, policyRoute, meterRoute, periodUsageRoute, provisionalRoute, fundingRoute, rentalProfileActive, customerRoute, contractRoute, rentalContractRoute]);
+  }, [hostRoute, assetRoute, propertiesRoute, roomsRoute, catalogRoute, policyRoute, meterRoute, periodUsageRoute, provisionalRoute, fundingRoute, rentalProfileActive, customerRoute, contractRoute, rentalContractRoute, templateRoute]);
   const googleEntry = useRef(isGoogleEntry());
   const [authCheck, setAuthCheck] = useState<'checking' | 'ready' | 'error'>(() => isGoogleEntry() ? 'ready' : 'checking');
   const [authRetry, setAuthRetry] = useState(0);
@@ -534,6 +555,7 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
             setCustomerRoute(null);
             setContractRoute(null);
             setRentalContractRoute(null);
+            setTemplateRoute(null);
             setAuthNotice({
               kind: 'error',
               message: rentalProfile ? rentalProfileMessages.session : rooms?.paymentPolicy ? paymentMessages.session : funding ? fundingMessages.session : provisional ? provisionalMessages.session : customers ? customerMessages.sessionInvalid : services || policy ? catalogMessages.sessionInvalid : assets ? assetMessages.sessionInvalid : hostAccountMessages.sessionInvalid,
@@ -566,6 +588,7 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
       setCustomerRoute(parseCustomerRoute(window.location.pathname, window.location.search));
       setContractRoute(parseDepositContractRoute(window.location.pathname, window.location.search));
       setRentalContractRoute(parseRentalContractRoute(window.location.pathname, window.location.search));
+      setTemplateRoute(parseDocumentTemplateRoute(window.location.pathname, window.location.search));
 
       // Private navigation preserves the authenticated user and pending session check.
       if (!next.path && !wasRecovery) return;
@@ -610,6 +633,7 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
     navigationGuard.current = null;
     setContractRoute(null);
     setRentalContractRoute(null);
+    setTemplateRoute(null);
   }, []);
 
   useEffect(() => onSessionChange((event) => {
@@ -651,7 +675,7 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
     window.history.pushState(null, '', path || '/');
     setRecovery({ path, token: null }); setRecoveryVisit((n) => n + 1);
     setCurrentUser(null); setView('login'); setAuthNotice(null);
-    setHostRoute(null); setAssetRoute(null); setPropertiesRoute(null); setRoomsRoute(null); setCatalogRoute(null); setPolicyRoute(null); setMeterRoute(null); setPeriodUsageRoute(null); setProvisionalRoute(null); setRentalProfileActive(false); setFundingRoute(null); setCustomerRoute(null); setContractRoute(null); setRentalContractRoute(null); setAuthCheck('ready');
+    setHostRoute(null); setAssetRoute(null); setPropertiesRoute(null); setRoomsRoute(null); setCatalogRoute(null); setPolicyRoute(null); setMeterRoute(null); setPeriodUsageRoute(null); setProvisionalRoute(null); setRentalProfileActive(false); setFundingRoute(null); setCustomerRoute(null); setContractRoute(null); setRentalContractRoute(null); setTemplateRoute(null); setAuthCheck('ready');
   };
 
   const finishRecovery = (notice: AuthNotice) => {
@@ -674,6 +698,7 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
     setMeterRoute(null); setPeriodUsageRoute(null); setProvisionalRoute(null); setRentalProfileActive(false); setFundingRoute(null); setCustomerRoute(null);
     setContractRoute(null);
     setRentalContractRoute(null);
+    setTemplateRoute(null);
   }, [permitNavigation]);
 
   const navigateOverview = useCallback(() => {
@@ -688,6 +713,7 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
     setMeterRoute(null); setPeriodUsageRoute(null); setProvisionalRoute(null); setRentalProfileActive(false); setFundingRoute(null); setCustomerRoute(null);
     setContractRoute(null);
     setRentalContractRoute(null);
+    setTemplateRoute(null);
   }, [permitNavigation]);
 
   const navigateAssets = useCallback((url: string, replace = false) => {
@@ -704,6 +730,7 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
     setRoomsRoute(null);
     setContractRoute(null);
     setRentalContractRoute(null);
+    setTemplateRoute(null);
     setAssetRoute(next);
     setCatalogRoute(null);
     setPolicyRoute(null);
@@ -718,6 +745,7 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
     setRoomsRoute(null);
     setContractRoute(null);
     setRentalContractRoute(null);
+    setTemplateRoute(null);
     setPropertiesRoute(parsePropertiesRoute(window.location.pathname, window.location.search));
     setCatalogRoute(null);
     setPolicyRoute(null);
@@ -732,6 +760,7 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
     setPropertiesRoute(null);
     setContractRoute(null);
     setRentalContractRoute(null);
+    setTemplateRoute(null);
     setRoomsRoute(parseRoomsRoute(window.location.pathname, window.location.search));
     setCatalogRoute(null);
     setPolicyRoute(null);
@@ -747,7 +776,7 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
       if (window.location.pathname + window.location.search !== canonical) {
         if (replace) window.history.replaceState(null, '', canonical); else window.history.pushState(null, '', canonical);
       }
-      setHostRoute(null); setAssetRoute(null); setPropertiesRoute(null); setRoomsRoute(null); setCatalogRoute(null); setMeterRoute(null); setPeriodUsageRoute(null); setProvisionalRoute(null); setRentalProfileActive(false); setFundingRoute(null); setCustomerRoute(null); setContractRoute(null); setRentalContractRoute(null);
+      setHostRoute(null); setAssetRoute(null); setPropertiesRoute(null); setRoomsRoute(null); setCatalogRoute(null); setMeterRoute(null); setPeriodUsageRoute(null); setProvisionalRoute(null); setRentalProfileActive(false); setFundingRoute(null); setCustomerRoute(null); setContractRoute(null); setRentalContractRoute(null); setTemplateRoute(null);
       setPolicyRoute(policy);
       return;
     }
@@ -757,7 +786,7 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
     if (window.location.pathname + window.location.search !== canonical) {
       if (replace) window.history.replaceState(null, '', canonical); else window.history.pushState(null, '', canonical);
     }
-    setHostRoute(null); setAssetRoute(null); setPropertiesRoute(null); setRoomsRoute(null); setPolicyRoute(null); setMeterRoute(null); setPeriodUsageRoute(null); setProvisionalRoute(null); setRentalProfileActive(false); setFundingRoute(null); setCustomerRoute(null); setContractRoute(null); setRentalContractRoute(null);
+    setHostRoute(null); setAssetRoute(null); setPropertiesRoute(null); setRoomsRoute(null); setPolicyRoute(null); setMeterRoute(null); setPeriodUsageRoute(null); setProvisionalRoute(null); setRentalProfileActive(false); setFundingRoute(null); setCustomerRoute(null); setContractRoute(null); setRentalContractRoute(null); setTemplateRoute(null);
     setCatalogRoute(next);
   }, [permitNavigation]);
 
@@ -770,7 +799,7 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
       if (window.location.pathname + window.location.search !== canonical) {
         if (replace) window.history.replaceState(null, '', canonical); else window.history.pushState(null, '', canonical);
       }
-      setHostRoute(null); setAssetRoute(null); setPropertiesRoute(null); setRoomsRoute(null); setPolicyRoute(null); setMeterRoute(null); setPeriodUsageRoute(null); setProvisionalRoute(null); setRentalProfileActive(false); setFundingRoute(null); setCustomerRoute(null); setContractRoute(null); setRentalContractRoute(null);
+      setHostRoute(null); setAssetRoute(null); setPropertiesRoute(null); setRoomsRoute(null); setPolicyRoute(null); setMeterRoute(null); setPeriodUsageRoute(null); setProvisionalRoute(null); setRentalProfileActive(false); setFundingRoute(null); setCustomerRoute(null); setContractRoute(null); setRentalContractRoute(null); setTemplateRoute(null);
       setCatalogRoute(catalog);
       return;
     }
@@ -780,7 +809,7 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
     if (window.location.pathname + window.location.search !== canonical) {
       if (replace) window.history.replaceState(null, '', canonical); else window.history.pushState(null, '', canonical);
     }
-    setHostRoute(null); setAssetRoute(null); setPropertiesRoute(null); setRoomsRoute(null); setCatalogRoute(null); setMeterRoute(null); setPeriodUsageRoute(null); setProvisionalRoute(null); setRentalProfileActive(false); setFundingRoute(null); setCustomerRoute(null); setContractRoute(null); setRentalContractRoute(null);
+    setHostRoute(null); setAssetRoute(null); setPropertiesRoute(null); setRoomsRoute(null); setCatalogRoute(null); setMeterRoute(null); setPeriodUsageRoute(null); setProvisionalRoute(null); setRentalProfileActive(false); setFundingRoute(null); setCustomerRoute(null); setContractRoute(null); setRentalContractRoute(null); setTemplateRoute(null);
     setPolicyRoute(next);
   }, [permitNavigation]);
 
@@ -800,6 +829,7 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
     setPolicyRoute(null);
     setContractRoute(null);
     setRentalContractRoute(null);
+    setTemplateRoute(null);
     setMeterRoute(null);
     setPeriodUsageRoute(null); setProvisionalRoute(null); setRentalProfileActive(false); setFundingRoute(null);
     setCustomerRoute(next);
@@ -812,7 +842,7 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
     const canonical = next.invalid ? url : meterUrl(next);
     if (window.location.pathname + window.location.search !== canonical) window.history.pushState(null, '', canonical);
     setHostRoute(null); setAssetRoute(null); setPropertiesRoute(null); setRoomsRoute(null);
-    setCatalogRoute(null); setPolicyRoute(null); setPeriodUsageRoute(null); setProvisionalRoute(null); setRentalProfileActive(false); setFundingRoute(null); setCustomerRoute(null); setContractRoute(null); setRentalContractRoute(null);
+    setCatalogRoute(null); setPolicyRoute(null); setPeriodUsageRoute(null); setProvisionalRoute(null); setRentalProfileActive(false); setFundingRoute(null); setCustomerRoute(null); setContractRoute(null); setRentalContractRoute(null); setTemplateRoute(null);
     setMeterRoute(next);
   }, [permitNavigation]);
 
@@ -823,7 +853,7 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
     const canonical = next.invalid ? url : periodUsageUrl(next);
     if (window.location.pathname + window.location.search !== canonical) window.history.pushState(null, '', canonical);
     setHostRoute(null); setAssetRoute(null); setPropertiesRoute(null); setRoomsRoute(null);
-    setCatalogRoute(null); setPolicyRoute(null); setMeterRoute(null); setCustomerRoute(null); setContractRoute(null); setRentalContractRoute(null);
+    setCatalogRoute(null); setPolicyRoute(null); setMeterRoute(null); setCustomerRoute(null); setContractRoute(null); setRentalContractRoute(null); setTemplateRoute(null);
     setProvisionalRoute(null); setRentalProfileActive(false); setFundingRoute(null); setPeriodUsageRoute(next);
   }, [permitNavigation]);
 
@@ -836,7 +866,7 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
       if (replace) window.history.replaceState(null, '', canonical); else window.history.pushState(null, '', canonical);
     }
     setHostRoute(null); setAssetRoute(null); setPropertiesRoute(null); setRoomsRoute(null); setCatalogRoute(null); setPolicyRoute(null);
-    setMeterRoute(null); setPeriodUsageRoute(null); setProvisionalRoute(null); setRentalProfileActive(false); setCustomerRoute(null); setContractRoute(null); setRentalContractRoute(null);
+    setMeterRoute(null); setPeriodUsageRoute(null); setProvisionalRoute(null); setRentalProfileActive(false); setCustomerRoute(null); setContractRoute(null); setRentalContractRoute(null); setTemplateRoute(null);
     setFundingRoute(next);
   }, [permitNavigation]);
 
@@ -847,7 +877,7 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
     }
     setHostRoute(null); setAssetRoute(null); setPropertiesRoute(null); setRoomsRoute(null);
     setCatalogRoute(null); setPolicyRoute(null); setMeterRoute(null); setPeriodUsageRoute(null);
-    setCustomerRoute(null); setContractRoute(null); setRentalContractRoute(null);
+    setCustomerRoute(null); setContractRoute(null); setRentalContractRoute(null); setTemplateRoute(null);
     setProvisionalRoute(null); setFundingRoute(null); setRentalProfileActive(true);
   }, [permitNavigation]);
 
@@ -859,7 +889,7 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
     if (window.location.pathname + window.location.search !== canonical) window.history.pushState(null, '', canonical);
     setHostRoute(null); setAssetRoute(null); setPropertiesRoute(null); setRoomsRoute(null);
     setCatalogRoute(null); setPolicyRoute(null); setMeterRoute(null); setPeriodUsageRoute(null);
-    setCustomerRoute(null); setContractRoute(null); setRentalContractRoute(null);
+    setCustomerRoute(null); setContractRoute(null); setRentalContractRoute(null); setTemplateRoute(null);
     setRentalProfileActive(false); setProvisionalRoute(next); setFundingRoute(null);
   }, [permitNavigation]);
 
@@ -881,6 +911,29 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
     if (window.location.pathname + window.location.search !== canonical) window.history.replaceState(null, '', canonical);
   }, [periodUsageRoute]);
 
+  const navigateTemplates = useCallback((url: string) => {
+    const target = new URL(url, window.location.origin);
+    const next = parseDocumentTemplateRoute(target.pathname, target.search);
+    if (!next || target.origin !== window.location.origin || pendingCreateUrl.current || !permitNavigation()) return;
+    const path = target.pathname + target.search;
+    if (window.location.pathname + window.location.search !== path) window.history.pushState(null, '', path);
+    setHostRoute(null);
+    setAssetRoute(null);
+    setPropertiesRoute(null);
+    setRoomsRoute(null);
+    setCatalogRoute(null);
+    setPolicyRoute(null);
+    setMeterRoute(null);
+    setPeriodUsageRoute(null);
+    setProvisionalRoute(null);
+    setRentalProfileActive(false);
+    setFundingRoute(null);
+    setCustomerRoute(null);
+    setContractRoute(null);
+    setRentalContractRoute(null);
+    setTemplateRoute(next);
+  }, [permitNavigation]);
+
   const navigateContracts = useCallback((url: string) => {
     if (!permitNavigation()) return;
     const target = new URL(url, window.location.origin);
@@ -897,6 +950,7 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
     setMeterRoute(null); setPeriodUsageRoute(null); setProvisionalRoute(null); setRentalProfileActive(false); setFundingRoute(null); setCustomerRoute(null);
     setContractRoute(deposit);
     setRentalContractRoute(rental);
+    setTemplateRoute(null);
   }, [permitNavigation]);
 
   useEffect(() => {
@@ -912,7 +966,7 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
   if (authCheck === 'checking') return <SessionSplash />;
 
   if (authCheck === 'error') return <main className="host-boot">
-    <h1>{rentalProfileActive ? rentalProfileTitle : fundingRoute ? fundingMessages.title : provisionalRoute ? provisionalMessages.title : customerRoute ? 'Quản lý khách thuê' : periodUsageRoute ? 'Số lượng, phí & giảm trừ' : catalogRoute || policyRoute ? 'Danh mục dịch vụ' : assetRoute ? 'Quản lý tài sản' : hostRoute ? 'Quản lý tài khoản Host' : 'RentOps'}</h1>
+    <h1>{templateRoute ? 'Mẫu tài liệu' : rentalProfileActive ? rentalProfileTitle : fundingRoute ? fundingMessages.title : provisionalRoute ? provisionalMessages.title : customerRoute ? 'Quản lý khách thuê' : periodUsageRoute ? 'Số lượng, phí & giảm trừ' : catalogRoute || policyRoute ? 'Danh mục dịch vụ' : assetRoute ? 'Quản lý tài sản' : hostRoute ? 'Quản lý tài khoản Host' : 'RentOps'}</h1>
     <p role="alert">{customerRoute ? customerMessages.listFailure : catalogRoute || policyRoute ? catalogMessages.listFailure : assetRoute ? assetMessages.listFailure : hostRoute ? hostAccountMessages.listFailure : 'Chưa thể khôi phục phiên đăng nhập. Vui lòng kiểm tra kết nối rồi thử lại.'}</p>
     <button type="button" className="host-button" onClick={() => { setAuthCheck('checking'); setAuthRetry((n) => n + 1); }}>Thử lại</button>
     <button type="button" className="host-button" onClick={() => resetAuthentication()}>Đăng nhập lại</button>
@@ -938,6 +992,8 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
         onNavigateContracts={navigateContracts}
         rentalContractRoute={rentalContractRoute}
         onNavigateRentalContracts={navigateContracts}
+        templateRoute={templateRoute}
+        onNavigateTemplates={navigateTemplates}
         onCreatePendingChange={handleCreatePendingChange}
         onNavigateHost={navigateHost}
         onOverview={navigateOverview}

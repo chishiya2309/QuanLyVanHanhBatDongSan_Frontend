@@ -9,6 +9,7 @@ import {
   rentalContractApi,
   RentalContractApiError,
 } from '../../services/rentalContractApi';
+import { DocumentExportModal } from './DocumentExportModal';
 import './contracts.css';
 
 interface MoveInHandoverModalProps {
@@ -66,6 +67,7 @@ export const MoveInHandoverModal: React.FC<MoveInHandoverModalProps> = ({
   const [isReadOnly, setIsReadOnly] = useState(false);
   const [isDraft, setIsDraft] = useState(false);
   const [currentReportId, setCurrentReportId] = useState<string | null>(null);
+  const [exportModalOpen, setExportModalOpen] = useState(false);
 
   const [submitting, setSubmitting] = useState(false);
   const [showConfirmPopup, setShowConfirmPopup] = useState(false);
@@ -757,14 +759,33 @@ export const MoveInHandoverModal: React.FC<MoveInHandoverModalProps> = ({
         {/* Modal Footer */}
         <div className="contract-modal-footer">
           {isReadOnly ? (
-            <button
-              type="button"
-              className="contract-btn-secondary"
-              onClick={onClose}
-              style={{ minWidth: '90px' }}
-            >
-              Đóng
-            </button>
+            <>
+              <button
+                type="button"
+                className="contract-btn-secondary"
+                onClick={onClose}
+                style={{ minWidth: '90px' }}
+              >
+                Đóng
+              </button>
+              {currentReportId && (
+                <button
+                  type="button"
+                  className="contract-action-btn"
+                  style={{
+                    minWidth: '140px',
+                    color: '#0284c7',
+                    borderColor: '#bae6fd',
+                    background: '#f0f9ff',
+                    fontWeight: 600,
+                  }}
+                  onClick={() => setExportModalOpen(true)}
+                  title="Xuất biên bản bàn giao nhận phòng (UC35)"
+                >
+                  📥 Xuất biên bản
+                </button>
+              )}
+            </>
           ) : (
             <>
               <button
@@ -861,6 +882,17 @@ export const MoveInHandoverModal: React.FC<MoveInHandoverModalProps> = ({
               </div>
             </div>
           </div>
+        )}
+
+        {/* Modal Xuất biên bản nhận phòng (UC35, UC78, UC79) */}
+        {contract && currentReportId && (
+          <DocumentExportModal
+            isOpen={exportModalOpen}
+            onClose={() => setExportModalOpen(false)}
+            sourceType="HANDOVER"
+            sourceId={contract.id}
+            handoverReportId={currentReportId}
+          />
         )}
       </div>
     </div>

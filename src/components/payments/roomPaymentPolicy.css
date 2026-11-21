@@ -211,8 +211,6 @@
   font-weight: 600;
   color: var(--color-muted);
   font-size: var(--text-xs);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
   margin-bottom: var(--space-3xs);
 }
 
