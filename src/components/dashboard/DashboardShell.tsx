@@ -206,8 +206,7 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
     setTimeout(() => setToastMessage(null), 3000);
   };
 
-  const isCustomView = invoiceLink?.active || rentalProfileActive || fundingSourcesActive || provisionalChargesActive || meterReadingsActive || hostAccountsActive || assetsActive || propertiesActive || roomsActive || servicesActive || customersActive;
-  const isCustomView = hostAccountsActive || assetsActive || propertiesActive || roomsActive || servicesActive || customersActive || documentTemplatesActive;
+  const isCustomView = invoiceLink?.active || rentalProfileActive || fundingSourcesActive || provisionalChargesActive || meterReadingsActive || hostAccountsActive || assetsActive || propertiesActive || roomsActive || servicesActive || customersActive || documentTemplatesActive;
 
   return (
     <div className={`dashboard-root${hostAccountsActive ? ' dashboard-root--admin' : ''}${assetsActive ? ' dashboard-root--assets' : ''}`}>
@@ -227,7 +226,7 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
       <button type="button" className="dash-mobile-menu-toggle" aria-expanded={mobileOpen} aria-controls="rentops-navigation" onClick={() => setMobileOpen((open) => !open)}>Điều hướng</button>
       {!mobileOpen && <nav className="dash-mobile-shortcuts asset-mobile-nav" aria-label="Điều hướng nhanh trên thiết bị nhỏ">
         {[
-          { label: 'Tổng quan', path: '/', active: !isCustomView, action: onNavigateOverview, show: true },
+          { label: 'Tổng quan', path: '/', active: !isCustomView && !periodUsagesActive && !contractsActive && !rentalContractsActive, action: onNavigateOverview, show: true },
           { label: 'Tài sản', path: '/assets', active: assetsActive, action: onNavigateAssets, show: showAssets },
           { label: 'Khách thuê', path: '/customers', active: customersActive, action: onNavigateCustomers, show: showCustomers },
           { label: 'Ghi chỉ số', path: '/meter-readings', active: meterReadingsActive, action: onNavigateMeterReadings, show: showMeterReadings },

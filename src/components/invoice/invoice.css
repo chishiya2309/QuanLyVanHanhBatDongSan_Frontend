@@ -16,7 +16,7 @@
 .invoice-overdue { margin-inline-start: .5rem; color: #a12b1f; }
 .invoice-transfer { display: flex; flex-wrap: wrap; gap: 1.25rem; }
 .invoice-transfer img { display: block; max-width: 100%; object-fit: contain; }
-.invoice-transfer dl { grid-template-columns: 1fr; }
+.invoice-transfer dl { grid-template-columns: minmax(0, 1fr); }
 
 .invoice-success-live {
   position: fixed;

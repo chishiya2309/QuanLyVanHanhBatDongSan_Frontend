@@ -46,7 +46,7 @@ export const DocumentTemplatesPage: React.FC<DocumentTemplatesPageProps> = ({
 
   // Active category tab (defaults to DEPOSIT_CONTRACT if not specified)
   const [activeTab, setActiveTab] = useState<TemplateType | ''>(
-    route?.type !== undefined ? route.type : 'DEPOSIT_CONTRACT'
+    route?.type === 'ALL' ? '' : route?.type ?? 'DEPOSIT_CONTRACT'
   );
 
   // Filters
@@ -62,7 +62,8 @@ export const DocumentTemplatesPage: React.FC<DocumentTemplatesPageProps> = ({
   const [variablesModalType, setVariablesModalType] = useState<TemplateType>('DEPOSIT_CONTRACT');
   const [replacingTemplate, setReplacingTemplate] = useState<DocumentTemplate | null>(null);
   const [editingTemplate, setEditingTemplate] = useState<DocumentTemplate | null>(null);
-  const [historyTemplateId, setHistoryTemplateId] = useState<string | null>(null);
+  const [localHistoryTemplateId, setLocalHistoryTemplateId] = useState<string | null>(null);
+  const historyTemplateId = route ? route.detailId : localHistoryTemplateId;
 
   // Action loading states
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
@@ -108,20 +109,29 @@ export const DocumentTemplatesPage: React.FC<DocumentTemplatesPageProps> = ({
     void loadTemplates();
   }, [loadTemplates]);
 
-  // Sync route changes
-  useEffect(() => {
+  const [previousRoute, setPreviousRoute] = useState(route);
+  if (route !== previousRoute) {
+    setPreviousRoute(route);
     if (route) {
-      if (route.type !== undefined) setActiveTab(route.type);
-      if (route.active !== undefined) setStatusFilter(route.active ? 'true' : 'false');
-      if (route.keyword !== undefined) setSearchKeyword(route.keyword);
+      setActiveTab(route.type === 'ALL' ? '' : route.type ?? 'DEPOSIT_CONTRACT');
+      setStatusFilter(route.active === undefined ? '' : String(route.active));
+      setSearchKeyword(route.keyword ?? '');
     }
-  }, [route]);
+  }
+
+  const navigateHistory = (detailId?: string) => {
+    if (route && onNavigate) {
+      onNavigate(buildDocumentTemplateUrl({ ...route, detailId }));
+    } else {
+      setLocalHistoryTemplateId(detailId ?? null);
+    }
+  };
 
   const handleTabChange = (tabKey: TemplateType | '') => {
     setActiveTab(tabKey);
     if (onNavigate) {
       const targetUrl = buildDocumentTemplateUrl({
-        type: tabKey || undefined,
+        type: tabKey || 'ALL',
         active: statusFilter === 'true' ? true : statusFilter === 'false' ? false : undefined,
         keyword: searchKeyword.trim() || undefined,
       });
@@ -133,7 +143,7 @@ export const DocumentTemplatesPage: React.FC<DocumentTemplatesPageProps> = ({
     e.preventDefault();
     if (onNavigate) {
       const targetUrl = buildDocumentTemplateUrl({
-        type: activeTab || undefined,
+        type: activeTab || 'ALL',
         active: statusFilter === 'true' ? true : statusFilter === 'false' ? false : undefined,
         keyword: searchKeyword.trim() || undefined,
       });
@@ -245,8 +255,8 @@ export const DocumentTemplatesPage: React.FC<DocumentTemplatesPageProps> = ({
         {/* Heading matching other pages */}
         <div className="contract-page-heading">
           <div>
-            <h1>Mẫu biểu &amp; Biểu mẫu</h1>
-            <p>Quản lý mẫu biểu hợp đồng, biên bản bàn giao, hóa đơn và phiếu thu chi (FC-13)</p>
+            <h1>Mẫu biểu</h1>
+            <p>Quản lý mẫu hợp đồng, biên bản bàn giao, hóa đơn và phiếu thu chi.</p>
           </div>
 
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
@@ -317,7 +327,7 @@ export const DocumentTemplatesPage: React.FC<DocumentTemplatesPageProps> = ({
                       setStatusFilter(e.target.value);
                       if (onNavigate) {
                         const targetUrl = buildDocumentTemplateUrl({
-                          type: activeTab || undefined,
+                          type: activeTab || 'ALL',
                           active: e.target.value === 'true' ? true : e.target.value === 'false' ? false : undefined,
                           keyword: searchKeyword.trim() || undefined,
                         });
@@ -342,7 +352,7 @@ export const DocumentTemplatesPage: React.FC<DocumentTemplatesPageProps> = ({
                       setSearchKeyword('');
                       if (onNavigate) {
                         onNavigate(buildDocumentTemplateUrl({
-                          type: activeTab || undefined,
+                          type: activeTab || 'ALL',
                           active: statusFilter === 'true' ? true : statusFilter === 'false' ? false : undefined,
                         }));
                       }
@@ -362,25 +372,25 @@ export const DocumentTemplatesPage: React.FC<DocumentTemplatesPageProps> = ({
                   </div>
                 ) : templates.length === 0 ? (
                   <div className="templates-empty-state">
-                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                    <svg aria-hidden="true" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                       <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
                       <polyline points="14 2 14 8 20 8"></polyline>
                       <line x1="16" y1="13" x2="8" y2="13"></line>
                       <line x1="16" y1="17" x2="8" y2="17"></line>
                     </svg>
-                    <h3>Chưa có mẫu biểu nào phù hợp</h3>
+                    <h3>{searchKeyword || statusFilter ? 'Không tìm thấy mẫu biểu' : 'Danh mục chưa có mẫu biểu'}</h3>
                     <p>
                       {searchKeyword || statusFilter
-                        ? 'Không tìm thấy mẫu biểu nào khớp với bộ lọc tìm kiếm.'
-                        : 'Chưa có mẫu biểu nào cho danh mục này. Hãy tải lên mẫu biểu đầu tiên.'}
+                        ? 'Thử đổi từ khóa hoặc chọn trạng thái khác.'
+                        : 'Tải lên mẫu đầu tiên để sử dụng cho danh mục này.'}
                     </p>
-                    <button
+                    {!searchKeyword && !statusFilter && <button
                       type="button"
                       className="contract-action-btn btn-primary"
                       onClick={() => setShowUploadModal(true)}
                     >
                       + Tải lên mẫu mới
-                    </button>
+                    </button>}
                   </div>
                 ) : (
                       <div className="contract-table-container">
@@ -491,7 +501,7 @@ export const DocumentTemplatesPage: React.FC<DocumentTemplatesPageProps> = ({
                                           className="contract-action-btn"
                                           style={{ marginRight: '6px' }}
                                           title="Xem lịch sử các phiên bản"
-                                          onClick={() => setHistoryTemplateId(tpl.id)}
+                                          onClick={() => navigateHistory(tpl.id)}
                                         >
                                           Lịch sử
                                         </button>
@@ -593,8 +603,9 @@ export const DocumentTemplatesPage: React.FC<DocumentTemplatesPageProps> = ({
 
                                 {historyTemplateId && (
                                   <VersionHistoryModal
+                                    key={historyTemplateId}
                                     templateId={historyTemplateId}
-                                    onClose={() => setHistoryTemplateId(null)}
+                                    onClose={() => navigateHistory()}
                                   />
                                 )}
 

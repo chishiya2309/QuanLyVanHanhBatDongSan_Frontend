@@ -442,7 +442,6 @@
 .text-input:focus {
   border-color: var(--color-focus);
   box-shadow: var(--shadow-input-focus);
-  outline: none;
 }
 
 .text-input:disabled {

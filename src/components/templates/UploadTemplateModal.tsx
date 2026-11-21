@@ -1,4 +1,5 @@
-import React, { useState, useRef } from 'react';
+import React, { useId, useState, useRef } from 'react';
+import { PropertyDialog } from '../properties/PropertyDialog';
 import type { TemplateType, ValidationResult } from '../../types/documentTemplate';
 import { TEMPLATE_TYPE_LABELS } from '../../types/documentTemplate';
 import { documentTemplateApi, DocumentTemplateApiError } from '../../services/documentTemplateApi';
@@ -9,6 +10,7 @@ interface UploadTemplateModalProps {
 }
 
 export const UploadTemplateModal: React.FC<UploadTemplateModalProps> = ({ onSuccess, onClose }) => {
+  const titleId = useId();
   const [file, setFile] = useState<File | null>(null);
   const [name, setName] = useState('');
   const [type, setType] = useState<TemplateType>('RENTAL_CONTRACT');
@@ -122,12 +124,11 @@ export const UploadTemplateModal: React.FC<UploadTemplateModalProps> = ({ onSucc
   };
 
   return (
-    <div className="templates-modal-backdrop" onClick={onClose}>
-      <div className="templates-modal" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
+    <PropertyDialog className="templates-modal" labelledBy={titleId} onClose={onClose} pending={submitting}>
         <form onSubmit={handleSubmit} className="templates-modal-form">
           <div className="templates-modal-header">
-            <h2>Tải lên mẫu tài liệu mới</h2>
-            <button type="button" className="templates-modal-close" onClick={onClose} aria-label="Đóng">
+            <h2 id={titleId}>Tải lên mẫu tài liệu mới</h2>
+            <button type="button" className="templates-modal-close" onClick={onClose} aria-label="Đóng" disabled={submitting}>
               &times;
             </button>
           </div>
@@ -173,10 +174,10 @@ export const UploadTemplateModal: React.FC<UploadTemplateModalProps> = ({ onSucc
                 }}
                 onDragLeave={() => setDragOver(false)}
                 onDrop={handleDrop}
-                onClick={() => fileInputRef.current?.click()}
+                onClick={() => { if (!submitting) fileInputRef.current?.click(); }}
               >
-                <div className="file-dropzone-icon">📄</div>
-                <div className="file-dropzone-text">Kéo thả tệp vào đây hoặc bấm để chọn tệp</div>
+                <button type="button" className="file-dropzone-text" disabled={submitting}>Chọn tệp</button>
+                <div className="file-dropzone-sub">Hoặc kéo thả tệp vào đây</div>
                 <div className="file-dropzone-sub">Hỗ trợ Microsoft Word (.docx) và Adobe PDF (.pdf)</div>
               </div>
 
@@ -290,7 +291,6 @@ export const UploadTemplateModal: React.FC<UploadTemplateModalProps> = ({ onSucc
             </button>
           </div>
         </form>
-      </div>
-    </div>
+    </PropertyDialog>
   );
 };

@@ -1,7 +1,7 @@
 import type { TemplateType } from '../types/documentTemplate';
 
 export interface DocumentTemplateRoute {
-  type?: TemplateType;
+  type?: TemplateType | 'ALL';
   active?: boolean;
   keyword?: string;
   detailId?: string;
@@ -28,8 +28,10 @@ export function parseDocumentTemplateRoute(pathname: string, search: string): Do
     'DISBURSEMENT',
   ];
 
-  let type: TemplateType | undefined = undefined;
-  if (typeParam && validTypes.includes(typeParam as TemplateType)) {
+  let type: DocumentTemplateRoute['type'];
+  if (typeParam === 'ALL') {
+    type = 'ALL';
+  } else if (typeParam && validTypes.includes(typeParam as TemplateType)) {
     type = typeParam as TemplateType;
   }
 
