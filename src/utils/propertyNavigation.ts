@@ -1,4 +1,6 @@
 import type { PropertiesRoute, RoomsRoute } from '../types/properties';
+import { parseRoomServicesRoute } from './roomServiceNavigation';
+import { parsePaymentPolicyRoute } from './roomPaymentPolicyNavigation';
 
 export function parsePropertiesRoute(pathname: string, search: string): PropertiesRoute | null {
   if (!/^\/properties\/?$/.test(pathname)) return null;
@@ -17,6 +19,10 @@ export function propertiesUrl(tab: 'areas' | 'buildings' = 'areas', create = fal
 }
 
 export function parseRoomsRoute(pathname: string, search: string): RoomsRoute | null {
+  const services = parseRoomServicesRoute(pathname, search);
+  if (services) return { view: 'matrix', services: true, ...services };
+  const paymentPolicy = parsePaymentPolicyRoute(pathname, search);
+  if (paymentPolicy) return { view: 'matrix', paymentPolicy: true, ...paymentPolicy };
   if (!/^\/rooms\/?$/.test(pathname)) return null;
   const params = new URLSearchParams(search);
   const view = params.get('view') === 'table' ? 'table' : 'matrix';
@@ -28,7 +34,7 @@ export function parseRoomsRoute(pathname: string, search: string): RoomsRoute | 
     : null;
   const floorId = params.get('floorId') || null;
 
-  return { view, buildingId, roomId, action, floorId };
+  return { view, buildingId, roomId, action, floorId, keyword: params.get('keyword') || undefined, areaId: params.get('areaId') || undefined, status: params.get('status') || undefined };
 }
 
 export function roomsUrl(params: {
@@ -37,6 +43,9 @@ export function roomsUrl(params: {
   roomId?: string | null;
   action?: 'create' | 'edit' | 'detail' | 'history' | null;
   floorId?: string | null;
+  keyword?: string;
+  areaId?: string;
+  status?: string;
 }): string {
   const q = new URLSearchParams();
   if (params.view && params.view !== 'matrix') q.set('view', params.view);
@@ -44,6 +53,9 @@ export function roomsUrl(params: {
   if (params.roomId) q.set('roomId', params.roomId);
   if (params.action) q.set('action', params.action);
   if (params.floorId) q.set('floorId', params.floorId);
+  if (params.keyword) q.set('keyword', params.keyword);
+  if (params.areaId) q.set('areaId', params.areaId);
+  if (params.status) q.set('status', params.status);
   const qs = q.toString();
   return `/rooms${qs ? `?${qs}` : ''}`;
 }

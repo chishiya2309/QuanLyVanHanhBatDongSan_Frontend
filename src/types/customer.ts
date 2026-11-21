@@ -1,3 +1,4 @@
+import type { LookupRoute } from './customerLookup';
 import type { CustomerAccountAction } from './customerAccount';
 
 export type IdentityType = 'CCCD' | 'PASSPORT';
@@ -96,7 +97,8 @@ export interface UpdateVehicleInput {
 }
 
 export interface CustomerRoute {
-  view: 'list' | 'detail';
+  view: 'list' | 'detail' | 'lookup' | 'history';
+  lookup?: LookupRoute;
   customerId: string | null;
   action: 'create' | 'edit' | null;
   vehicleAction: 'create' | 'edit' | null;

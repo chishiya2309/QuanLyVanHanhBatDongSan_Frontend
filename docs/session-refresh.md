@@ -30,8 +30,13 @@ Request bị abort, đổi URL hoặc không còn thuộc controller đang hoạ
 Account ID, nonce thông báo và cờ kết quả refresh chưa rõ, không lưu mật khẩu hoặc
 access/refresh token trong Web Storage.
 
-Khi mở ứng dụng, màn hình kiểm tra phiên chờ khôi phục xong trước khi hiện form
-đăng nhập. Lỗi kết nối hiện nút **Thử lại**, giữ đường dẫn đang mở. Trang Google
+Khi mở ứng dụng, màn hình chờ hiển thị biểu tượng tòa nhà và chữ RentOps ở giữa
+trang trong lúc kiểm tra phiên. Logo đứng yên, rộng 128px trên desktop và 104px
+trên mobile; trạng thái kiểm tra vẫn có nội dung dành cho trình đọc màn hình.
+Request xác thực chạy ngay; màn hình chờ hiện tối thiểu 800ms trước khi vào
+dashboard hoặc form đăng nhập, không cộng thêm thời gian nếu request lâu hơn.
+Lỗi kết nối hiện ngay nút **Thử lại**, giữ đường dẫn đang mở; thử lại bắt đầu
+lượt chờ mới. Timer và request được hủy khi rời luồng hoặc đổi tài khoản. Trang Google
 onboarding/callback và quên/đặt lại mật khẩu dùng luồng khởi tạo riêng.
 Người dùng có thể chủ động chọn **Đăng nhập lại** nếu không khôi phục được cookie
 sau một lần xoay token chưa rõ kết quả; ứng dụng không tự chuyển sang đăng nhập.
@@ -40,5 +45,7 @@ Không có timer refresh nền. Chính sách backend giữ nguyên: access token
 phiên không hoạt động 7 ngày, giới hạn tuyệt đối 30 ngày. Đổi mật khẩu thành công
 vẫn kết thúc phiên.
 
-Kiểm thử: `npm test`, `npm run build`, `npm run lint`. Backend chạy `./mvnw.cmd -q
+Kiểm thử: `npm test`, `npm run build`, `npm run lint`. Với Vite đang chạy, dùng
+`npm run test:browser:session-splash` để kiểm tra bố cục, trạng thái hỗ trợ tiếp cận
+và reduced motion trên tám kích thước màn hình. Backend chạy `./mvnw.cmd -q
 test` bằng JDK 25, dùng H2; không chạy các kiểm thử `*IT` trên PostgreSQL thực.

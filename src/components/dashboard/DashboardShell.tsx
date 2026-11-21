@@ -1,3 +1,4 @@
+import { rentalProfilePath, rentalProfileTitle } from '../../types/rentalProfile';
 import React, { useState, useMemo, useEffect } from 'react';
 import type { UserProfile, OverviewMetrics } from '../../types/dashboard';
 import {
@@ -16,6 +17,12 @@ import { PropertyStatusTable } from './PropertyStatusTable';
 import './dashboard.css';
 
 interface DashboardShellProps {
+  showFundingSources?: boolean; fundingSourcesActive?: boolean; onNavigateFundingSources?: () => void;
+  showRentalProfile?: boolean; rentalProfileActive?: boolean; onNavigateRentalProfile?: () => void;
+  showProvisionalCharges?: boolean; provisionalChargesActive?: boolean; provisionalChargesPath?: string; onNavigateProvisionalCharges?: () => void;
+  invoiceLink?: { path: string; label: string; active: boolean };
+  showPeriodUsages?: boolean; periodUsagesActive?: boolean; onNavigatePeriodUsages?: () => void;
+  showMeterReadings?: boolean; meterReadingsActive?: boolean; onNavigateMeterReadings?: () => void;
   showServices?: boolean; servicesActive?: boolean; onNavigateServices?: () => void;
   user: UserProfile;
   onLogout: () => void;
@@ -48,6 +55,12 @@ interface DashboardShellProps {
 }
 
 export const DashboardShell: React.FC<DashboardShellProps> = ({
+  showFundingSources = false, fundingSourcesActive = false, onNavigateFundingSources,
+  showRentalProfile = false, rentalProfileActive = false, onNavigateRentalProfile,
+  showProvisionalCharges = false, provisionalChargesActive = false, provisionalChargesPath = '/provisional-charges', onNavigateProvisionalCharges,
+  invoiceLink,
+  showPeriodUsages = false, periodUsagesActive = false, onNavigatePeriodUsages,
+  showMeterReadings = false, meterReadingsActive = false, onNavigateMeterReadings,
   showServices = false, servicesActive = false, onNavigateServices,
   user,
   onLogout,
@@ -181,6 +194,7 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
   }, [selectedPropertyId, user.managedProperties]);
 
   const handleQuickAction = (actionKey: string) => {
+    if (actionKey === 'record-utilities' && showMeterReadings) { onNavigateMeterReadings?.(); return; }
     const actionTitles: Record<string, string> = {
       'create-contract': 'Mở biểu mẫu tạo Hợp đồng thuê phòng mới',
       'add-tenant': 'Mở biểu mẫu tiếp nhận thông tin Khách thuê mới',
@@ -192,6 +206,7 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
     setTimeout(() => setToastMessage(null), 3000);
   };
 
+  const isCustomView = invoiceLink?.active || rentalProfileActive || fundingSourcesActive || provisionalChargesActive || meterReadingsActive || hostAccountsActive || assetsActive || propertiesActive || roomsActive || servicesActive || customersActive;
   const isCustomView = hostAccountsActive || assetsActive || propertiesActive || roomsActive || servicesActive || customersActive || documentTemplatesActive;
 
   return (
@@ -215,6 +230,12 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
           { label: 'Tổng quan', path: '/', active: !isCustomView, action: onNavigateOverview, show: true },
           { label: 'Tài sản', path: '/assets', active: assetsActive, action: onNavigateAssets, show: showAssets },
           { label: 'Khách thuê', path: '/customers', active: customersActive, action: onNavigateCustomers, show: showCustomers },
+          { label: 'Ghi chỉ số', path: '/meter-readings', active: meterReadingsActive, action: onNavigateMeterReadings, show: showMeterReadings },
+          { label: 'Số lượng, phí & giảm trừ', path: '/period-usages', active: periodUsagesActive, action: onNavigatePeriodUsages, show: showPeriodUsages },
+          { label: 'Quản lý nguồn tiền', path: '/funding-sources', active: fundingSourcesActive, action: onNavigateFundingSources, show: showFundingSources },
+          { label: rentalProfileTitle, path: rentalProfilePath, active: rentalProfileActive, action: onNavigateRentalProfile, show: showRentalProfile },
+          { label: 'Tạm tính dịch vụ', path: provisionalChargesPath, active: provisionalChargesActive, action: onNavigateProvisionalCharges, show: showProvisionalCharges },
+          ...(invoiceLink ? [{ ...invoiceLink, show: true }] : []),
           { label: 'Danh mục dịch vụ', path: '/services', active: servicesActive, action: onNavigateServices, show: showServices },
           { label: 'Cơ sở & Tòa nhà', path: '/properties', active: propertiesActive, action: onNavigateProperties, show: propertiesActive },
           { label: 'Mặt bằng & Phòng', path: '/rooms', active: roomsActive, action: onNavigateRooms, show: roomsActive },
@@ -222,10 +243,26 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
           { label: 'Hợp đồng thuê', path: '/rental-contracts', active: rentalContractsActive, action: onNavigateRentalContracts, show: showContracts },
           { label: 'Mẫu tài liệu', path: '/document-templates', active: documentTemplatesActive, action: onNavigateDocumentTemplates, show: showDocumentTemplates },
           { label: 'Tài khoản Host', path: '/admin/host-accounts', active: hostAccountsActive, action: onNavigateHostAccounts, show: hostAccountsActive },
-        ].filter((item) => item.show).map((item) => <a key={item.path} href={item.path} aria-current={smallScreen && item.active ? 'page' : undefined} onClick={(event) => { event.preventDefault(); item.action?.(); }}>{item.label}</a>)}
+        ].filter((item) => item.show).map((item) => <a key={item.path} href={item.path} aria-current={smallScreen && item.active ? 'page' : undefined} onClick={(event) => { if (item.action) { event.preventDefault(); item.action(); } }}>{item.label}</a>)}
       </nav>}
       <div className="dashboard-layout">
         <Sidebar
+          showFundingSources={showFundingSources}
+          fundingSourcesActive={fundingSourcesActive}
+          onNavigateFundingSources={mobileNavigate(onNavigateFundingSources)}
+          showRentalProfile={showRentalProfile}
+          rentalProfileActive={rentalProfileActive}
+          onNavigateRentalProfile={mobileNavigate(onNavigateRentalProfile)}
+          showProvisionalCharges={showProvisionalCharges}
+          invoiceLink={invoiceLink}
+          provisionalChargesActive={provisionalChargesActive}
+          onNavigateProvisionalCharges={mobileNavigate(onNavigateProvisionalCharges)}
+          showMeterReadings={showMeterReadings}
+          meterReadingsActive={meterReadingsActive}
+          onNavigateMeterReadings={mobileNavigate(onNavigateMeterReadings)}
+          showPeriodUsages={showPeriodUsages}
+          periodUsagesActive={periodUsagesActive}
+          onNavigatePeriodUsages={mobileNavigate(onNavigatePeriodUsages)}
           markCurrent={!smallScreen || mobileOpen}
           mobileOpen={mobileOpen}
           showServices={showServices}

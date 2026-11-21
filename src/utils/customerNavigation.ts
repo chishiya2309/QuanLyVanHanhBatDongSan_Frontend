@@ -1,3 +1,4 @@
+import { parseLookupRoute } from './customerLookupNavigation';
 import type { CustomerRoute } from '../types/customer';
 import type { CustomerAccountAction } from '../types/customerAccount';
 
@@ -5,6 +6,9 @@ export const isUuid = (value: unknown): value is string =>
   typeof value === 'string' && /^[\da-f]{8}-[\da-f]{4}-[\da-f]{4}-[\da-f]{4}-[\da-f]{12}$/i.test(value);
 
 export function parseCustomerRoute(pathname: string, search: string): CustomerRoute | null {
+  const lookup = parseLookupRoute(pathname, search);
+  if (lookup) return { view: lookup.view, lookup, customerId: lookup.customerId, q: lookup.q, page: lookup.page, size: lookup.size,
+    invalid: lookup.invalid, action: null, vehicleAction: null, accountAction: null, vehicleId: null };
   const match = /^\/customers(?:\/([^/]+))?\/?$/.exec(pathname);
   if (!match) return null;
 
