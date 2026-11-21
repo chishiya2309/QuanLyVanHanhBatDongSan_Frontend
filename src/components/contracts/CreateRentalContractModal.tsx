@@ -13,6 +13,7 @@ import './contracts.css';
 
 interface CreateRentalContractModalProps {
   isOpen: boolean;
+  initialRoomId?: string;
   onClose: () => void;
   onSuccess: (savedContract: RentalContract) => void;
   onSessionExpired?: () => void;
@@ -20,6 +21,7 @@ interface CreateRentalContractModalProps {
 
 export const CreateRentalContractModal: React.FC<CreateRentalContractModalProps> = ({
   isOpen,
+  initialRoomId,
   onClose,
   onSuccess,
   onSessionExpired,
@@ -76,22 +78,41 @@ export const CreateRentalContractModal: React.FC<CreateRentalContractModalProps>
     setCycleMonths(1);
     setBillingAnchor(today.getDate());
 
+    let active = true;
+    setErrorMessage(null);
+    setCustomers([]);
+    setRooms([]);
     setLoadingData(true);
     Promise.all([
       rentalContractApi.getAvailableCustomers(),
       rentalContractApi.getAvailableRooms(),
     ])
       .then(([custList, roomList]) => {
+        if (!active) return;
         setCustomers(custList);
         setRooms(roomList);
+        if (initialRoomId) {
+          const room = roomList.find(item => item.id === initialRoomId);
+          if (room) {
+            setRoomId(room.id);
+            if (room.defaultRent && room.defaultRent > 0) setRent(room.defaultRent);
+            const deposit = room.defaultDeposit && room.defaultDeposit > 0 ? room.defaultDeposit : room.defaultRent;
+            if (deposit && deposit > 0) setDepositRequired(deposit);
+          } else {
+            setErrorMessage('Phòng đã chọn không còn khả dụng. Vui lòng chọn phòng khác.');
+          }
+        }
       })
       .catch((err) => {
+        if (!active) return;
+        if (initialRoomId) setErrorMessage('Không thể tải danh sách phòng khả dụng. Vui lòng thử lại.');
         console.error('Lỗi khi tải dữ liệu khởi tạo hợp đồng thuê:', err);
       })
       .finally(() => {
-        setLoadingData(false);
+        if (active) setLoadingData(false);
       });
-  }, [isOpen]);
+    return () => { active = false; };
+  }, [isOpen, initialRoomId]);
 
   const handleStartDateChange = (newStartDate: string) => {
     setStartDate(newStartDate);

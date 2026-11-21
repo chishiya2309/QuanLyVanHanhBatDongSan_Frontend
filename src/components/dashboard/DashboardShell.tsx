@@ -37,6 +37,8 @@ interface DashboardShellProps {
   propertiesActive?: boolean;
   onNavigateProperties?: () => void;
   showRooms?: boolean;
+  occupancyActive?: boolean;
+  onNavigateOccupancy?: () => void;
   roomsActive?: boolean;
   onNavigateRooms?: () => void;
   showCustomers?: boolean;
@@ -75,6 +77,8 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
   propertiesActive = false,
   onNavigateProperties,
   showRooms = false,
+  occupancyActive = false,
+  onNavigateOccupancy,
   roomsActive = false,
   onNavigateRooms,
   showCustomers = false,
@@ -206,7 +210,7 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
     setTimeout(() => setToastMessage(null), 3000);
   };
 
-  const isCustomView = invoiceLink?.active || rentalProfileActive || fundingSourcesActive || provisionalChargesActive || meterReadingsActive || hostAccountsActive || assetsActive || propertiesActive || roomsActive || servicesActive || customersActive || documentTemplatesActive;
+  const isCustomView = invoiceLink?.active || rentalProfileActive || fundingSourcesActive || provisionalChargesActive || meterReadingsActive || hostAccountsActive || assetsActive || propertiesActive || roomsActive || occupancyActive || servicesActive || customersActive || documentTemplatesActive;
 
   return (
     <div className={`dashboard-root${hostAccountsActive ? ' dashboard-root--admin' : ''}${assetsActive ? ' dashboard-root--assets' : ''}`}>
@@ -237,6 +241,7 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
           ...(invoiceLink ? [{ ...invoiceLink, show: true }] : []),
           { label: 'Danh mục dịch vụ', path: '/services', active: servicesActive, action: onNavigateServices, show: showServices },
           { label: 'Cơ sở & Tòa nhà', path: '/properties', active: propertiesActive, action: onNavigateProperties, show: propertiesActive },
+          { label: 'Phân tích phòng trống', path: '/reports/occupancy', active: occupancyActive, action: onNavigateOccupancy, show: occupancyActive },
           { label: 'Mặt bằng & Phòng', path: '/rooms', active: roomsActive, action: onNavigateRooms, show: roomsActive },
           { label: 'Hợp đồng cọc', path: '/deposit-contracts', active: contractsActive, action: onNavigateContracts, show: showContracts },
           { label: 'Hợp đồng thuê', path: '/rental-contracts', active: rentalContractsActive, action: onNavigateRentalContracts, show: showContracts },
@@ -276,6 +281,8 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
           propertiesActive={propertiesActive}
           onNavigateProperties={mobileNavigate(onNavigateProperties)}
           showRooms={showRooms}
+          occupancyActive={occupancyActive}
+          onNavigateOccupancy={onNavigateOccupancy ? mobileNavigate(onNavigateOccupancy) : undefined}
           roomsActive={roomsActive}
           onNavigateRooms={mobileNavigate(onNavigateRooms)}
           showCustomers={showCustomers}
