@@ -73,6 +73,8 @@ export const DocumentExportModal: React.FC<DocumentExportModalProps> = ({
 
     let isMounted = true;
     setLoading(true);
+    setOptions(null);
+    setSelectedVersionId('');
     setError(null);
     setExportSuccessMessage(null);
     setActiveTab('review');
@@ -302,7 +304,7 @@ export const DocumentExportModal: React.FC<DocumentExportModalProps> = ({
             className={`export-tab-btn ${activeTab === 'review' ? 'active' : ''}`}
             onClick={() => setActiveTab('review')}
           >
-            <i className="tab-icon">📋</i> 1. Soát xét dữ liệu & Cấu hình
+            Cấu hình
           </button>
           <button
             className={`export-tab-btn ${activeTab === 'preview' ? 'active' : ''}`}
@@ -311,7 +313,7 @@ export const DocumentExportModal: React.FC<DocumentExportModalProps> = ({
               else handlePreview();
             }}
           >
-            <i className="tab-icon">👁️</i> 2. Xem trước tài liệu
+            Xem trước
           </button>
           <button
             className={`export-tab-btn ${activeTab === 'history' ? 'active' : ''}`}
@@ -320,7 +322,7 @@ export const DocumentExportModal: React.FC<DocumentExportModalProps> = ({
               loadHistory();
             }}
           >
-            <i className="tab-icon">🕒</i> 3. Lịch sử đã xuất ({history.length})
+            Lịch sử ({history.length})
           </button>
         </div>
 
@@ -328,13 +330,13 @@ export const DocumentExportModal: React.FC<DocumentExportModalProps> = ({
         <div className="export-modal-body">
           {error && (
             <div className="export-notice-banner warning">
-              <span>⚠️ {error}</span>
+              <span>{error}</span>
             </div>
           )}
 
           {exportSuccessMessage && (
             <div className="export-notice-banner info">
-              <span>✅ {exportSuccessMessage}</span>
+              <span>{exportSuccessMessage}</span>
             </div>
           )}
 
@@ -355,7 +357,7 @@ export const DocumentExportModal: React.FC<DocumentExportModalProps> = ({
 
               {options && options.availableTemplates.length === 0 && (
                 <div className="export-notice-banner warning">
-                  <span>⚠️ Bạn chưa có mẫu biểu nào trong hệ thống. Vui lòng vào mục <strong>Mẫu biểu</strong> để tải lên mẫu biểu trước khi xuất tài liệu.</span>
+                  <span>Bạn chưa có mẫu biểu nào trong hệ thống. Vui lòng vào mục <strong>Mẫu biểu</strong> để tải lên mẫu biểu trước khi xuất tài liệu.</span>
                 </div>
               )}
 
@@ -493,7 +495,7 @@ export const DocumentExportModal: React.FC<DocumentExportModalProps> = ({
             <div className="export-preview-container">
               <div className="export-notice-banner warning" style={{ marginBottom: '10px' }}>
                 <span>
-                  🛡️ <strong>Bản xem trước:</strong> Tài liệu được gắn hình mờ (Watermark) bán trong suốt nhằm phục vụ kiểm tra đối soát, không có giá trị pháp lý chính thức.
+                  <strong>Bản xem trước:</strong> Tài liệu được gắn hình mờ (Watermark) bán trong suốt nhằm phục vụ kiểm tra đối soát, không có giá trị pháp lý chính thức.
                 </span>
               </div>
               {previewBlobUrl ? (
@@ -569,7 +571,7 @@ export const DocumentExportModal: React.FC<DocumentExportModalProps> = ({
                                 )
                               }
                             >
-                              ⬇️ Tải lại file
+                              Tải lại
                             </button>
                           </td>
                         </tr>
@@ -598,11 +600,11 @@ export const DocumentExportModal: React.FC<DocumentExportModalProps> = ({
           )}
 
           <button
-            className="export-btn export-btn-preview"
+            className="export-btn export-btn-secondary"
             onClick={handlePreview}
             disabled={previewLoading || !selectedVersionId}
           >
-            {previewLoading ? 'Đang tạo xem trước...' : '👁️ Xem trước (PDF)'}
+            {previewLoading ? 'Đang tạo xem trước...' : 'Xem trước PDF'}
           </button>
 
           <button
@@ -619,7 +621,7 @@ export const DocumentExportModal: React.FC<DocumentExportModalProps> = ({
                 : 'Xuất và tải về tài liệu chính thức'
             }
           >
-            {exportLoading ? 'Đang xuất...' : '📥 Xác nhận & Xuất tài liệu'}
+            {exportLoading ? 'Đang xuất...' : 'Xuất tài liệu'}
           </button>
         </div>
       </div>

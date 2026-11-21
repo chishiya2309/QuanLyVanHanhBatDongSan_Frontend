@@ -792,23 +792,15 @@ export const RentalContractsPage: React.FC<RentalContractsPageProps> = ({
                           </button>
                           <button
                             type="button"
-                            className="contract-action-btn"
-                            style={{
-                              padding: '4px 10px',
-                              fontSize: '12px',
-                              color: '#0284c7',
-                              borderColor: '#38bdf8',
-                              background: '#f0f9ff',
-                              marginRight: '6px',
-                              fontWeight: 600,
-                            }}
+                            className="contract-action-btn btn-secondary"
+                            style={{ padding: '4px 10px', fontSize: '12px', marginRight: '6px' }}
                             onClick={() => {
                               setContractToExport(c);
                               setExportModalOpen(true);
                             }}
-                            title="Xuất hợp đồng thuê (UC34)"
+                            title="Xuất hợp đồng thuê"
                           >
-                            📄 Xuất HĐ
+                            Xuất HĐ
                           </button>
 
                           {c.status === 'ACTIVE' && (
@@ -1080,23 +1072,15 @@ export const RentalContractsPage: React.FC<RentalContractsPageProps> = ({
                           </button>
                           <button
                             type="button"
-                            className="contract-action-btn"
-                            style={{
-                              padding: '4px 10px',
-                              fontSize: '12px',
-                              color: '#0284c7',
-                              borderColor: '#38bdf8',
-                              background: '#f0f9ff',
-                              marginRight: '6px',
-                              fontWeight: 600,
-                            }}
+                            className="contract-action-btn btn-secondary"
+                            style={{ padding: '4px 10px', fontSize: '12px', marginRight: '6px' }}
                             onClick={() => {
                               setContractToExport(c);
                               setExportModalOpen(true);
                             }}
-                            title="Xuất hợp đồng thuê (UC34)"
+                            title="Xuất hợp đồng thuê"
                           >
-                            📄 Xuất HĐ
+                            Xuất HĐ
                           </button>
                           <button
                             type="button"
