@@ -291,6 +291,7 @@ export const RentalContractsPage: React.FC<RentalContractsPageProps> = ({
       buildRentalContractUrl({
         ...route,
         create: undefined,
+        roomId: undefined,
       })
     );
   };
@@ -1194,6 +1195,7 @@ export const RentalContractsPage: React.FC<RentalContractsPageProps> = ({
       {/* Modal Lập hợp đồng mới */}
       <CreateRentalContractModal
         isOpen={createModalOpen}
+        initialRoomId={route.roomId}
         onClose={handleCloseCreateModal}
         onSuccess={handleCreateSuccess}
         onSessionExpired={onSessionExpired}

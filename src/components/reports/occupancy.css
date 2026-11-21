@@ -1,0 +1,126 @@
+/* Hallmark · v2.0.0 · scope: app · theme: Coral · signature: sortable vacancy table */
+/* Keep both building metrics directly labelled and the room actions within reach. */
+.occupancy {
+  width: 100%;
+  max-width: var(--container);
+  margin-inline: auto;
+  min-width: 0;
+  display: grid;
+  gap: var(--space-lg);
+  color: var(--color-ink);
+  font-family: var(--font-body);
+}
+.occupancy h1, .occupancy h2 {
+  margin: 0 0 var(--space-sm);
+  min-width: 0;
+  overflow-wrap: break-word;
+  text-wrap: balance;
+  font-weight: 600;
+}
+.occupancy h1 { font-size: var(--text-2xl); }
+.occupancy h2 { font-size: var(--text-lg); }
+.occupancy p { margin: 0 0 var(--space-sm); }
+.occupancy-toolbar, .occupancy-meta, .occupancy-actions, .occupancy-pagination {
+  display: flex;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+  align-items: center;
+}
+.occupancy-toolbar { align-items: end; }
+.occupancy label { display: grid; gap: var(--space-2xs); font-size: var(--text-sm); }
+.occupancy button, .occupancy select {
+  min-height: 44px;
+  max-width: 100%;
+  padding: var(--space-2xs) var(--space-sm);
+  border: 1px solid var(--color-field-border);
+  border-radius: var(--radius-input);
+  color: var(--color-ink);
+  font: inherit;
+}
+.occupancy button { background: transparent; cursor: pointer; }
+.occupancy select { background: var(--color-surface); }
+.occupancy button:active:not(:disabled), .occupancy select:active:not(:disabled) { border-color: var(--color-focus); }
+
+.occupancy button:hover:not(:disabled) { background: var(--color-surface-hover); }
+.occupancy button.occupancy-primary { background: var(--color-accent-primary); color: var(--color-white); }
+.occupancy button.occupancy-primary:hover:not(:disabled) { background: var(--color-accent-hover); }
+.occupancy button:disabled, .occupancy select:disabled, .occupancy button.occupancy-primary:disabled {
+  background: var(--color-paper-2);
+  color: var(--color-muted);
+  cursor: not-allowed;
+}
+.occupancy :is(button, select, [tabindex]):focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+.occupancy-kpis, .occupancy-charts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-md);
+  margin: 0;
+}
+.occupancy-kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.occupancy-kpis > div, .occupancy-chart, .occupancy-state, .occupancy-table-block {
+  border: 1px solid var(--color-rule);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  padding: var(--space-md);
+  margin: 0;
+  min-width: 0;
+}
+.occupancy-kpis dt { font-size: var(--text-sm); color: var(--color-muted); }
+.occupancy-kpis dd {
+  margin: var(--space-xs) 0 0;
+  font-size: var(--text-xl);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+.occupancy-meta { color: var(--color-muted); font-size: var(--text-sm); }
+.occupancy p.occupancy-warning {
+  border: 1px solid var(--color-rule);
+  background: var(--color-status-maint-bg);
+  padding: var(--space-sm);
+  margin: 0;
+}
+.occupancy-chart figcaption { font-weight: 600; }
+.occupancy-chart ul {
+  margin: var(--space-sm) 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: var(--space-sm);
+  max-height: 22rem;
+  overflow: auto;
+}
+.occupancy-chart li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--space-2xs) var(--space-sm); }
+.occupancy-chart li span { overflow-wrap: anywhere; }
+.occupancy-chart li strong { font-weight: 600; font-variant-numeric: tabular-nums; }
+.occupancy-bar-track {
+  grid-column: 1 / -1;
+  background: var(--color-paper-2);
+  border-radius: var(--radius-pill);
+}
+.occupancy-bar { height: 0.5rem; border-radius: inherit; background: var(--color-accent-primary); }
+.occupancy-table-block { display: grid; gap: var(--space-md); }
+.occupancy-table-block > label { justify-self: start; }
+.occupancy-table-scroll { min-width: 0; overflow: auto; }
+.occupancy table { width: 100%; border-collapse: collapse; text-align: start; }
+.occupancy :is(th, td) { padding: var(--space-sm); text-align: start; font-variant-numeric: tabular-nums; border-bottom: 1px solid var(--color-rule); }
+.occupancy th { font-weight: 600; }
+.occupancy thead th { background: var(--color-paper-2); font-size: var(--text-sm); white-space: nowrap; }
+.occupancy-actions { min-width: 10rem; }
+.occupancy-pagination { justify-content: end; }
+.occupancy-state button + button { margin-inline-start: var(--space-xs); }
+@media (max-width: 760px) {
+  .occupancy-kpis, .occupancy-charts { grid-template-columns: minmax(0, 1fr); }
+  .occupancy-toolbar > * { flex: 1 1 12rem; min-width: 0; }
+  .occupancy-pagination { justify-content: start; }
+  .occupancy tr > th:first-child {
+    position: sticky;
+    inset-inline-start: 0;
+    background: var(--color-surface);
+    box-shadow: 1px 0 var(--color-rule);
+  }
+  .occupancy thead tr > th:first-child { background: var(--color-paper-2); }
+}
