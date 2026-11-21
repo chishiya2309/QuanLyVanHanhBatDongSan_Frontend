@@ -319,18 +319,6 @@
   color: var(--color-ink);
 }
 
-.export-btn-preview {
-  background-color: #f0f9ff;
-  border-color: #bae6fd;
-  color: #0284c7;
-}
-
-.export-btn-preview:hover {
-  background-color: #e0f2fe;
-  border-color: #7dd3fc;
-  color: #0369a1;
-}
-
 .export-btn-primary {
   background-color: var(--color-accent-primary);
   color: var(--color-white);
@@ -387,6 +375,27 @@
   to {
     opacity: 1;
     transform: scale(1);
+  }
+}
+
+@media (max-width: 40rem) {
+  .export-modal-header,
+  .export-modal-body,
+  .export-modal-footer {
+    padding-inline: var(--space-md);
+  }
+
+  .export-modal-tabs {
+    padding-inline: var(--space-xs);
+    gap: 0;
+  }
+
+  .export-tab-btn {
+    padding-inline: var(--space-xs);
+  }
+
+  .export-modal-footer {
+    flex-wrap: wrap;
   }
 }
 

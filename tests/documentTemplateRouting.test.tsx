@@ -133,11 +133,11 @@ it.each([
     vi.stubGlobal('fetch', request);
     render(<DocumentExportModal isOpen onClose={vi.fn()} sourceType={sourceType}
       sourceId="contract1" handoverReportId={sourceType === 'HANDOVER' ? 'report1' : undefined} />);
-    const preview = screen.getByRole('button', { name: /Xem trước \(PDF\)/ });
+    const preview = screen.getByRole('button', { name: 'Xem trước PDF' });
     await waitFor(() => expect(preview).toHaveProperty('disabled', false));
     fireEvent.click(preview);
     await screen.findByRole('button', { name: /Quay lại soát xét/ });
-    fireEvent.click(screen.getByRole('button', { name: /Xác nhận & Xuất tài liệu/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Xuất tài liệu' }));
     await waitFor(() => expect(download).toHaveBeenCalledOnce());
   } finally {
     download.mockRestore();
