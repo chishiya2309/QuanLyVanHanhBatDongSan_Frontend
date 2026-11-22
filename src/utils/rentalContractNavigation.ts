@@ -10,6 +10,9 @@ export function parseRentalContractRoute(pathname: string, search: string): Rent
   const create = params.get('create') === 'true';
   const roomId = create ? params.get('roomId') : null;
   const detailId = params.get('detail') || undefined;
+  const actionParam = params.get('action');
+  const action = detailId && !create && !params.get('edit')
+    && (actionParam === 'extend' || actionParam === 'move-out' || actionParam === 'terminate') ? actionParam : undefined;
   const editId = params.get('edit') || undefined;
   const keyword = params.get('keyword') || undefined;
   const statusParam = params.get('status')?.toUpperCase();
@@ -29,6 +32,7 @@ export function parseRentalContractRoute(pathname: string, search: string): Rent
     create,
     ...(roomId ? { roomId } : {}),
     detailId,
+    ...(action ? { action } : {}),
     editId,
     keyword,
     status,
@@ -41,6 +45,7 @@ export function buildRentalContractUrl(route: RentalContractRoute): string {
   if (route.create) params.set('create', 'true');
   if (route.create && route.roomId) params.set('roomId', route.roomId);
   if (route.detailId) params.set('detail', route.detailId);
+  if (route.detailId && route.action) params.set('action', route.action);
   if (route.editId) params.set('edit', route.editId);
   if (route.keyword) params.set('keyword', route.keyword);
   if (route.status) params.set('status', route.status);

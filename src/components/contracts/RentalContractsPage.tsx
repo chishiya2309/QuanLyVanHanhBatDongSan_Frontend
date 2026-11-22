@@ -109,7 +109,7 @@ export const RentalContractsPage: React.FC<RentalContractsPageProps> = ({
   const [contractForMoveOut, setContractForMoveOut] = useState<RentalContract | null>(null);
   const [initialDeductionReasonForTerminate, setInitialDeductionReasonForTerminate] = useState<string | undefined>(undefined);
 
-  const [drawerOpen, setDrawerOpen] = useState(Boolean(route.detailId));
+  const [drawerOpen, setDrawerOpen] = useState(Boolean(route.detailId && !route.action));
   const [detailContract, setDetailContract] = useState<RentalContract | null>(null);
 
   const [exportModalOpen, setExportModalOpen] = useState(false);
@@ -190,9 +190,44 @@ export const RentalContractsPage: React.FC<RentalContractsPageProps> = ({
     fetchExpiringBadge();
   }, [activeSubtab, loadContracts, loadExpiringContracts, fetchExpiringBadge]);
 
+  const { action: pendingAction, detailId: pendingContractId } = route;
+
+  // A report action is consumed once, and the current contract is fetched before opening a form.
+  useEffect(() => {
+    const action = pendingAction;
+    const detailId = pendingContractId;
+    if (!action || !detailId) return;
+    let active = true;
+    rentalContractApi.getRentalContractDetail(detailId).then(contract => {
+      if (!active) return;
+      if (contract.status !== 'ACTIVE') {
+        setLoadError('Hợp đồng không còn ở trạng thái có thể xử lý.');
+      } else if (action === 'extend') {
+        setContractToExtend(contract);
+        setExtendModalOpen(true);
+      } else if (action === 'move-out') {
+        setContractForMoveOut(contract);
+        setMoveOutModalOpen(true);
+      } else {
+        setContractToTerminate(contract);
+        setTerminateModalOpen(true);
+      }
+    }).catch(() => {
+      if (active) setLoadError('Không thể tải hợp đồng để thực hiện thao tác.');
+    }).finally(() => {
+      if (!active) return;
+      const url = new URL(window.location.href);
+      if (url.searchParams.get('action') !== action || url.searchParams.get('detail') !== detailId) return;
+      url.searchParams.delete('action');
+      url.searchParams.delete('detail');
+      window.history.replaceState(window.history.state, '', url);
+    });
+    return () => { active = false; };
+  }, [pendingAction, pendingContractId]);
+
   // Sync route detailId
   useEffect(() => {
-    if (route.detailId) {
+    if (route.detailId && !route.action) {
       rentalContractApi
         .getRentalContractDetail(route.detailId)
         .then((data) => {
@@ -212,7 +247,7 @@ export const RentalContractsPage: React.FC<RentalContractsPageProps> = ({
       setDrawerOpen(false);
       setDetailContract(null);
     }
-  }, [route.detailId]);
+  }, [route.detailId, route.action]);
 
   // Sync route editId
   useEffect(() => {

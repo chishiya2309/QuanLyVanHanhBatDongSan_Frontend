@@ -184,6 +184,7 @@ export interface AvailableCustomerForRental {
 }
 
 export interface RentalContractRoute {
+  action?: 'extend' | 'move-out' | 'terminate';
   roomId?: string;
   keyword?: string;
   status?: RentalStatus;
