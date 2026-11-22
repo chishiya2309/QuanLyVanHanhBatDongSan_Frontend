@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="Tám trạng thái của hộp thoại xuất báo cáo bất động sản.">
+  <title>Trạng thái hộp thoại xuất báo cáo</title>
+  <link rel="stylesheet" href="../../tokens.css">
+  <link rel="stylesheet" href="../../base.css">
+  <link rel="stylesheet" href="./report-export.css">
+</head>
+<body>
+  <main class="report-export-dialog">
+    <h1>Xuất báo cáo tổng hợp</h1>
+    <section>
+      <h2>Mặc định</h2>
+      <button class="report-export-trigger">Xuất báo cáo tổng hợp</button>
+    </section>
+    <section>
+      <h2>Di chuột</h2>
+      <button class="report-export-trigger is-hover">Xuất báo cáo tổng hợp</button>
+    </section>
+    <section>
+      <h2>Focus bàn phím</h2>
+      <button class="report-export-trigger is-focus">Xuất báo cáo tổng hợp</button>
+    </section>
+    <section>
+      <h2>Đang nhấn</h2>
+      <button class="report-export-trigger is-active">Xuất báo cáo tổng hợp</button>
+    </section>
+    <section>
+      <h2>Vô hiệu hóa</h2>
+      <button class="report-export-primary" disabled>Tải báo cáo</button>
+    </section>
+    <section>
+      <h2>Đang xử lý</h2>
+      <p role="status">Đang tạo báo cáo…</p>
+      <button class="report-export-primary" disabled>Tải báo cáo</button>
+    </section>
+    <section>
+      <h2>Lỗi</h2>
+      <label>Ngày kết thúc xu hướng
+        <input type="date" aria-invalid="true" aria-describedby="preview-error">
+      </label>
+      <p id="preview-error" class="report-export-error">Ngày kết thúc không được vượt ngày nghiệp vụ.</p>
+    </section>
+    <section>
+      <h2>Thành công</h2>
+      <p class="report-export-success" role="status">Đã tạo báo cáo thành công. Tệp đã sẵn sàng để tải xuống.</p>
+    </section>
+  </main>
+</body>
+</html>

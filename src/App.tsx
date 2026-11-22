@@ -29,6 +29,10 @@ import { RoomServicesPage, RoomServicesForbidden } from './components/services/R
 import { RoomPaymentPolicyPage } from './components/payments/RoomPaymentPolicyPage';
 import { paymentMessages } from './types/roomPaymentPolicy';
 import type { PropertiesRoute, RoomsRoute } from './types/properties';
+import { OccupancyAnalysisPage } from './components/reports/OccupancyAnalysisPage';
+import { occupancyAnalysisPath, parseOccupancyAnalysisRoute, type OccupancyAnalysisQuery } from './utils/occupancyAnalysisNavigation';
+import { ExpiringLeaseReportPage } from './components/reports/ExpiringLeaseReportPage';
+import { expiringLeasePath, parseExpiringLeaseRoute, type ExpiringLeaseQuery } from './utils/expiringLeaseNavigation';
 import { OccupancyReportPage } from './components/reports/OccupancyReportPage';
 import { occupancyPath, parseOccupancyRoute, type OccupancyQuery } from './utils/occupancyNavigation';
 import { parsePropertiesRoute, parseRoomsRoute } from './utils/propertyNavigation';
@@ -77,6 +81,9 @@ function isGoogleEntry(): boolean {
     || new URLSearchParams(window.location.search).has('status');
 }
 
+const parseReportRoute = (path: string, search: string) =>
+  parseOccupancyRoute(path, search) ?? parseExpiringLeaseRoute(path, search) ?? parseOccupancyAnalysisRoute(path, search);
+
 function isProtectedPath(pathname: string, search: string): boolean {
   return Boolean(
     isInvoicePath(pathname)
@@ -89,7 +96,7 @@ function isProtectedPath(pathname: string, search: string): boolean {
     || parseAssetRoute(pathname, search)
     || parsePropertiesRoute(pathname, search)
     || parseRoomsRoute(pathname, search)
-    || parseOccupancyRoute(pathname, search)
+    || parseReportRoute(pathname, search)
     || parseCatalogRoute(pathname, search)
     || parseServicePolicyRoute(pathname, search)
     || parseCustomerRoute(pathname, search)
@@ -150,7 +157,7 @@ function AuthenticatedDashboard({
   onNavigateAssets: (url: string, replace?: boolean) => void;
   propertiesRoute: PropertiesRoute | null;
   onNavigateProperties: (url: string) => void;
-  occupancyRoute: OccupancyQuery | null;
+  occupancyRoute: OccupancyQuery | ExpiringLeaseQuery | OccupancyAnalysisQuery | null;
   roomsRoute: RoomsRoute | null;
   onNavigateRooms: (url: string) => void;
   contractRoute: DepositContractRoute | null;
@@ -223,7 +230,11 @@ function AuthenticatedDashboard({
         propertiesActive={propertiesRoute !== null}
         onNavigateProperties={() => onNavigateProperties('/properties')}
         showRooms={user.role === 'HOST'}
-        occupancyActive={occupancyRoute !== null}
+        occupancyActive={occupancyRoute !== null && !('kind' in occupancyRoute)}
+        expiringLeasesActive={occupancyRoute !== null && 'kind' in occupancyRoute && occupancyRoute.kind === 'expiring-leases'}
+        occupancyAnalysisActive={occupancyRoute !== null && 'kind' in occupancyRoute && occupancyRoute.kind === 'occupancy-analysis'}
+        onNavigateOccupancyAnalysis={user.role === 'HOST' ? () => onNavigateRooms(occupancyAnalysisPath) : undefined}
+        onNavigateExpiringLeases={user.role === 'HOST' ? () => onNavigateRooms(expiringLeasePath) : undefined}
         onNavigateOccupancy={user.role === 'HOST' ? () => onNavigateRooms(occupancyPath) : undefined}
         roomsActive={roomsRoute !== null}
         onNavigateRooms={() => onNavigateRooms('/rooms')}
@@ -341,6 +352,12 @@ function AuthenticatedDashboard({
           )
         ) : occupancyRoute ? (
           user.role === 'HOST' ? (
+            'kind' in occupancyRoute && occupancyRoute.kind === 'occupancy-analysis' ? (
+              <OccupancyAnalysisPage query={occupancyRoute} onNavigate={onNavigateRooms} onSessionExpired={onSessionExpired} />
+            ) : 'kind' in occupancyRoute ? (
+              <ExpiringLeaseReportPage query={occupancyRoute} onNavigate={onNavigateRooms}
+                onContract={onNavigateRentalContracts} onSessionExpired={onSessionExpired} />
+            ) :
             <OccupancyReportPage
               query={occupancyRoute}
               onNavigate={onNavigateRooms}
@@ -350,6 +367,8 @@ function AuthenticatedDashboard({
               onSessionExpired={onSessionExpired}
             />
           ) : <CatalogForbidden onOverview={onOverview} />
+        ) : rentalContractRoute?.action && user.role !== 'HOST' ? (
+          <CatalogForbidden onOverview={onOverview} />
         ) : rentalContractRoute ? (
           <RentalContractsPage
             route={rentalContractRoute}
@@ -487,7 +506,7 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
   const [hostRoute, setHostRoute] = useState<HostAccountRoute | null>(() => parseHostAccountRoute(window.location.pathname));
   const [assetRoute, setAssetRoute] = useState<AssetRoute | null>(() => parseAssetRoute(window.location.pathname, window.location.search));
   const [propertiesRoute, setPropertiesRoute] = useState<PropertiesRoute | null>(() => parsePropertiesRoute(window.location.pathname, window.location.search));
-  const [occupancyRoute, setOccupancyRoute] = useState(() => parseOccupancyRoute(window.location.pathname, window.location.search));
+  const [occupancyRoute, setOccupancyRoute] = useState(() => parseReportRoute(window.location.pathname, window.location.search));
   const [roomsRoute, setRoomsRoute] = useState<RoomsRoute | null>(() => parseRoomsRoute(window.location.pathname, window.location.search));
   const [catalogRoute, setCatalogRoute] = useState<CatalogRoute | null>(() => parseCatalogRoute(window.location.pathname, window.location.search));
   const [policyRoute, setPolicyRoute] = useState<ServicePolicyRoute | null>(() => parseServicePolicyRoute(window.location.pathname, window.location.search));
@@ -598,7 +617,7 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
       setAssetRoute(parseAssetRoute(window.location.pathname, window.location.search));
       setPropertiesRoute(parsePropertiesRoute(window.location.pathname, window.location.search));
       setRoomsRoute(parseRoomsRoute(window.location.pathname, window.location.search));
-      setOccupancyRoute(parseOccupancyRoute(window.location.pathname, window.location.search));
+      setOccupancyRoute(parseReportRoute(window.location.pathname, window.location.search));
       setCatalogRoute(parseCatalogRoute(window.location.pathname, window.location.search));
       setPolicyRoute(parseServicePolicyRoute(window.location.pathname, window.location.search));
       setMeterRoute(parseMeterRoute(window.location.pathname, window.location.search));
@@ -788,7 +807,7 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
     setRentalContractRoute(null);
     setTemplateRoute(null);
     setRoomsRoute(parseRoomsRoute(window.location.pathname, window.location.search));
-    setOccupancyRoute(parseOccupancyRoute(window.location.pathname, window.location.search));
+    setOccupancyRoute(parseReportRoute(window.location.pathname, window.location.search));
     setCatalogRoute(null);
     setPolicyRoute(null);
     setMeterRoute(null); setPeriodUsageRoute(null); setProvisionalRoute(null); setRentalProfileActive(false); setFundingRoute(null); setCustomerRoute(null);

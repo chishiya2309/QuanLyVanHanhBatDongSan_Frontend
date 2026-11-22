@@ -1,3 +1,4 @@
+import { ReportExportButton } from './ReportExportDialog';
 import { useEffect, useState } from 'react';
 import { getAreas, getBuildings, PropertyApiError } from '../../services/propertiesApi';
 import { AuthApiError } from '../../services/authErrors';
@@ -158,6 +159,9 @@ export function OccupancyReportPage({ query, onNavigate, onRoom, onContract, onP
             </select>
           </label>
           <button type="button" className="occupancy-primary" disabled={invalid || waitingForPair} onClick={reload}>Làm mới báo cáo</button>
+          <ReportExportButton source={{ kind: 'occupancy', areaId, buildingId }} catalog={catalog}
+            catalogFailed={catalogFailed} onRetryCatalog={() => { setCatalogFailed(false); setCatalogRevision(value => value + 1); }}
+            onSessionExpired={onSessionExpired} />
         </div>
         {catalogFailed && <div className="occupancy-state">
           <p role="status">Không thể tải danh mục khu vực và tòa nhà.</p>

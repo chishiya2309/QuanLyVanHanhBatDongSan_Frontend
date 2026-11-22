@@ -37,6 +37,10 @@ interface DashboardShellProps {
   propertiesActive?: boolean;
   onNavigateProperties?: () => void;
   showRooms?: boolean;
+  expiringLeasesActive?: boolean;
+  onNavigateExpiringLeases?: () => void;
+  occupancyAnalysisActive?: boolean;
+  onNavigateOccupancyAnalysis?: () => void;
   occupancyActive?: boolean;
   onNavigateOccupancy?: () => void;
   roomsActive?: boolean;
@@ -77,6 +81,10 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
   propertiesActive = false,
   onNavigateProperties,
   showRooms = false,
+  expiringLeasesActive = false,
+  onNavigateExpiringLeases,
+  occupancyAnalysisActive = false,
+  onNavigateOccupancyAnalysis,
   occupancyActive = false,
   onNavigateOccupancy,
   roomsActive = false,
@@ -210,7 +218,7 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
     setTimeout(() => setToastMessage(null), 3000);
   };
 
-  const isCustomView = invoiceLink?.active || rentalProfileActive || fundingSourcesActive || provisionalChargesActive || meterReadingsActive || hostAccountsActive || assetsActive || propertiesActive || roomsActive || occupancyActive || servicesActive || customersActive || documentTemplatesActive;
+  const isCustomView = invoiceLink?.active || rentalProfileActive || fundingSourcesActive || provisionalChargesActive || meterReadingsActive || hostAccountsActive || assetsActive || propertiesActive || roomsActive || occupancyAnalysisActive || occupancyActive || expiringLeasesActive || servicesActive || customersActive || documentTemplatesActive;
 
   return (
     <div className={`dashboard-root${hostAccountsActive ? ' dashboard-root--admin' : ''}${assetsActive ? ' dashboard-root--assets' : ''}`}>
@@ -241,6 +249,8 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
           ...(invoiceLink ? [{ ...invoiceLink, show: true }] : []),
           { label: 'Danh mục dịch vụ', path: '/services', active: servicesActive, action: onNavigateServices, show: showServices },
           { label: 'Cơ sở & Tòa nhà', path: '/properties', active: propertiesActive, action: onNavigateProperties, show: propertiesActive },
+          { label: 'Phòng sắp trống', path: '/reports/expiring-leases', active: expiringLeasesActive, action: onNavigateExpiringLeases, show: expiringLeasesActive },
+          { label: 'Tỷ lệ lấp đầy', path: '/reports/occupancy-analysis', active: occupancyAnalysisActive, action: onNavigateOccupancyAnalysis, show: occupancyAnalysisActive },
           { label: 'Phân tích phòng trống', path: '/reports/occupancy', active: occupancyActive, action: onNavigateOccupancy, show: occupancyActive },
           { label: 'Mặt bằng & Phòng', path: '/rooms', active: roomsActive, action: onNavigateRooms, show: roomsActive },
           { label: 'Hợp đồng cọc', path: '/deposit-contracts', active: contractsActive, action: onNavigateContracts, show: showContracts },
@@ -281,6 +291,10 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
           propertiesActive={propertiesActive}
           onNavigateProperties={mobileNavigate(onNavigateProperties)}
           showRooms={showRooms}
+          expiringLeasesActive={expiringLeasesActive}
+          onNavigateExpiringLeases={onNavigateExpiringLeases ? mobileNavigate(onNavigateExpiringLeases) : undefined}
+          occupancyAnalysisActive={occupancyAnalysisActive}
+          onNavigateOccupancyAnalysis={onNavigateOccupancyAnalysis ? mobileNavigate(onNavigateOccupancyAnalysis) : undefined}
           occupancyActive={occupancyActive}
           onNavigateOccupancy={onNavigateOccupancy ? mobileNavigate(onNavigateOccupancy) : undefined}
           roomsActive={roomsActive}

@@ -1,0 +1,46 @@
+/* Hallmark · v2.0.0 · scope: app · theme: existing dashboard · signature: grouped expiry queue */
+/* Give urgency and the signed calendar interval a consistent position in every group. */
+.expiry-header, .expiry-group { min-width: 0; display: grid; gap: var(--space-sm); }
+.expiry-heading, .expiry-threshold, .expiry-date-filter, .expiry-card-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-sm);
+}
+.expiry-heading, .expiry-card-title { justify-content: space-between; }
+.expiry-heading h1, .expiry-group h2 { margin: 0; text-wrap: balance; }
+.expiry-date-filter { align-items: end; }
+.expiry-date-filter p { flex-basis: 100%; }
+.expiry-report input {
+  min-height: 2.75rem;
+  max-width: 100%;
+  border: 1px solid var(--color-field-border);
+  border-radius: var(--radius-input);
+  padding-inline: var(--space-sm);
+  background: var(--color-surface);
+  color: var(--color-ink);
+  font: inherit;
+}
+.expiry-report :is(input, summary):focus-visible { outline: 2px solid var(--color-focus); outline-offset: 2px; }
+.expiry-report :is(input, summary):active { box-shadow: 0 0 0 1px var(--color-focus); }
+.expiry-table { border: 1px solid var(--color-rule); }
+.expiry-table :is(td, th) { vertical-align: top; }
+.expiry-table :is(td, th) > :is(span, small, time, strong), .expiry-cards dd span { display: block; }
+.expiry-group h2 {
+  display: flex;
+  gap: var(--space-sm);
+  align-items: baseline;
+}
+.expiry-group[data-bucket="OVERDUE"] h2 { color: var(--color-error); }
+.expiry-group h2 span { font-size: var(--text-sm); font-variant-numeric: tabular-nums; }
+.expiry-cards { display: none; padding: 0; margin: 0; list-style: none; }
+.expiry-loading div { min-height: 2rem; margin-block: var(--space-sm); background: var(--color-paper-2); }
+.expiry-report summary { cursor: pointer; }
+
+@media (max-width: 40rem) {
+  .expiry-table { display: none; }
+  .expiry-cards { display: grid; gap: var(--space-sm); }
+  .expiry-cards li { padding: var(--space-sm); border: 1px solid var(--color-rule); overflow-wrap: anywhere; }
+  .expiry-cards dl { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--space-2xs) var(--space-sm); }
+  .expiry-cards dd { margin: 0; }
+}
