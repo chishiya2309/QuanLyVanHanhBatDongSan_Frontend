@@ -270,10 +270,10 @@ function ReportExportDialog({ source, catalog, catalogFailed, onRetryCatalog, on
             Phạm vi đã chọn không khả dụng. Vui lòng chọn lại khu vực hoặc tòa nhà.
           </p>}
         </fieldset>
-        <RangeFields title="Ngày hết hạn hợp đồng (UC70)" defaultText="Theo ngưỡng theo dõi của Host."
+        <RangeFields title="Ngày hết hạn hợp đồng" defaultText="Theo cài đặt theo dõi hợp đồng của bạn."
           range={expiry} onChange={setExpiry}
           error={attempted && expiryInvalid ? 'Nhập đủ hai ngày theo thứ tự, cách nhau tối đa 366 ngày.' : ''} />
-        <RangeFields title="Xu hướng tỷ lệ lấp đầy (UC71)" defaultText="Từ đầu năm đến ngày nghiệp vụ."
+        <RangeFields title="Xu hướng tỷ lệ lấp đầy" defaultText="Từ đầu năm đến ngày nghiệp vụ."
           range={trend} onChange={setTrend} maximum={today}
           error={attempted && trendInvalid ? 'Nhập đủ hai ngày theo thứ tự, cách nhau tối đa 366 ngày. Ngày kết thúc không được vượt ngày nghiệp vụ.' : ''} />
       </fieldset>

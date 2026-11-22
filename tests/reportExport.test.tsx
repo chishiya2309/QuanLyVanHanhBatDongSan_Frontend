@@ -20,8 +20,8 @@ const getButton = () => screen.getByRole('button', { name: 'Xuất báo cáo t�
 const getDialog = () => within(screen.getByRole('dialog'));
 const submit = () => fireEvent.click(getDialog().getByRole('button', { name: 'Tải báo cáo' }));
 const group = (name: RegExp) => within(getDialog().getByRole('group', { name }));
-const expiry = () => group(/UC70/);
-const trend = () => group(/UC71/);
+const expiry = () => group(/^Ngày hết hạn hợp đồng$/);
+const trend = () => group(/^Xu hướng tỷ lệ lấp đầy$/);
 
 function binary(mime = xlsx, name?: string) {
   const headers = new Headers({ 'Content-Type': mime });
