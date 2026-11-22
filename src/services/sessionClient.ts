@@ -30,7 +30,19 @@ type SessionEvent = { accountId: string | null };
 const listeners = new Set<(event: SessionEvent) => void>();
 const abort = () => Object.assign(new Error('The request belongs to an earlier page or session'), { name: 'AbortError' });
 
-export function invalidateSession(): void { epoch++; accountId = null; clearCsrfCache(); }
+const invalidationListeners = new Set<() => void>();
+
+export function onSessionInvalidated(listener: () => void): () => void {
+  invalidationListeners.add(listener);
+  return () => { invalidationListeners.delete(listener); };
+}
+
+export function invalidateSession(): void {
+  epoch++;
+  accountId = null;
+  clearCsrfCache();
+  invalidationListeners.forEach(listener => listener());
+}
 export function sessionGuard(shouldSend = () => true): () => boolean {
   const version = epoch;
   const page = window.location.href;

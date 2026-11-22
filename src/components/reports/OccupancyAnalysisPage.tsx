@@ -1,3 +1,4 @@
+import { ReportExportButton } from './ReportExportDialog';
 import { useEffect, useState, type FormEvent, type MouseEvent } from 'react';
 import { AuthApiError } from '../../services/authErrors';
 import { OccupancyApiError } from '../../services/occupancyApi';
@@ -248,6 +249,9 @@ export function OccupancyAnalysisPage({ query, onNavigate, onSessionExpired }: {
           {buildingId && !availableBuildings.some(building => building.id === buildingId) && <option value={buildingId}>{knownBuilding?.name ?? 'Tòa nhà đã chọn'}</option>}
           {availableBuildings.map(building => <option key={building.id} value={building.id}>{building.name}</option>)}
         </select></label>
+        <ReportExportButton source={{ kind: 'occupancy-analysis', areaId, buildingId, fromDate, toDate }} catalog={catalog}
+          catalogFailed={catalogFailed} onRetryCatalog={() => { setCatalogFailed(false); setCatalogRevision(value => value + 1); }}
+          onSessionExpired={onSessionExpired} />
         {catalogFailed && !catalog && <p role="status">Không thể tải danh mục khu vực và tòa nhà. <button type="button" onClick={() => setCatalogRevision(value => value + 1)}>Tải lại danh mục</button></p>}
       </div>
       {error ? <div className="oa-notice" role="alert"><p>{error}</p>

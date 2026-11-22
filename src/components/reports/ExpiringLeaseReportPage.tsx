@@ -1,3 +1,4 @@
+import { ReportExportButton } from './ReportExportDialog';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { AuthApiError } from '../../services/authErrors';
 import { getAreas, getBuildings, PropertyApiError } from '../../services/propertiesApi';
@@ -277,6 +278,9 @@ export function ExpiringLeaseReportPage({ query, onNavigate, onContract, onSessi
           <option value="daysRemaining,asc">Số ngày còn lại tăng dần</option>
           <option value="daysRemaining,desc">Số ngày còn lại giảm dần</option>
         </select></label>
+        <ReportExportButton source={{ kind: 'expiring-leases', areaId, buildingId, fromDate, toDate }} catalog={catalog}
+          catalogFailed={Boolean(catalogError)} onRetryCatalog={() => { setCatalogError(''); setCatalogRevision(value => value + 1); }}
+          onSessionExpired={onSessionExpired} />
       </div>
       <DateFilter key={JSON.stringify([fromDate, toDate])} query={query}
         apply={(from, to) => navigate({ fromDate: from, toDate: to })} />
