@@ -1,0 +1,143 @@
+/* Hallmark · v2.0.0 · shape: app screen · scope: app · theme: Coral (existing) · signature: building comparison linked to rooms */
+/* Hallmark · pre-emit critique: P4 H4 E4 S4 R5 V4 · a shared scale and separate labels keep N/A distinct from zero. */
+.occupancy-analysis {
+  width: 100%;
+  max-width: var(--container);
+  margin-inline: auto;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-lg);
+  color: var(--color-ink);
+  font-family: var(--font-body);
+}
+.occupancy-analysis :is(h1, h2, h3) {
+  min-width: 0;
+  overflow-wrap: break-word;
+  margin-block: 0 var(--space-xs);
+  text-wrap: balance;
+}
+.occupancy-analysis :is(h1, h2, h3, strong, th) { font-weight: 600; }
+.occupancy-analysis h1 { font-size: var(--text-2xl); }
+.occupancy-analysis h2 { font-size: var(--text-lg); }
+.occupancy-analysis h3 { font-size: var(--text-md); margin-block-start: var(--space-md); }
+.occupancy-analysis p { margin-block: 0 var(--space-xs); }
+.oa-header, .oa-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  align-items: end;
+}
+.oa-header { justify-content: space-between; }
+.oa-header p, .occupancy-analysis figcaption { color: var(--color-muted); font-size: var(--text-sm); }
+.oa-filter { margin-block-end: var(--space-xs); }
+.oa-filter label { display: grid; min-width: 0; gap: var(--space-2xs); font-size: var(--text-sm); }
+.oa-filter-error { flex-basis: 100%; color: var(--color-error); }
+.occupancy-analysis :is(button, select, input) {
+  min-height: 44px;
+  max-width: 100%;
+  padding: var(--space-2xs) var(--space-sm);
+  border: 1px solid var(--color-field-border);
+  border-radius: var(--radius-input);
+  color: var(--color-ink);
+  background: var(--color-surface);
+  font: inherit;
+}
+.occupancy-analysis button { cursor: pointer; }
+.occupancy-analysis button:hover:not(:disabled) { background: var(--color-surface-hover); }
+.occupancy-analysis button:active:not(:disabled) { border-color: var(--color-focus); }
+.occupancy-analysis button:disabled { color: var(--color-muted); cursor: not-allowed; }
+.occupancy-analysis .oa-primary { background: var(--color-accent-primary); color: var(--color-white); }
+.occupancy-analysis .oa-primary:hover:not(:disabled) { background: var(--color-accent-hover); }
+.occupancy-analysis :is(button, select, input, a, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+.occupancy-analysis a { color: var(--color-accent-primary); text-underline-offset: 0.2em; }
+.oa-kpis {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) repeat(3, minmax(0, 1fr));
+  background: var(--color-surface);
+  margin: 0;
+  border: 1px solid var(--color-rule);
+  border-radius: var(--radius-input);
+}
+.oa-kpis > * { padding: var(--space-md); min-height: 96px; min-width: 0; }
+.oa-kpis > * + * { border-inline-start: 1px solid var(--color-rule); }
+.oa-kpis dt { color: var(--color-muted); font-size: var(--text-sm); }
+.oa-kpis dd { margin: 0; font-size: var(--text-2xl); font-weight: 600; font-variant-numeric: tabular-nums; }
+.oa-primary-kpi { background: var(--color-surface-subtle); }
+.oa-loading .oa-kpis { background: var(--color-surface-subtle); }
+.oa-notice {
+  background: var(--color-surface-subtle);
+  border: 1px solid var(--color-status-warn-rule);
+  padding: var(--space-sm) var(--space-md);
+}
+.oa-notice ul { margin-block: var(--space-xs) 0; padding-inline-start: var(--space-md); }
+.occupancy-analysis figure { margin: 0; }
+.oa-scroll { max-width: 100%; min-width: 0; overflow-x: auto; padding: var(--space-2xs); }
+.oa-bar-chart { display: flex; gap: var(--space-xs); padding-block-start: var(--space-sm); }
+.oa-axis {
+  flex: 0 0 3.25rem;
+  height: 168px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  text-align: end;
+  color: var(--color-muted);
+  font-size: var(--text-xs);
+  font-variant-numeric: tabular-nums;
+}
+.oa-bars {
+  display: flex;
+  flex: 1;
+  gap: var(--space-xs);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.oa-bars li { flex: 1 0 7.25rem; min-width: 0; }
+.oa-bars a { display: block; text-align: center; padding-inline: var(--space-2xs); }
+.oa-bar-plot {
+  height: 168px;
+  display: grid;
+  position: relative;
+  justify-items: center;
+  align-items: end;
+  border-block-end: 1px solid var(--color-rule-2);
+  color: var(--color-ink);
+}
+.oa-bar { position: absolute; inset-block-end: 0; width: 24px; background: var(--color-success); border-radius: 2px 2px 0 0; }
+[data-band="medium"] .oa-bar { background: var(--color-status-warn); }
+[data-band="low"] .oa-bar { background: var(--color-error); }
+.oa-bar-name { display: block; overflow-wrap: anywhere; padding-block-start: var(--space-2xs); }
+.oa-band strong { font-variant-numeric: tabular-nums; }
+.oa-band { color: var(--color-muted); display: block; }
+.occupancy-analysis table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.occupancy-analysis :is(th, td) {
+  border-block-end: 1px solid var(--color-rule);
+  text-align: start;
+  padding: var(--space-xs) var(--space-sm);
+  white-space: nowrap;
+}
+.occupancy-analysis thead { background: var(--color-surface-subtle); }
+.occupancy-analysis thead th { font-size: var(--text-sm); }
+.occupancy-analysis tbody a { display: inline-flex; align-items: center; min-height: 44px; }
+.oa-trend-chart { display: block; max-width: none; }
+.oa-trend-chart text { fill: var(--color-muted); font-size: var(--text-xs); }
+.oa-grid-line { stroke: var(--color-rule); }
+.oa-series-line { stroke: var(--color-accent-primary); stroke-width: 2; }
+.oa-point { fill: var(--color-accent-primary); }
+.oa-point-partial { fill: var(--color-paper); stroke: var(--color-accent-primary); stroke-width: 2; }
+.oa-trend summary { cursor: pointer; min-height: 44px; align-content: center; }
+@media (max-width: 760px) {
+  .oa-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .oa-kpis > :nth-child(odd) { border-inline-start: 0; }
+  .oa-kpis > :nth-child(n+3) { border-block-start: 1px solid var(--color-rule); }
+  .oa-ranking tr > :nth-child(2) {
+    position: sticky;
+    inset-inline-start: 0;
+    background: var(--color-paper);
+  }
+  .oa-ranking thead tr > :nth-child(2) { background: var(--color-surface-subtle); }
+}

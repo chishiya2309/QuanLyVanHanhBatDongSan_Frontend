@@ -29,6 +29,8 @@ import { RoomServicesPage, RoomServicesForbidden } from './components/services/R
 import { RoomPaymentPolicyPage } from './components/payments/RoomPaymentPolicyPage';
 import { paymentMessages } from './types/roomPaymentPolicy';
 import type { PropertiesRoute, RoomsRoute } from './types/properties';
+import { OccupancyAnalysisPage } from './components/reports/OccupancyAnalysisPage';
+import { occupancyAnalysisPath, parseOccupancyAnalysisRoute, type OccupancyAnalysisQuery } from './utils/occupancyAnalysisNavigation';
 import { ExpiringLeaseReportPage } from './components/reports/ExpiringLeaseReportPage';
 import { expiringLeasePath, parseExpiringLeaseRoute, type ExpiringLeaseQuery } from './utils/expiringLeaseNavigation';
 import { OccupancyReportPage } from './components/reports/OccupancyReportPage';
@@ -80,7 +82,7 @@ function isGoogleEntry(): boolean {
 }
 
 const parseReportRoute = (path: string, search: string) =>
-  parseOccupancyRoute(path, search) ?? parseExpiringLeaseRoute(path, search);
+  parseOccupancyRoute(path, search) ?? parseExpiringLeaseRoute(path, search) ?? parseOccupancyAnalysisRoute(path, search);
 
 function isProtectedPath(pathname: string, search: string): boolean {
   return Boolean(
@@ -155,7 +157,7 @@ function AuthenticatedDashboard({
   onNavigateAssets: (url: string, replace?: boolean) => void;
   propertiesRoute: PropertiesRoute | null;
   onNavigateProperties: (url: string) => void;
-  occupancyRoute: OccupancyQuery | ExpiringLeaseQuery | null;
+  occupancyRoute: OccupancyQuery | ExpiringLeaseQuery | OccupancyAnalysisQuery | null;
   roomsRoute: RoomsRoute | null;
   onNavigateRooms: (url: string) => void;
   contractRoute: DepositContractRoute | null;
@@ -229,7 +231,9 @@ function AuthenticatedDashboard({
         onNavigateProperties={() => onNavigateProperties('/properties')}
         showRooms={user.role === 'HOST'}
         occupancyActive={occupancyRoute !== null && !('kind' in occupancyRoute)}
-        expiringLeasesActive={occupancyRoute !== null && 'kind' in occupancyRoute}
+        expiringLeasesActive={occupancyRoute !== null && 'kind' in occupancyRoute && occupancyRoute.kind === 'expiring-leases'}
+        occupancyAnalysisActive={occupancyRoute !== null && 'kind' in occupancyRoute && occupancyRoute.kind === 'occupancy-analysis'}
+        onNavigateOccupancyAnalysis={user.role === 'HOST' ? () => onNavigateRooms(occupancyAnalysisPath) : undefined}
         onNavigateExpiringLeases={user.role === 'HOST' ? () => onNavigateRooms(expiringLeasePath) : undefined}
         onNavigateOccupancy={user.role === 'HOST' ? () => onNavigateRooms(occupancyPath) : undefined}
         roomsActive={roomsRoute !== null}
@@ -348,7 +352,9 @@ function AuthenticatedDashboard({
           )
         ) : occupancyRoute ? (
           user.role === 'HOST' ? (
-            'kind' in occupancyRoute ? (
+            'kind' in occupancyRoute && occupancyRoute.kind === 'occupancy-analysis' ? (
+              <OccupancyAnalysisPage query={occupancyRoute} onNavigate={onNavigateRooms} onSessionExpired={onSessionExpired} />
+            ) : 'kind' in occupancyRoute ? (
               <ExpiringLeaseReportPage query={occupancyRoute} onNavigate={onNavigateRooms}
                 onContract={onNavigateRentalContracts} onSessionExpired={onSessionExpired} />
             ) :
