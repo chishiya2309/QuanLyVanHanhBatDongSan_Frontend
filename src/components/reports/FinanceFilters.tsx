@@ -7,7 +7,7 @@ import { transactionCategories } from './financePresentation';
 export type FinanceCatalog = { areas: Area[]; buildings: Building[]; sources: FundingSource[] };
 type Option = { id: string; name: string };
 
-function FilterSelect({ label, value, options, onChange, disabled }: {
+export function FilterSelect({ label, value, options, onChange, disabled }: {
   label: string; value?: string; options: Option[]; onChange: (value?: string) => void; disabled?: boolean;
 }) {
   return <label className="finance-field">{label}

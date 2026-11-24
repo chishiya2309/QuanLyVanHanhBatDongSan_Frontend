@@ -1,3 +1,4 @@
+import { parseExpenseBreakdownRoute } from '../../src/utils/expenseBreakdownNavigation';
 import { createRoot } from 'react-dom/client';
 import App from '../../src/App';
 import '../../src/index.css';
@@ -33,6 +34,46 @@ window.fetch = async (input, init) => {
   if (url.pathname === '/api/v1/buildings') return envelope([{ ...property, id: buildingId, areaId, name: 'Tòa nhà A' }]);
   if (url.pathname.endsWith('/rooms')) return envelope([{ ...property, id: roomId, buildingId, code: 'A101', name: 'Phòng A101' }]);
   if (url.pathname === '/api/v1/funding-sources') return fsReply([{ ...fsCash, id: sourceId }]);
+  if (url.pathname === '/api/v1/reports/expense-breakdown') {
+    calls.push(url.pathname + url.search);
+    if (q.get('areaId') === 'foreign') return envelope(null, 404, 'Khu vực ngoài phạm vi quản lý.');
+    if (q.get('areaId') === 'retry' && !failed) {
+      failed = true;
+      return envelope(null, 500);
+    }
+    if (q.get('areaId') === 'slow') await new Promise(resolve => setTimeout(resolve, 900));
+    const currentDates = { fromDate: q.get('fromDate') ?? '2026-11-01', toDate: q.get('toDate') ?? '2026-11-24' };
+    const previousDates = { fromDate: '2026-10-01', toDate: '2026-10-24' };
+    const empty = q.get('areaId') === 'empty';
+    const negative = q.get('areaId') === 'negative';
+    const zero = q.get('areaId') === 'zero';
+    const scope = Object.fromEntries(['areaId', 'buildingId', 'roomId'].filter(key => q.has(key)).map(key => [key, q.get(key)]));
+    const trace = (dates: typeof currentDates, code: string | null, financialImpact = 'OPERATING_EXPENSE') =>
+      ({ path: '/api/v1/cash-ledger', ...dates, ...scope, financialImpact,
+        financialCategoryCode: code, uncategorized: !code && financialImpact !== 'UNKNOWN' });
+    const value = q.get('areaId') === 'slow' ? 88888888 : empty || zero ? 0 : negative ? -1000000 : 12000000;
+    const periodAmounts = (value: number, expenseCount: number) =>
+      ({ grossExpense: value, expenseDeductions: 0, netExpense: value, expenseCount, deductionCount: 0 });
+    const category = (code: string, name: string, now: number, prior: number, ratio: number | null, expenseCount: number) =>
+      ({ code, name, current: periodAmounts(now, expenseCount), previous: periodAmounts(prior, 2),
+        ratio, expenseDelta: now - prior, growthRate: now < 0 ? null : ((now - prior) / prior) * 100,
+        change: empty ? 'NO_LONGER_INCURRED' : now > prior ? 'INCREASED' : 'DECREASED',
+        currentDrillDown: trace(currentDates, code), previousDrillDown: trace(previousDates, code) });
+    const categories = [category('MAINTENANCE', 'Bảo trì', value, 10000000, value > 0 ? 100 : null, empty ? 0 : 2),
+      category('REPAIR', 'Sửa chữa', 0, 1000000, value > 0 ? 0 : null, 0)];
+    if (q.get('order') === 'ASC') categories.reverse();
+    const period = (dates: typeof currentDates, total: number, count: number) =>
+      ({ ...dates, totalGrossExpense: total, totalExpenseDeductions: 0, totalNetExpense: total,
+        expenseCount: count, deductionCount: 0, hasExpenseData: count > 0, expenseWithoutProperty: 0,
+        expenseWithoutPropertyCount: 0, unknown: { count: 1, totalIn: 0, totalOut: 50000 },
+        unknownDrillDown: trace(dates, null, 'UNKNOWN') });
+    return envelope({ filter: { ...currentDates, ...scope }, current: period(currentDates, value, empty ? 0 : 2),
+      previous: period(previousDates, 11000000, 4), categories, expenseDelta: value - 11000000,
+      growthRate: value < 0 ? null : Number(((value - 11000000) / 110000).toFixed(2)),
+      largestExpense: null, largestIncrease: null, ratioAvailable: value > 0,
+      comparisonProvisional: true, deductionRecognitionSupported: false,
+      warnings: ['Kỳ đối chiếu có giao dịch chưa xác định bản chất.'] });
+  }
   if (url.pathname.startsWith('/api/v1/reports/profit-loss')) {
     calls.push(url.pathname + url.search);
     if (q.get('areaId') === 'foreign') return envelope(null, 404, 'Khu vực ngoài phạm vi quản lý.');
@@ -123,7 +164,8 @@ window.fetch = async (input, init) => {
       adjustsId: null, adjustments: [], correctionKind: null,
     }));
     const empty = q.get('sourceId') === 'empty';
-    return envelope({ items: empty ? [] : q.has('entryId') ? [item].filter(row => row.id === q.get('entryId')) : [item, ...income], page, size: 20, totalElements: empty ? 0 : 22 });
+    return envelope({ items: empty ? [] : q.has('entryId') ? [item].filter(row => row.id === q.get('entryId')) : [item, ...income], page, size: 20, totalElements: empty ? 0 : 22,
+      ...(q.has('financialImpact') ? { totalContribution: q.get('financialImpact') === 'UNKNOWN' ? 50000 : 10000000 } : {}) });
   }
   const days = (Date.parse(filter.toDate) - Date.parse(filter.fromDate)) / 86_400_000 + 1;
   const empty = filter.sourceId === 'empty';
@@ -153,6 +195,7 @@ if (capture) {
   };
   void heartbeat();
 }
-if (!parseFinanceRoute(location.pathname, location.search) && !parseProfitLossRoute(location.pathname, location.search)) history.replaceState(null, '', initial);
+if (!parseFinanceRoute(location.pathname, location.search) && !parseProfitLossRoute(location.pathname, location.search)
+    && !parseExpenseBreakdownRoute(location.pathname, location.search)) history.replaceState(null, '', initial);
 createRoot(document.getElementById('root')!).render(<App />);
 

@@ -12,6 +12,7 @@ interface SidebarProps {
   showHostAccounts?: boolean; hostAccountsActive?: boolean;
   showAssets?: boolean; assetsActive?: boolean; onNavigateAssets?: () => void;
   showProperties?: boolean; propertiesActive?: boolean; onNavigateProperties?: () => void;
+  expenseBreakdownActive?: boolean; onNavigateExpenseBreakdown?: () => void;
   profitLossActive?: boolean; onNavigateProfitLoss?: () => void;
   financeActive?: boolean; onNavigateFinance?: () => void;
   occupancyAnalysisActive?: boolean; onNavigateOccupancyAnalysis?: () => void;
@@ -42,6 +43,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   expiringLeasesActive = false,
   onNavigateExpiringLeases,
   occupancyAnalysisActive = false,
+  expenseBreakdownActive, onNavigateExpenseBreakdown,
   profitLossActive, onNavigateProfitLoss,
   financeActive,
   onNavigateFinance,
@@ -233,6 +235,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
           </svg>
           <span>Thu chi &amp; Dòng tiền</span>
+        </button>}
+        {onNavigateExpenseBreakdown && <button type="button" className={expenseBreakdownActive ? 'dash-nav-item is-active' : 'dash-nav-item'}
+          aria-current={expenseBreakdownActive && markCurrent ? 'page' : undefined} onClick={onNavigateExpenseBreakdown}>
+          Cơ cấu chi phí
         </button>}
         {onNavigateProfitLoss && <button type="button" className={profitLossActive ? 'dash-nav-item is-active' : 'dash-nav-item'}
           aria-current={profitLossActive && markCurrent ? 'page' : undefined} onClick={onNavigateProfitLoss}>
