@@ -1,3 +1,4 @@
+import { queryParams, type DetailQuery, type ReportQuery } from '../utils/profitLossNavigation';
 import { isLosslessNumber, parse } from 'lossless-json';
 import { isRecord, safeInteger } from './assetCodec';
 import { authenticatedFetch } from './sessionClient';
@@ -91,7 +92,7 @@ export class FinanceApiError extends Error {
     this.status = status;
   }
 }
-async function request<T>(path: string, params: URLSearchParams, decode: (value: unknown) => T, signal: AbortSignal) {
+export async function requestFinance<T>(path: string, params: URLSearchParams, decode: (value: unknown) => T, signal: AbortSignal) {
   const response = await authenticatedFetch(base + path + (params.size ? '?' + params : ''), {
     signal, credentials: 'include', cache: 'no-store', headers: { Accept: 'application/json' },
   });
@@ -104,12 +105,88 @@ async function request<T>(path: string, params: URLSearchParams, decode: (value:
   return decode(body.data);
 }
 export function getFinanceReport(filter: FinanceFilter, signal: AbortSignal) {
-  return request('/reports/finance', financeParams(filter), decodeFinanceReport, signal);
+  return requestFinance('/reports/finance', financeParams(filter), decodeFinanceReport, signal);
 }
+const percentage = (value: unknown) => {
+  if (value === null) return null;
+  const number = isLosslessNumber(value) ? value.value : value;
+  if (typeof number !== 'string' || !/^-?\d+(\.\d+)?$/.test(number)) return invalid();
+  return number;
+};
+const boolean = (value: unknown) => typeof value === 'boolean' ? value : invalid();
+const totals = (value: unknown) => {
+  const row = record(value);
+  return { revenue: decodeFinanceMoney(row.revenue), expense: decodeFinanceMoney(row.expense),
+    profit: decodeFinanceMoney(row.profit), profitMargin: percentage(row.profitMargin) };
+};
+const window = (value: unknown) => {
+  const row = record(value);
+  return { page: count(row.page), size: count(row.size), totalElements: count(row.totalElements) };
+};
+export function decodeProfitLossReport(value: unknown) {
+  const row = record(value);
+  const scope = record(row.filter);
+  const unknown = record(row.unknown);
+  if (row.granularity !== 'DAY' && row.granularity !== 'MONTH') return invalid();
+  if (row.status !== 'POSITIVE' && row.status !== 'NEGATIVE' && row.status !== 'ZERO' && row.status !== 'NO_DATA') return invalid();
+  return { ...totals(row), granularity: row.granularity, status: row.status as 'POSITIVE' | 'NEGATIVE' | 'ZERO' | 'NO_DATA',
+    fromDate: text(scope.fromDate), toDate: text(scope.toDate),
+    directContribution: row.directContribution == null ? undefined : decodeFinanceMoney(row.directContribution),
+    byPeriod: list(row.byPeriod, value => {
+      const item = record(value);
+      return { bucket: text(item.bucket), fromDate: text(item.fromDate), toDate: text(item.toDate),
+        partial: boolean(item.partial), totals: totals(item.totals) };
+    }),
+    byBuilding: list(row.byBuilding, value => {
+      const item = record(value);
+      return { id: text(item.id), name: optional(item.name), totals: totals(item.totals),
+        directExpense: decodeFinanceMoney(item.directExpense), commonExpense: decodeFinanceMoney(item.commonExpense) };
+    }),
+    byRoom: list(row.byRoom, value => {
+      const item = record(value);
+      return { id: text(item.id), buildingId: optional(item.buildingId), code: optional(item.code),
+        revenue: decodeFinanceMoney(item.roomRevenue), expense: decodeFinanceMoney(item.directExpense),
+        contribution: decodeFinanceMoney(item.directContribution) };
+    }),
+    byExpenseCategory: list(row.byExpenseCategory, value => {
+      const item = record(value);
+      return { code: text(item.code), name: text(item.name), expense: decodeFinanceMoney(item.expense),
+        share: percentage(item.share) };
+    }),
+    buildingPagination: window(row.buildingPagination), roomPagination: window(row.roomPagination),
+    unknown: { count: count(unknown.count), totalIn: decodeFinanceMoney(unknown.totalIn),
+      totalOut: decodeFinanceMoney(unknown.totalOut) },
+    unallocated: totals(row.unallocated), method: text(row.method), provisional: boolean(row.provisional),
+    dataLimitations: list(row.dataLimitations, text), notes: list(row.notes, text), emptyMessage: optional(row.emptyMessage),
+  };
+}
+export function decodeProfitLossDetails(value: unknown) {
+  const row = record(value);
+  return { ...window(row), totalContribution: decodeFinanceMoney(row.totalContribution), totals: totals(row.totals),
+    entries: list(row.entries, value => {
+      const item = record(value);
+      return { cashEntryId: optional(item.cashEntryId), occurredAt: text(item.occurredAt),
+        categoryCode: optional(item.categoryCode), classification: text(item.classification), origin: text(item.origin),
+        direction: text(item.reportDirection), amount: decodeFinanceMoney(item.amount),
+        contribution: decodeFinanceMoney(item.contribution), correctionKind: optional(item.correctionKind),
+        references: [item.paymentId, item.adjustsId, item.settlementId].flatMap(id => id == null ? [] : [text(id)]) };
+    }) };
+}
+export type ProfitLossReport = ReturnType<typeof decodeProfitLossReport>;
+export type ProfitLossDetails = ReturnType<typeof decodeProfitLossDetails>;
+
+export function getProfitLossReport(filter: ReportQuery, signal: AbortSignal) {
+  return requestFinance('/reports/profit-loss', queryParams(filter), decodeProfitLossReport, signal);
+}
+export function getProfitLossDetails(query: DetailQuery, signal: AbortSignal) {
+  return requestFinance('/reports/profit-loss/details', queryParams(query), decodeProfitLossDetails, signal);
+}
+
 export function getCashLedger(route: FinanceRoute, signal: AbortSignal) {
   const params = financeParams(route.filter);
+  if (route.entryId) params.set('entryId', route.entryId);
   params.set('page', String(route.page));
   params.set('size', String(route.size));
-  return request('/cash-ledger', params, decodeCashLedger, signal);
+  return requestFinance('/cash-ledger', params, decodeCashLedger, signal);
 }
 
