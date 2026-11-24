@@ -1,6 +1,7 @@
 import { createRoot } from 'react-dom/client';
 import App from '../../src/App';
 import '../../src/index.css';
+import { parseProfitLossRoute } from '../../src/utils/profitLossNavigation';
 import { parseFinanceRoute } from '../../src/utils/financeNavigation';
 import { fsCash, fsFixture, fsReply } from './fundingSources';
 
@@ -32,6 +33,69 @@ window.fetch = async (input, init) => {
   if (url.pathname === '/api/v1/buildings') return envelope([{ ...property, id: buildingId, areaId, name: 'Tòa nhà A' }]);
   if (url.pathname.endsWith('/rooms')) return envelope([{ ...property, id: roomId, buildingId, code: 'A101', name: 'Phòng A101' }]);
   if (url.pathname === '/api/v1/funding-sources') return fsReply([{ ...fsCash, id: sourceId }]);
+  if (url.pathname.startsWith('/api/v1/reports/profit-loss')) {
+    calls.push(url.pathname + url.search);
+    if (q.get('areaId') === 'foreign') return envelope(null, 404, 'Khu vực ngoài phạm vi quản lý.');
+    if (q.get('areaId') === 'retry' && !failed) {
+      failed = true;
+      return envelope(null, 500);
+    }
+    if (q.get('areaId') === 'slow') await new Promise(resolve => setTimeout(resolve, 900));
+    const filter = { fromDate: q.get('fromDate') ?? '2025-12-01', toDate: q.get('toDate') ?? '2026-11-24' };
+    const days = (Date.parse(filter.toDate) - Date.parse(filter.fromDate)) / 86_400_000 + 1;
+    const empty = q.get('areaId') === 'empty';
+    const totals = { revenue: empty || q.has('roomId') ? 0 : q.get('areaId') === 'slow' ? 88888888 : 108000000,
+      expense: empty ? 0 : 36000000, profit: empty ? 0 : q.has('roomId') ? -36000000 : 72000000,
+      profitMargin: empty || q.has('roomId') ? null : 66.67 };
+    const pagination = { page: Number(q.get('roomPage')), size: 1, totalElements: q.has('buildingId') ? 2 : 1 };
+    if (url.pathname.endsWith('/details')) {
+      return envelope({ page: Number(q.get('page')), size: 1, totalElements: 2, totals, totalContribution: 72000000,
+        entries: [{ cashEntryId: 'refund', occurredAt: '2026-11-06T02:00:00Z', classification: 'UNKNOWN',
+          origin: 'MANUAL', reportDirection: 'OUT', categoryCode: 'REFUND', amount: 75000, contribution: 75000 }] });
+    }
+    const daily = days <= 31;
+    const first = new Date(daily ? filter.fromDate : filter.fromDate.slice(0, 7) + '-01');
+    const periods = [];
+    const iso = (day: Date) => day.toISOString().slice(0, 10);
+    for (const start = new Date(first); iso(start) <= filter.toDate; ) {
+      const bucket = iso(start);
+      const next = new Date(start);
+      if (daily) next.setUTCDate(next.getUTCDate() + 1);
+      else next.setUTCMonth(next.getUTCMonth() + 1);
+      const last = iso(new Date(next.getTime() - 86_400_000));
+      const fromDate = bucket < filter.fromDate ? filter.fromDate : bucket;
+      const toDate = last > filter.toDate ? filter.toDate : last;
+      periods.push({ bucket, fromDate, toDate, partial: fromDate !== bucket || toDate !== last, totals });
+      start.setTime(next.getTime());
+    }
+    const weights = periods.map((_, index) => 1 + index % 5);
+    const weight = weights.reduce((sum, item) => sum + item, 0);
+    let revenueLeft = totals.revenue, expenseLeft = totals.expense;
+    for (const [index, period] of periods.entries()) {
+      const revenue = index === periods.length - 1 ? revenueLeft : Math.floor(totals.revenue * weights[index] / weight);
+      const expense = index === periods.length - 1 ? expenseLeft : Math.floor(totals.expense * (weights.at(-1 - index) ?? 0) / weight);
+      revenueLeft -= revenue;
+      expenseLeft -= expense;
+      period.totals = { revenue, expense, profit: revenue - expense, profitMargin: null };
+    }
+    return envelope({ ...totals, filter, granularity: daily ? 'DAY' : 'MONTH',
+      status: empty ? 'NO_DATA' : q.has('roomId') ? 'NEGATIVE' : 'POSITIVE',
+      directContribution: q.has('roomId') ? totals.profit : null,
+      byPeriod: empty ? [] : periods,
+      byBuilding: empty ? [] : [{ id: buildingId, name: 'Tòa nhà A', totals,
+        directExpense: 28000000, commonExpense: 8000000 }],
+      byRoom: empty ? [] : [{ id: roomId, buildingId, code: pagination.page ? 'A102' : 'A101',
+        roomRevenue: 0, directExpense: 28000000, directContribution: -28000000 }],
+      byExpenseCategory: empty ? [] : [{ code: 'OPERATING_EXPENSE', name: 'Vận hành', expense: 36000000, share: 100 }],
+      buildingPagination: { page: 0, size: 20, totalElements: 1 }, roomPagination: pagination,
+      unallocated: { revenue: 0, expense: 0, profit: 0, profitMargin: null },
+      unknown: { count: 2, totalIn: 0, totalOut: 150000 }, provisional: !empty,
+      dataLimitations: ['Một số khoản hoàn tiền chưa liên kết giao dịch gốc.'],
+      notes: ['Chi phí chung cấp tòa nhà được trình bày riêng.'],
+      method: 'Báo cáo quản trị theo thực thu, thực chi.',
+      emptyMessage: empty ? 'Chưa có dữ liệu doanh thu và chi phí được ghi nhận trong kỳ.' : null,
+    });
+  }
   if (!['/api/v1/reports/finance', '/api/v1/cash-ledger'].includes(url.pathname)) return auth.fetcher(input, init);
   calls.push(url.pathname + url.search);
   if (q.get('sourceId') === 'foreign') return envelope(null, 404, 'Nguồn tiền ngoài phạm vi quản lý.');
@@ -59,7 +123,7 @@ window.fetch = async (input, init) => {
       adjustsId: null, adjustments: [], correctionKind: null,
     }));
     const empty = q.get('sourceId') === 'empty';
-    return envelope({ items: empty ? [] : [item, ...income], page, size: 20, totalElements: empty ? 0 : 22 });
+    return envelope({ items: empty ? [] : q.has('entryId') ? [item].filter(row => row.id === q.get('entryId')) : [item, ...income], page, size: 20, totalElements: empty ? 0 : 22 });
   }
   const days = (Date.parse(filter.toDate) - Date.parse(filter.fromDate)) / 86_400_000 + 1;
   const empty = filter.sourceId === 'empty';
@@ -89,6 +153,6 @@ if (capture) {
   };
   void heartbeat();
 }
-if (!parseFinanceRoute(location.pathname, location.search)) history.replaceState(null, '', initial);
+if (!parseFinanceRoute(location.pathname, location.search) && !parseProfitLossRoute(location.pathname, location.search)) history.replaceState(null, '', initial);
 createRoot(document.getElementById('root')!).render(<App />);
 

@@ -12,6 +12,7 @@ interface SidebarProps {
   showHostAccounts?: boolean; hostAccountsActive?: boolean;
   showAssets?: boolean; assetsActive?: boolean; onNavigateAssets?: () => void;
   showProperties?: boolean; propertiesActive?: boolean; onNavigateProperties?: () => void;
+  profitLossActive?: boolean; onNavigateProfitLoss?: () => void;
   financeActive?: boolean; onNavigateFinance?: () => void;
   occupancyAnalysisActive?: boolean; onNavigateOccupancyAnalysis?: () => void;
   occupancyActive?: boolean; onNavigateOccupancy?: () => void;
@@ -41,6 +42,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   expiringLeasesActive = false,
   onNavigateExpiringLeases,
   occupancyAnalysisActive = false,
+  profitLossActive, onNavigateProfitLoss,
   financeActive,
   onNavigateFinance,
   onNavigateOccupancyAnalysis,
@@ -64,7 +66,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onNavigateOverview,
   onNavigateHostAccounts,
 }) => {
-  const isOverviewActive = !invoiceLink?.active && !rentalProfileActive && !fundingSourcesActive && !provisionalChargesActive && !meterReadingsActive && !periodUsagesActive && !hostAccountsActive && !assetsActive && !propertiesActive && !roomsActive && !financeActive && !occupancyAnalysisActive && !occupancyActive && !expiringLeasesActive && !servicesActive && !customersActive && !contractsActive && !rentalContractsActive && !documentTemplatesActive;
+  const isOverviewActive = !invoiceLink?.active && !rentalProfileActive && !fundingSourcesActive && !provisionalChargesActive && !meterReadingsActive && !periodUsagesActive && !hostAccountsActive && !assetsActive && !propertiesActive && !roomsActive && !financeActive && !profitLossActive && !occupancyAnalysisActive && !occupancyActive && !expiringLeasesActive && !servicesActive && !customersActive && !contractsActive && !rentalContractsActive && !documentTemplatesActive;
   return (
     <aside id="rentops-navigation" className={`dash-sidebar${mobileOpen ? ' is-mobile-open' : ''}`} aria-label="Thanh điều hướng chính">
       <div className="dash-nav-group">
@@ -232,6 +234,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </svg>
           <span>Thu chi &amp; Dòng tiền</span>
         </button>}
+        {onNavigateProfitLoss && <button type="button" className={profitLossActive ? 'dash-nav-item is-active' : 'dash-nav-item'}
+          aria-current={profitLossActive && markCurrent ? 'page' : undefined} onClick={onNavigateProfitLoss}>
+          <span>Doanh thu &amp; Lời lỗ</span>
+        </button>}
         {onNavigateExpiringLeases && (
           <button type="button" className={`dash-nav-item${expiringLeasesActive ? ' is-active' : ''}`}
             aria-current={expiringLeasesActive && markCurrent ? 'page' : undefined} onClick={onNavigateExpiringLeases}>
@@ -286,7 +292,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </button>
         </>}
       </div>
-        {!invoiceLink?.active && !rentalProfileActive && !fundingSourcesActive && !provisionalChargesActive && !hostAccountsActive && !assetsActive && !propertiesActive && !roomsActive && !financeActive && !occupancyAnalysisActive && !occupancyActive && !expiringLeasesActive && !servicesActive && !customersActive && !contractsActive && !rentalContractsActive && !documentTemplatesActive && (
+        {!invoiceLink?.active && !rentalProfileActive && !fundingSourcesActive && !provisionalChargesActive && !hostAccountsActive && !assetsActive && !propertiesActive && !roomsActive && !financeActive && !profitLossActive && !occupancyAnalysisActive && !occupancyActive && !expiringLeasesActive && !servicesActive && !customersActive && !contractsActive && !rentalContractsActive && !documentTemplatesActive && (
       <div className="dash-sidebar-footer">
         <div className="system-status-box">
           <div>

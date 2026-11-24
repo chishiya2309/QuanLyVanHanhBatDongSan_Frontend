@@ -9,6 +9,8 @@ export type FinanceRoute = {
   page: number;
   size: number;
   reportSearch?: string;
+  entryId?: string;
+  profitLossSearch?: string;
 };
 
 export function financeParams(filter: FinanceFilter) {
@@ -36,6 +38,8 @@ export function parseFinanceRoute(path: string, search: string): FinanceRoute | 
     page: Number.isInteger(page) && page >= 0 && page <= 21_474_836 ? page : 0,
     size: Number.isInteger(size) && size >= 1 && size <= 100 ? size : 20,
     reportSearch: params.get('report') ?? undefined,
+    ...(kind === 'cash-ledger' && params.has('entryId') ? { entryId: params.get('entryId')! } : {}),
+    ...(kind === 'cash-ledger' && params.has('profitLoss') ? { profitLossSearch: params.get('profitLoss')! } : {}),
   };
 }
 
@@ -44,6 +48,8 @@ export function financeUrl(route: FinanceRoute) {
   if (route.kind === 'cash-ledger') {
     params.set('page', String(route.page));
     params.set('size', String(route.size));
+    if (route.entryId) params.set('entryId', route.entryId);
+    if (route.profitLossSearch !== undefined) params.set('profitLoss', route.profitLossSearch);
     if (route.reportSearch) params.set('report', route.reportSearch);
   }
   return (route.kind === 'finance' ? financePath : ledgerPath) + (params.size ? '?' + params : '');
@@ -54,6 +60,10 @@ export function drillDownUrl(filter: FinanceFilter, report: FinanceFilter) {
 }
 
 export function returnToFinance(route: FinanceRoute) {
+  if (route.profitLossSearch !== undefined) {
+    const search = new URLSearchParams(route.profitLossSearch);
+    return '/reports/profit-loss' + (search.size ? '?' + search : '');
+  }
   return financeUrl(parseFinanceRoute(financePath, route.reportSearch ?? '')!);
 }
 
