@@ -1,5 +1,8 @@
-import { useEffect, useEffectEvent, useRef, useState, type ReactNode } from 'react';
-import { FinanceApiError, getProfitLossDetails, getProfitLossReport } from '../../services/financeApi';
+import { FinancePending } from './FinancePending';
+import { useFinanceRequest } from './useFinanceRequest';
+import { expenseBreakdownUrl } from '../../utils/expenseBreakdownNavigation';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { getProfitLossDetails, getProfitLossReport } from '../../services/financeApi';
 import { getAreas, getBuildings, getRoomsByBuilding } from '../../services/propertiesApi';
 import type { Room } from '../../types/properties';
 import { validFinanceDates } from '../../utils/financeNavigation';
@@ -21,36 +24,6 @@ const emptyCatalog: FinanceCatalog = { areas: [], buildings: [], sources: [] };
 function propertyScope(value: Scope): Scope {
   return { fromDate: value.fromDate, toDate: value.toDate, areaId: value.areaId,
     buildingId: value.buildingId, roomId: value.roomId };
-}
-
-function useRequest<T>(key: string | undefined, load: (signal: AbortSignal) => Promise<T>, expired: () => void) {
-  const [attempt, retry] = useState(0);
-  const [result, setResult] = useState<{ key: string; attempt: number; data?: T; error?: string }>();
-  const request = useEffectEvent(load);
-  const onExpired = useEffectEvent(expired);
-  useEffect(() => {
-    if (key === undefined) return;
-    const controller = new AbortController();
-    void request(controller.signal).then(data => {
-      if (!controller.signal.aborted) setResult({ key, attempt, data });
-    }).catch((error: unknown) => {
-      if (controller.signal.aborted) return;
-      if (error instanceof FinanceApiError && error.status === 401) onExpired();
-      const message = error instanceof FinanceApiError && error.status < 500
-        ? error.message || 'Bộ lọc không hợp lệ hoặc nằm ngoài phạm vi quản lý.' : unavailable;
-      setResult({ key, attempt, error: message });
-    });
-    return () => controller.abort();
-  }, [key, attempt]);
-  const current = result?.key === key && result?.attempt === attempt ? result : undefined;
-  return { data: current?.data, error: current?.error, retry: () => retry(value => value + 1) };
-}
-
-function Pending({ error, retry, label }: { error?: string; retry: () => void; label: string }) {
-  return error ? <div className="finance-error" role="alert"><p>{error}</p>
-    <button type="button" onClick={retry}>Thử lại</button></div>
-    : <div className="finance-loading" role="status" aria-busy="true"><p>{label}</p>
-      <div className="finance-placeholder" aria-hidden="true" /></div>;
 }
 
 function Pagination({ value, label, change }: {
@@ -80,22 +53,22 @@ export function ProfitLossPage({ route, onNavigate, onSessionExpired }: {
   const scope = propertyScope(filter);
   const filterKey = String(queryParams(scope));
   const valid = validFinanceDates({ ...scope, transactionCategory: [] });
-  const reportLoad = useRequest(valid ? String(queryParams(filter)) : undefined,
-    signal => getProfitLossReport(filter, signal), onSessionExpired);
+  const reportLoad = useFinanceRequest(valid ? String(queryParams(filter)) : undefined,
+    signal => getProfitLossReport(filter, signal), onSessionExpired, unavailable);
   const report = reportLoad.data;
   const selectedFilter = { ...scope, fromDate: report?.fromDate, toDate: report?.toDate,
     buildingId: selectedBuilding, roomPage: selectedRoomPage, groupSize: filter.groupSize };
-  const roomsLoad = useRequest(selectedBuilding && report ? String(queryParams(selectedFilter)) : undefined,
-    signal => getProfitLossReport(selectedFilter, signal), onSessionExpired);
-  const detailLoad = useRequest(detail ? String(queryParams(detail)) : undefined,
-    signal => getProfitLossDetails(detail!, signal), onSessionExpired);
-  const catalogLoad = useRequest('properties', async () => {
+  const roomsLoad = useFinanceRequest(selectedBuilding && report ? String(queryParams(selectedFilter)) : undefined,
+    signal => getProfitLossReport(selectedFilter, signal), onSessionExpired, unavailable);
+  const detailLoad = useFinanceRequest(detail ? String(queryParams(detail)) : undefined,
+    signal => getProfitLossDetails(detail!, signal), onSessionExpired, unavailable);
+  const catalogLoad = useFinanceRequest('properties', async () => {
     const [areas, buildings] = await Promise.all([getAreas(), getBuildings()]);
     return { areas, buildings, sources: [] };
-  }, onSessionExpired);
+  }, onSessionExpired, unavailable);
   const [roomDraft, setRoomDraft] = useState<{ filterKey: string; id?: string }>();
   const draftBuilding = roomDraft?.filterKey === filterKey ? roomDraft.id : filter.buildingId;
-  const roomOptions = useRequest(draftBuilding, () => getRoomsByBuilding(draftBuilding!), onSessionExpired);
+  const roomOptions = useFinanceRequest(draftBuilding, () => getRoomsByBuilding(draftBuilding!), onSessionExpired, unavailable);
   const roomsByBuilding: Record<string, Room[]> = draftBuilding && roomOptions.data ? { [draftBuilding]: roomOptions.data } : {};
   const currentRooms = selectedBuilding ? roomsLoad.data : report;
   const detailScope = { ...scope, fromDate: report?.fromDate, toDate: report?.toDate };
@@ -123,6 +96,9 @@ export function ProfitLossPage({ route, onNavigate, onSessionExpired }: {
   return <section className="finance-page profit-loss-page" aria-labelledby="profit-loss-title">
     <header className="finance-heading"><h1 id="profit-loss-title">Doanh thu &amp; Lời lỗ</h1>
       {report && <p className="finance-period">{dateLabel(report.fromDate)} – {dateLabel(report.toDate)}</p>}
+      {report && <button type="button" onClick={() => onNavigate(expenseBreakdownUrl({
+        kind: 'expense-breakdown', filter: { ...detailScope }, view: 'composition',
+      }))}>Phân tích cơ cấu chi phí</button>}
     </header>
     <FinanceFilters key={filterKey} propertyOnly applied={{ ...scope, transactionCategory: [] }}
       defaultFrom={report?.fromDate} defaultTo={report?.toDate} catalog={catalogLoad.data ?? emptyCatalog}
@@ -132,7 +108,7 @@ export function ProfitLossPage({ route, onNavigate, onSessionExpired }: {
       <button type="button" onClick={() => { if (catalogLoad.error) catalogLoad.retry(); if (roomOptions.error) roomOptions.retry(); }}>Thử lại</button>
     </div>}
     {!valid ? <p className="finance-panel" role="alert">Chọn đủ hai ngày và kiểm tra thứ tự khoảng thời gian.</p>
-      : !report && <div className="finance-panel"><Pending error={reportLoad.error} retry={reportLoad.retry} label="Đang tải báo cáo…" /></div>}
+      : !report && <div className="finance-panel"><FinancePending error={reportLoad.error} retry={reportLoad.retry} label="Đang tải báo cáo…" /></div>}
     {report && <>
       {report.provisional && <section className="finance-panel profit-loss-warning" role="status">
         <h2>Kết quả kinh doanh tạm tính</h2>
@@ -179,7 +155,7 @@ export function ProfitLossPage({ route, onNavigate, onSessionExpired }: {
             {currentRooms?.byBuilding[0] && <p>{currentRooms.byBuilding[0].name ?? 'Tòa nhà đã chọn'}. Chi phí chung {money(currentRooms.byBuilding[0].commonExpense)}.</p>}
           </div>}
           <p className="finance-note">Chênh lệch cấp phòng chỉ gồm thu chi trực tiếp, chưa bao gồm chi phí chung và khoản chưa phân bổ.</p>
-          {!currentRooms ? <Pending error={roomsLoad.error} retry={roomsLoad.retry} label="Đang tải phòng…" />
+          {!currentRooms ? <FinancePending error={roomsLoad.error} retry={roomsLoad.retry} label="Đang tải phòng…" />
             : <>
               <DataTable label="Thu chi trực tiếp theo phòng" headers={['Phòng', 'Doanh thu', 'Chi phí trực tiếp', 'Chênh lệch']}>
                 {currentRooms.byRoom.map(row => <tr key={row.id + (row.buildingId ?? '')}>
@@ -219,7 +195,7 @@ export function ProfitLossPage({ route, onNavigate, onSessionExpired }: {
       ref={detailRegion} tabIndex={-1}>
       <div className="finance-heading"><h2 id="profit-loss-detail">Đối chiếu {labels[detail.metric].toLocaleLowerCase('vi')}</h2>
         <button type="button" onClick={() => navigate({ detail: undefined })}>Đóng chi tiết</button></div>
-      {!detailLoad.data ? <Pending error={detailLoad.error} retry={detailLoad.retry} label="Đang tải giao dịch…" /> : <>
+      {!detailLoad.data ? <FinancePending error={detailLoad.error} retry={detailLoad.retry} label="Đang tải giao dịch…" /> : <>
         <p>Tổng đóng góp {money(detailLoad.data.totalContribution)} trên {detailLoad.data.totalElements} giao dịch.</p>
         {detail.metric === 'PROFIT_MARGIN' && <p>Doanh thu {money(detailLoad.data.totals.revenue)}, kết quả {money(detailLoad.data.totals.profit)}, tỷ suất {percent(detailLoad.data.totals.profitMargin)}.</p>}
         <DataTable label="Giao dịch đối chiếu" headers={['Thời điểm', 'Danh mục', 'Số tiền', 'Đóng góp', 'Nghiệp vụ gốc']}>

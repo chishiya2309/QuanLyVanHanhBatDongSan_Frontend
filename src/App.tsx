@@ -1,3 +1,5 @@
+import { ExpenseBreakdownPage } from './components/reports/ExpenseBreakdownPage';
+import { expenseBreakdownPath, parseExpenseBreakdownRoute, type ExpenseBreakdownRoute } from './utils/expenseBreakdownNavigation';
 import { ProfitLossPage } from './components/reports/ProfitLossPage';
 import { parseProfitLossRoute, profitLossPath, type ProfitLossRoute } from './utils/profitLossNavigation';
 import { FinancePage } from './components/reports/FinancePage';
@@ -86,7 +88,7 @@ function isGoogleEntry(): boolean {
 }
 
 const parseReportRoute = (path: string, search: string) =>
-  parseProfitLossRoute(path, search) ?? parseFinanceRoute(path, search) ?? parseOccupancyRoute(path, search) ?? parseExpiringLeaseRoute(path, search) ?? parseOccupancyAnalysisRoute(path, search);
+  parseExpenseBreakdownRoute(path, search) ?? parseProfitLossRoute(path, search) ?? parseFinanceRoute(path, search) ?? parseOccupancyRoute(path, search) ?? parseExpiringLeaseRoute(path, search) ?? parseOccupancyAnalysisRoute(path, search);
 
 function isProtectedPath(pathname: string, search: string): boolean {
   return Boolean(
@@ -161,7 +163,7 @@ function AuthenticatedDashboard({
   onNavigateAssets: (url: string, replace?: boolean) => void;
   propertiesRoute: PropertiesRoute | null;
   onNavigateProperties: (url: string) => void;
-  occupancyRoute: OccupancyQuery | ExpiringLeaseQuery | OccupancyAnalysisQuery | FinanceRoute | ProfitLossRoute | null;
+  occupancyRoute: OccupancyQuery | ExpiringLeaseQuery | OccupancyAnalysisQuery | FinanceRoute | ProfitLossRoute | ExpenseBreakdownRoute | null;
   roomsRoute: RoomsRoute | null;
   onNavigateRooms: (url: string) => void;
   contractRoute: DepositContractRoute | null;
@@ -235,6 +237,8 @@ function AuthenticatedDashboard({
         onNavigateProperties={() => onNavigateProperties('/properties')}
         showRooms={user.role === 'HOST'}
         financeActive={occupancyRoute !== null && 'kind' in occupancyRoute && (occupancyRoute.kind === 'finance' || occupancyRoute.kind === 'cash-ledger')}
+        expenseBreakdownActive={occupancyRoute !== null && 'kind' in occupancyRoute && occupancyRoute.kind === 'expense-breakdown'}
+        onNavigateExpenseBreakdown={user.role === 'HOST' ? () => onNavigateRooms(expenseBreakdownPath) : undefined}
         profitLossActive={occupancyRoute !== null && 'kind' in occupancyRoute && occupancyRoute.kind === 'profit-loss'}
         onNavigateProfitLoss={user.role === 'HOST' ? () => onNavigateRooms(profitLossPath) : undefined}
         onNavigateFinance={user.role === 'HOST' ? () => onNavigateRooms(financePath) : undefined}
@@ -360,7 +364,9 @@ function AuthenticatedDashboard({
           )
         ) : occupancyRoute ? (
           user.role === 'HOST' ? (
-            'kind' in occupancyRoute && occupancyRoute.kind === 'profit-loss' ? (
+            'kind' in occupancyRoute && occupancyRoute.kind === 'expense-breakdown' ? (
+              <ExpenseBreakdownPage route={occupancyRoute} onNavigate={onNavigateRooms} onSessionExpired={onSessionExpired} />
+            ) : 'kind' in occupancyRoute && occupancyRoute.kind === 'profit-loss' ? (
               <ProfitLossPage route={occupancyRoute} onNavigate={onNavigateRooms} onSessionExpired={onSessionExpired} />
             ) : 'kind' in occupancyRoute && (occupancyRoute.kind === 'finance' || occupancyRoute.kind === 'cash-ledger') ? (
               <FinancePage route={occupancyRoute} onNavigate={onNavigateRooms} onSessionExpired={onSessionExpired} />

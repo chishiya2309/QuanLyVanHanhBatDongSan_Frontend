@@ -2,7 +2,8 @@ import { queryParams, type DetailQuery, type ReportQuery } from '../utils/profit
 import { isLosslessNumber, parse } from 'lossless-json';
 import { isRecord, safeInteger } from './assetCodec';
 import { authenticatedFetch } from './sessionClient';
-import { financeParams, type FinanceFilter, type FinanceRoute } from '../utils/financeNavigation';
+import { expenseParams, type ExpenseFilter } from '../utils/expenseBreakdownNavigation';
+import { appendFinancialParams, financialImpacts, financeParams, type FinanceFilter, type FinanceRoute } from '../utils/financeNavigation';
 
 function invalid(): never { throw new Error('Dữ liệu tài chính trả về không hợp lệ.'); }
 const record = (value: unknown) => isRecord(value) ? value : invalid();
@@ -65,6 +66,7 @@ export function decodeCashLedger(value: unknown) {
   const page = record(value);
   return {
     page: count(page.page), size: count(page.size), totalElements: count(page.totalElements),
+    ...(page.totalContribution == null ? {} : { totalContribution: decodeFinanceMoney(page.totalContribution) }),
     items: list(page.items, item => {
       const row = record(item);
       return {
@@ -184,9 +186,69 @@ export function getProfitLossDetails(query: DetailQuery, signal: AbortSignal) {
 
 export function getCashLedger(route: FinanceRoute, signal: AbortSignal) {
   const params = financeParams(route.filter);
+  appendFinancialParams(params, route.financial);
   if (route.entryId) params.set('entryId', route.entryId);
   params.set('page', String(route.page));
   params.set('size', String(route.size));
   return requestFinance('/cash-ledger', params, decodeCashLedger, signal);
 }
 
+
+function expenseTrace(value: unknown) {
+  const row = record(value);
+  const financialImpact = financialImpacts.find(impact => impact === row.financialImpact);
+  if (row.path !== '/api/v1/cash-ledger' || !financialImpact) return invalid();
+  return {
+    fromDate: text(row.fromDate), toDate: text(row.toDate), areaId: optional(row.areaId),
+    buildingId: optional(row.buildingId), roomId: optional(row.roomId), financialImpact,
+    financialCategoryCode: optional(row.financialCategoryCode), uncategorized: boolean(row.uncategorized),
+  };
+}
+function expensePeriod(value: unknown) {
+  const row = record(value);
+  const unknown = record(row.unknown);
+  return {
+    fromDate: text(row.fromDate), toDate: text(row.toDate), totalGrossExpense: decodeFinanceMoney(row.totalGrossExpense),
+    totalExpenseDeductions: decodeFinanceMoney(row.totalExpenseDeductions), totalNetExpense: decodeFinanceMoney(row.totalNetExpense),
+    expenseCount: count(row.expenseCount), deductionCount: count(row.deductionCount), hasExpenseData: boolean(row.hasExpenseData),
+    unknown: { count: count(unknown.count), totalIn: decodeFinanceMoney(unknown.totalIn), totalOut: decodeFinanceMoney(unknown.totalOut) },
+    expenseWithoutProperty: decodeFinanceMoney(row.expenseWithoutProperty), expenseWithoutPropertyCount: count(row.expenseWithoutPropertyCount),
+    unknownDrillDown: row.unknownDrillDown == null ? undefined : expenseTrace(row.unknownDrillDown),
+  };
+}
+function expenseAmounts(value: unknown) {
+  const row = record(value);
+  return {
+    grossExpense: decodeFinanceMoney(row.grossExpense), expenseDeductions: decodeFinanceMoney(row.expenseDeductions),
+    netExpense: decodeFinanceMoney(row.netExpense), expenseCount: count(row.expenseCount),
+  };
+}
+function expenseCategory(value: unknown) {
+  const row = record(value);
+  const change = ['NEW', 'NO_LONGER_INCURRED', 'INCREASED', 'DECREASED', 'UNCHANGED']
+    .find(status => status === row.change) ?? invalid();
+  return {
+    code: optional(row.code), name: text(row.name), current: expenseAmounts(row.current), previous: expenseAmounts(row.previous),
+    ratio: percentage(row.ratio), expenseDelta: decodeFinanceMoney(row.expenseDelta), growthRate: percentage(row.growthRate), change,
+    currentDrillDown: expenseTrace(row.currentDrillDown), previousDrillDown: expenseTrace(row.previousDrillDown),
+  };
+}
+export function decodeExpenseBreakdownReport(value: unknown) {
+  const row = record(value);
+  return {
+    current: expensePeriod(row.current), previous: expensePeriod(row.previous),
+    expenseDelta: decodeFinanceMoney(row.expenseDelta), growthRate: percentage(row.growthRate),
+    categories: list(row.categories, expenseCategory),
+    largestExpense: row.largestExpense == null ? undefined : expenseCategory(row.largestExpense),
+    largestIncrease: row.largestIncrease == null ? undefined : expenseCategory(row.largestIncrease),
+    ratioAvailable: boolean(row.ratioAvailable), comparisonProvisional: boolean(row.comparisonProvisional),
+    deductionRecognitionSupported: boolean(row.deductionRecognitionSupported), warnings: list(row.warnings, text),
+  };
+}
+export type ExpenseBreakdownReport = ReturnType<typeof decodeExpenseBreakdownReport>;
+export type ExpenseCategory = ReturnType<typeof expenseCategory>;
+export type ExpenseTrace = ReturnType<typeof expenseTrace>;
+
+export function getExpenseBreakdown(filter: ExpenseFilter, signal: AbortSignal) {
+  return requestFinance('/reports/expense-breakdown', expenseParams(filter), decodeExpenseBreakdownReport, signal);
+}

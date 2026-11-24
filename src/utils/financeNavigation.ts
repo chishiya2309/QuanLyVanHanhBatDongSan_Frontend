@@ -1,3 +1,10 @@
+import { expenseBreakdownPath, expenseBreakdownUrl, parseExpenseBreakdownRoute } from './expenseBreakdownNavigation';
+
+export const financialImpacts = ['OPERATING_EXPENSE', 'UNKNOWN', 'REVENUE'] as const;
+export type FinancialLedgerFilter = {
+  financialImpact: typeof financialImpacts[number]; financialCategoryCode?: string; uncategorized?: boolean;
+};
+
 export const financePath = '/reports/finance';
 export const ledgerPath = '/cash-ledger';
 
@@ -11,6 +18,9 @@ export type FinanceRoute = {
   reportSearch?: string;
   entryId?: string;
   profitLossSearch?: string;
+  expenseBreakdownSearch?: string;
+  financial?: FinancialLedgerFilter;
+  expenseMetric?: 'gross' | 'net';
 };
 
 export function financeParams(filter: FinanceFilter) {
@@ -31,6 +41,8 @@ export function parseFinanceRoute(path: string, search: string): FinanceRoute | 
     const value = params.get(key);
     if (value) filter[key] = value;
   }
+  const impact = financialImpacts.find(value => value === params.get('financialImpact'));
+  const metric = params.get('expenseMetric');
   const size = Number(params.get('size'));
   const page = Number(params.get('page'));
   return {
@@ -38,14 +50,29 @@ export function parseFinanceRoute(path: string, search: string): FinanceRoute | 
     page: Number.isInteger(page) && page >= 0 && page <= 21_474_836 ? page : 0,
     size: Number.isInteger(size) && size >= 1 && size <= 100 ? size : 20,
     reportSearch: params.get('report') ?? undefined,
+    ...(kind === 'cash-ledger' && impact ? { financial: { financialImpact: impact,
+      financialCategoryCode: params.get('financialCategoryCode') ?? undefined,
+      uncategorized: params.get('uncategorized') === 'true' } } : {}),
+    ...(kind === 'cash-ledger' && (metric === 'gross' || metric === 'net') ? { expenseMetric: metric } : {}),
+    ...(kind === 'cash-ledger' && params.has('expenseBreakdown') ? { expenseBreakdownSearch: params.get('expenseBreakdown')! } : {}),
     ...(kind === 'cash-ledger' && params.has('entryId') ? { entryId: params.get('entryId')! } : {}),
     ...(kind === 'cash-ledger' && params.has('profitLoss') ? { profitLossSearch: params.get('profitLoss')! } : {}),
   };
 }
 
+export function appendFinancialParams(params: URLSearchParams, financial?: FinancialLedgerFilter) {
+  if (!financial) return;
+  params.set('financialImpact', financial.financialImpact);
+  if (financial.financialCategoryCode) params.set('financialCategoryCode', financial.financialCategoryCode);
+  if (financial.uncategorized) params.set('uncategorized', 'true');
+}
+
 export function financeUrl(route: FinanceRoute) {
   const params = financeParams(route.filter);
   if (route.kind === 'cash-ledger') {
+    appendFinancialParams(params, route.financial);
+    if (route.expenseBreakdownSearch !== undefined) params.set('expenseBreakdown', route.expenseBreakdownSearch);
+    if (route.expenseMetric) params.set('expenseMetric', route.expenseMetric);
     params.set('page', String(route.page));
     params.set('size', String(route.size));
     if (route.entryId) params.set('entryId', route.entryId);
@@ -60,6 +87,9 @@ export function drillDownUrl(filter: FinanceFilter, report: FinanceFilter) {
 }
 
 export function returnToFinance(route: FinanceRoute) {
+  if (route.expenseBreakdownSearch !== undefined) {
+    return expenseBreakdownUrl(parseExpenseBreakdownRoute(expenseBreakdownPath, route.expenseBreakdownSearch)!);
+  }
   if (route.profitLossSearch !== undefined) {
     const search = new URLSearchParams(route.profitLossSearch);
     return '/reports/profit-loss' + (search.size ? '?' + search : '');

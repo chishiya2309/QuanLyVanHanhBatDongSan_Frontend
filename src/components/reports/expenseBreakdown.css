@@ -1,0 +1,60 @@
+/* Hallmark · v2.0.0 · scope: app · theme: existing finance system · signature: expense categories linked to signed ledger entries */
+/* Hallmark · critique: keep the basis of each chart and any data limitation visible beside its numbers. */
+/* Hallmark · answered F19 · The established Host shell retains its typography weights. */
+/* Hallmark · answered F25 · The first column pins the category and both reconciliation links. */
+.expense-breakdown-page {
+  --expense-series-0: var(--color-accent-primary);
+  --expense-series-1: var(--color-success);
+  --expense-series-2: var(--color-error);
+  --expense-series-3: var(--color-ink-2);
+  --expense-series-4: var(--color-accent-hover);
+}
+.expense-breakdown-page :is(a, button, input, select, [tabindex]):focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 3px;
+}
+.expense-periods { display: flex; flex-wrap: wrap; gap: var(--space-md); margin: 0; }
+.expense-periods dd { margin-inline-start: 0; font-variant-numeric: tabular-nums; }
+.expense-stats .expense-stat-note { font-size: var(--text-sm); font-weight: inherit; }
+.expense-stat-note small, .expense-change { display: block; }
+.expense-warnings { background: var(--color-surface-subtle); }
+.expense-chart .finance-toolbar { margin-block: var(--space-sm); }
+.expense-chart button[aria-pressed="true"] { border-color: var(--color-accent-primary); color: var(--color-accent-primary); }
+.expense-composition { display: grid; grid-template-columns: minmax(0, 11rem) minmax(0, 1fr); gap: var(--space-md); align-items: center; }
+.expense-composition svg { width: 100%; max-width: 11rem; overflow: visible; }
+.expense-slice circle { fill: none; stroke: var(--expense-series); stroke-width: 24; }
+.expense-slice a { cursor: pointer; }
+.expense-slice a:is(:hover, :focus-visible) circle { stroke-width: 30; }
+.expense-breakdown-page [data-series="0"] { --expense-series: var(--expense-series-0); }
+.expense-breakdown-page [data-series="1"] { --expense-series: var(--expense-series-1); }
+.expense-breakdown-page [data-series="2"] { --expense-series: var(--expense-series-2); }
+.expense-breakdown-page [data-series="3"] { --expense-series: var(--expense-series-3); }
+.expense-breakdown-page [data-series="4"] { --expense-series: var(--expense-series-4); }
+.expense-legend { display: grid; gap: var(--space-xs); list-style: none; padding: 0; }
+.expense-legend li { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto;
+  align-items: center; gap: var(--space-sm); }
+.expense-legend li::before { content: ''; width: 0.5rem; height: 0.5rem; background: var(--expense-series); }
+.expense-breakdown-page :is(button, a):active { color: var(--color-accent-hover); }
+.expense-breakdown-page button.finance-primary:active { color: var(--color-white); }
+.expense-breakdown-page :is(button, select):disabled { opacity: 0.55; cursor: not-allowed; }
+.expense-table-links { display: flex; flex-wrap: wrap; column-gap: var(--space-sm); font-size: var(--text-sm); }
+.expense-table-links a { white-space: nowrap; }
+.expense-breakdown-page .finance-table-scroll :is(th, td):first-child {
+  min-width: 13rem; position: sticky; inset-inline-start: 0; z-index: 1; background: var(--color-surface);
+}
+.expense-legend li :is(span, strong), .expense-bar-row strong { font-variant-numeric: tabular-nums; }
+.expense-bars { display: grid; gap: var(--space-sm); }
+.expense-bar-category h3 { margin: 0; }
+.expense-bar-row { display: grid; grid-template-columns: minmax(0, 15rem) minmax(0, 1fr); align-items: center; gap: var(--space-sm); }
+.expense-bar-row > a { display: flex; min-height: 2.75rem; align-items: center; justify-content: space-between; gap: var(--space-xs); }
+.expense-bar-row svg { width: 100%; height: 1rem; overflow: visible; }
+.expense-bar-row line { stroke: var(--color-ink-2); }
+.expense-bar-row rect { fill: var(--color-accent-primary); }
+.expense-bar-row[data-prior="true"] rect { fill: var(--color-ink-2); }
+.expense-bar-row svg a:is(:hover, :focus-visible) rect { stroke: var(--color-ink); cursor: pointer; }
+.expense-breakdown-page thead button { text-align: start; }
+@media (max-width: 42rem) {
+  .expense-breakdown-page .finance-table-scroll :is(th, td):first-child { min-width: 9rem; }
+  .expense-composition { grid-template-columns: minmax(0, 1fr); }
+  .expense-bar-row { grid-template-columns: minmax(0, 1fr); gap: 0; margin-block-end: var(--space-xs); }
+}

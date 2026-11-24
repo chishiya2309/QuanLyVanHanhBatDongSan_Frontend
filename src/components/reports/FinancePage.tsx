@@ -91,6 +91,10 @@ function Ledger({ ledger, route, catalog, rooms, navigate }: {
   };
 
   return <section className="finance-panel" aria-label="Giao dịch trong sổ thu chi">
+    {ledger.totalContribution !== undefined && <p>
+      {route.expenseMetric === 'gross' ? 'Chi phí trước giảm trừ' : route.expenseMetric === 'net' ? 'Chi phí thuần' : 'Đóng góp có dấu'}
+      {' trên toàn bộ kết quả: '}<strong>{money(ledger.totalContribution)}</strong>
+    </p>}
     {ledger.items.length ? <div className="finance-table-scroll">
       <table aria-label="Giao dịch trong sổ thu chi">
         <thead><tr>{['Thời điểm', 'Danh mục', 'Nội dung và tham chiếu', 'Thu', 'Chi', 'Nguồn tiền', 'Bất động sản', 'Xác nhận']
@@ -223,9 +227,16 @@ export function FinancePage({ route, onNavigate, onSessionExpired }: {
       <h1 id="finance-title">{isReport ? 'Phân tích thu chi và dòng tiền' : 'Sổ thu chi'}</h1>
       {!isReport && <FinanceLink href={returnToFinance(route)} navigate={onNavigate}>Quay lại báo cáo</FinanceLink>}
     </header>
-    <FinanceFilters key={route.kind + financeParams(route.filter)} applied={route.filter}
+    {!route.financial && <FinanceFilters key={route.kind + financeParams(route.filter)} applied={route.filter}
       defaultFrom={report?.filter.fromDate} defaultTo={report?.filter.toDate}
-      catalog={catalog} roomsByBuilding={rooms} onApply={apply} onBuilding={id => setActiveBuilding({ route, id })} />
+      catalog={catalog} roomsByBuilding={rooms} onApply={apply} onBuilding={id => setActiveBuilding({ route, id })} />}
+    {route.financial && <p className="finance-period">
+      {route.filter.fromDate && dateLabel(route.filter.fromDate)} – {route.filter.toDate && dateLabel(route.filter.toDate)}
+      {route.financial.uncategorized
+        ? ' | Chi phí chưa phân loại'
+        : route.financial.financialCategoryCode ? ' | ' + (transactionCategories[route.financial.financialCategoryCode] ?? route.financial.financialCategoryCode)
+          : route.financial.financialImpact === 'UNKNOWN' ? ' | Giao dịch chưa xác định' : ''}
+    </p>}
     {(catalogError || roomError) && <p role="status" className="finance-catalog-alert">Một số danh mục chưa tải được.{' '}
       <button type="button" onClick={() => retryCatalog(count => count + 1)}>Tải lại danh mục</button></p>}
     {!isReport && route.filter.dimension &&
