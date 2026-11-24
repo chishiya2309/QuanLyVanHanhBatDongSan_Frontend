@@ -12,6 +12,7 @@ interface SidebarProps {
   showHostAccounts?: boolean; hostAccountsActive?: boolean;
   showAssets?: boolean; assetsActive?: boolean; onNavigateAssets?: () => void;
   showProperties?: boolean; propertiesActive?: boolean; onNavigateProperties?: () => void;
+  financeActive?: boolean; onNavigateFinance?: () => void;
   occupancyAnalysisActive?: boolean; onNavigateOccupancyAnalysis?: () => void;
   occupancyActive?: boolean; onNavigateOccupancy?: () => void;
   expiringLeasesActive?: boolean; onNavigateExpiringLeases?: () => void;
@@ -40,6 +41,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   expiringLeasesActive = false,
   onNavigateExpiringLeases,
   occupancyAnalysisActive = false,
+  financeActive,
+  onNavigateFinance,
   onNavigateOccupancyAnalysis,
   occupancyActive = false,
   onNavigateOccupancy,
@@ -61,7 +64,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onNavigateOverview,
   onNavigateHostAccounts,
 }) => {
-  const isOverviewActive = !invoiceLink?.active && !rentalProfileActive && !fundingSourcesActive && !provisionalChargesActive && !meterReadingsActive && !periodUsagesActive && !hostAccountsActive && !assetsActive && !propertiesActive && !roomsActive && !occupancyAnalysisActive && !occupancyActive && !expiringLeasesActive && !servicesActive && !customersActive && !contractsActive && !rentalContractsActive && !documentTemplatesActive;
+  const isOverviewActive = !invoiceLink?.active && !rentalProfileActive && !fundingSourcesActive && !provisionalChargesActive && !meterReadingsActive && !periodUsagesActive && !hostAccountsActive && !assetsActive && !propertiesActive && !roomsActive && !financeActive && !occupancyAnalysisActive && !occupancyActive && !expiringLeasesActive && !servicesActive && !customersActive && !contractsActive && !rentalContractsActive && !documentTemplatesActive;
   return (
     <aside id="rentops-navigation" className={`dash-sidebar${mobileOpen ? ' is-mobile-open' : ''}`} aria-label="Thanh điều hướng chính">
       <div className="dash-nav-group">
@@ -221,13 +224,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
         {invoiceLink && <a href={invoiceLink.path} className={`dash-nav-item${invoiceLink.active ? ' is-active' : ''}`}
           aria-current={invoiceLink.active && markCurrent ? 'page' : undefined}>{invoiceLink.label}</a>}
 
-        <button type="button" className="dash-nav-item">
+        {onNavigateFinance && <button type="button" className={financeActive ? 'dash-nav-item is-active' : 'dash-nav-item'}
+          aria-current={financeActive && markCurrent ? 'page' : undefined} onClick={onNavigateFinance}>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <line x1="12" y1="1" x2="12" y2="23"></line>
             <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
           </svg>
-          <span>Báo cáo Dòng tiền</span>
-        </button>
+          <span>Thu chi &amp; Dòng tiền</span>
+        </button>}
         {onNavigateExpiringLeases && (
           <button type="button" className={`dash-nav-item${expiringLeasesActive ? ' is-active' : ''}`}
             aria-current={expiringLeasesActive && markCurrent ? 'page' : undefined} onClick={onNavigateExpiringLeases}>
@@ -282,7 +286,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </button>
         </>}
       </div>
-        {!invoiceLink?.active && !rentalProfileActive && !fundingSourcesActive && !provisionalChargesActive && !hostAccountsActive && !assetsActive && !propertiesActive && !roomsActive && !occupancyAnalysisActive && !occupancyActive && !expiringLeasesActive && !servicesActive && !customersActive && !contractsActive && !rentalContractsActive && !documentTemplatesActive && (
+        {!invoiceLink?.active && !rentalProfileActive && !fundingSourcesActive && !provisionalChargesActive && !hostAccountsActive && !assetsActive && !propertiesActive && !roomsActive && !financeActive && !occupancyAnalysisActive && !occupancyActive && !expiringLeasesActive && !servicesActive && !customersActive && !contractsActive && !rentalContractsActive && !documentTemplatesActive && (
       <div className="dash-sidebar-footer">
         <div className="system-status-box">
           <div>
