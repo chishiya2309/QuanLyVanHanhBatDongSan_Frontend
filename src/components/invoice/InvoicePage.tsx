@@ -24,6 +24,7 @@ import './invoice.css';
 import './invoiceIssuance.css';
 import './invoiceQuery.css';
 import { DraftSchedule } from './DraftSchedule';
+import { billingSchedulePath } from '../../utils/billingScheduleNavigation';
 import { draftDate as date } from './invoiceDraftFormat';
 import { DraftEditor, LineBasis } from './DraftEditor';
 import { IssuanceReviewPanel } from './IssuanceReviewPanel';
@@ -68,11 +69,13 @@ const message = (error: unknown) => (error instanceof Error ? error.message : 'C
 
 export function InvoicePage({
   accountRole,
+  accountId,
   pathname,
   search,
   registerGuard,
 }: {
   accountRole: string;
+  accountId?: string;
   pathname: string;
   search: string;
   registerGuard?: NavigationGuardRegistration;
@@ -95,10 +98,10 @@ export function InvoicePage({
           <a href="/invoices/host" aria-current={new URLSearchParams(search).get('view') !== 'schedule' ? 'page' : undefined}>
             Hóa đơn
           </a>
-          <a href="/invoices/host?view=schedule" aria-current={new URLSearchParams(search).get('view') === 'schedule' ? 'page' : undefined}>
+          <a href={billingSchedulePath}>
             Lịch lập hóa đơn
           </a>
-          <a className="pc-button" href="/invoices/host?view=schedule">
+          <a className="pc-button" href="/invoices/host?view=schedule" aria-current={new URLSearchParams(search).get('view') === 'schedule' ? 'page' : undefined}>
             Lập hóa đơn nháp
           </a>
         </nav>
@@ -106,7 +109,7 @@ export function InvoicePage({
       {id ? (
         <InvoiceDetail key={id} role={role} id={id} search={search} registerGuard={registerGuard} />
       ) : role === 'host' && new URLSearchParams(search).get('view') === 'schedule' ? (
-        <DraftSchedule search={search} />
+        <DraftSchedule search={search} accountId={accountId} />
       ) : (
         <InvoiceList role={role} search={search} />
       )}

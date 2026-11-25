@@ -6,6 +6,7 @@ interface SidebarProps {
   showRentalProfile?: boolean; rentalProfileActive?: boolean; onNavigateRentalProfile?: () => void;
   showProvisionalCharges?: boolean; provisionalChargesActive?: boolean; onNavigateProvisionalCharges?: () => void;
   invoiceLink?: { path: string; label: string; active: boolean };
+  billingScheduleLink?: { path: string; label: string; active: boolean };
   showMeterReadings?: boolean; meterReadingsActive?: boolean; onNavigateMeterReadings?: () => void;
   showPeriodUsages?: boolean; periodUsagesActive?: boolean; onNavigatePeriodUsages?: () => void;
   showServices?: boolean; servicesActive?: boolean; onNavigateServices?: () => void; mobileOpen?: boolean; markCurrent?: boolean;
@@ -30,6 +31,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   showRentalProfile = false, rentalProfileActive = false, onNavigateRentalProfile,
   showProvisionalCharges = false, provisionalChargesActive = false, onNavigateProvisionalCharges,
   invoiceLink,
+  billingScheduleLink,
   showMeterReadings = false, meterReadingsActive = false, onNavigateMeterReadings,
   showPeriodUsages = false, periodUsagesActive = false, onNavigatePeriodUsages,
   showServices = false, servicesActive = false, onNavigateServices, mobileOpen = false, markCurrent = true,
@@ -68,7 +70,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onNavigateOverview,
   onNavigateHostAccounts,
 }) => {
-  const isOverviewActive = !invoiceLink?.active && !rentalProfileActive && !fundingSourcesActive && !provisionalChargesActive && !meterReadingsActive && !periodUsagesActive && !hostAccountsActive && !assetsActive && !propertiesActive && !roomsActive && !financeActive && !profitLossActive && !occupancyAnalysisActive && !occupancyActive && !expiringLeasesActive && !servicesActive && !customersActive && !contractsActive && !rentalContractsActive && !documentTemplatesActive;
+  const isOverviewActive = !billingScheduleLink?.active && !invoiceLink?.active && !rentalProfileActive && !fundingSourcesActive && !provisionalChargesActive && !meterReadingsActive && !periodUsagesActive && !hostAccountsActive && !assetsActive && !propertiesActive && !roomsActive && !financeActive && !profitLossActive && !occupancyAnalysisActive && !occupancyActive && !expiringLeasesActive && !servicesActive && !customersActive && !contractsActive && !rentalContractsActive && !documentTemplatesActive;
   return (
     <aside id="rentops-navigation" className={`dash-sidebar${mobileOpen ? ' is-mobile-open' : ''}`} aria-label="Thanh điều hướng chính">
       <div className="dash-nav-group">
@@ -225,8 +227,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="M5 3h14v18H5zM8 7h8M8 11h8M8 15h3M14 15h2" /></svg>
           <span>Tạm tính dịch vụ</span>
         </button>}
+        {billingScheduleLink && <span className="dash-nav-header">Hóa đơn &amp; Thu chi</span>}
         {invoiceLink && <a href={invoiceLink.path} className={`dash-nav-item${invoiceLink.active ? ' is-active' : ''}`}
           aria-current={invoiceLink.active && markCurrent ? 'page' : undefined}>{invoiceLink.label}</a>}
+        {billingScheduleLink && <a href={billingScheduleLink.path} className={`dash-nav-item${billingScheduleLink.active ? ' is-active' : ''}`}
+          aria-current={billingScheduleLink.active && markCurrent ? 'page' : undefined}>{billingScheduleLink.label}</a>}
 
         {onNavigateFinance && <button type="button" className={financeActive ? 'dash-nav-item is-active' : 'dash-nav-item'}
           aria-current={financeActive && markCurrent ? 'page' : undefined} onClick={onNavigateFinance}>
@@ -298,7 +303,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </button>
         </>}
       </div>
-        {!invoiceLink?.active && !rentalProfileActive && !fundingSourcesActive && !provisionalChargesActive && !hostAccountsActive && !assetsActive && !propertiesActive && !roomsActive && !financeActive && !profitLossActive && !occupancyAnalysisActive && !occupancyActive && !expiringLeasesActive && !servicesActive && !customersActive && !contractsActive && !rentalContractsActive && !documentTemplatesActive && (
+        {!billingScheduleLink?.active && !invoiceLink?.active && !rentalProfileActive && !fundingSourcesActive && !provisionalChargesActive && !hostAccountsActive && !assetsActive && !propertiesActive && !roomsActive && !financeActive && !profitLossActive && !occupancyAnalysisActive && !occupancyActive && !expiringLeasesActive && !servicesActive && !customersActive && !contractsActive && !rentalContractsActive && !documentTemplatesActive && (
       <div className="dash-sidebar-footer">
         <div className="system-status-box">
           <div>

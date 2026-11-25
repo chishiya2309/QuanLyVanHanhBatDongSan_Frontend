@@ -66,7 +66,9 @@ import type { PeriodUsageRoute } from './types/periodUsage';
 import { parsePeriodUsageRoute, periodUsageUrl } from './utils/periodUsageNavigation';
 import { ProvisionalChargesPage } from './components/provisional/ProvisionalChargesPage';
 import { InvoicePage } from './components/invoice/InvoicePage';
+import { BillingSchedulePage } from './components/invoice/BillingSchedulePage';
 import { invoicePath, isInvoicePath } from './services/invoiceApi';
+import { billingSchedulePath, isBillingSchedulePath } from './utils/billingScheduleNavigation';
 import type { ProvisionalRoute } from './types/provisionalCharge';
 import { provisionalMessages } from './types/provisionalCharge';
 import { parseProvisionalRoute, provisionalPath, provisionalUrl } from './utils/provisionalChargeNavigation';
@@ -93,6 +95,7 @@ const parseReportRoute = (path: string, search: string) =>
 function isProtectedPath(pathname: string, search: string): boolean {
   return Boolean(
     isInvoicePath(pathname)
+    || isBillingSchedulePath(pathname)
     || isRentalProfilePath(pathname)
     || parseFundingRoute(pathname, search)
     || parseProvisionalRoute(pathname, search)
@@ -276,6 +279,11 @@ function AuthenticatedDashboard({
           label: user.role === 'HOST' ? 'Quản lý hóa đơn' : 'Hóa đơn của tôi',
           active: isInvoicePath(window.location.pathname),
         } : undefined}
+        billingScheduleLink={user.role === 'HOST' ? {
+          path: billingSchedulePath,
+          label: 'Lịch lập hóa đơn',
+          active: isBillingSchedulePath(window.location.pathname),
+        } : undefined}
         showProvisionalCharges={user.role === 'HOST' || user.role === 'CUSTOMER'}
         provisionalChargesActive={provisionalRoute !== null}
         provisionalChargesPath={provisionalPath(user.role === 'CUSTOMER' ? 'CUSTOMER' : 'HOST')}
@@ -288,8 +296,12 @@ function AuthenticatedDashboard({
         onNavigateOverview={onOverview}
         onNavigateHostAccounts={() => onNavigateHost(null)}
       >
-        {isInvoicePath(window.location.pathname) ? (
-          <InvoicePage key={window.location.href} registerGuard={registerGuard} accountRole={user.role} pathname={window.location.pathname} search={window.location.search} />
+        {isBillingSchedulePath(window.location.pathname) ? (
+          user.role === 'HOST' ? <BillingSchedulePage accountId={user.accountId} /> : (
+            <section className="pc-page"><p role="alert">Bạn không có quyền xem lịch lập hóa đơn.</p></section>
+          )
+        ) : isInvoicePath(window.location.pathname) ? (
+          <InvoicePage key={window.location.href} registerGuard={registerGuard} accountRole={user.role} accountId={user.accountId} pathname={window.location.pathname} search={window.location.search} />
         ) : templateRoute ? (
           user.role !== 'HOST' ? (
             <section className="templates-page">
