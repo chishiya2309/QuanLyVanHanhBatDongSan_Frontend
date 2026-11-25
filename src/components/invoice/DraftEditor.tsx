@@ -84,9 +84,10 @@ function makeSourceLink(invoice: DraftContext, line: DraftLine, search: string) 
   }
 }
 
-export function DraftEditor({invoice, search, refresh, registerGuard, issue, issuing}: {
+export function DraftEditor({invoice, search, refresh, registerGuard, issue, issuing, onOpenIssueReview}: {
   invoice: DraftContext & DraftReview; search: string; refresh: () => void;
-  registerGuard?: NavigationGuardRegistration; issue: (event: FormEvent<HTMLFormElement>) => void; issuing: boolean;
+  registerGuard?: NavigationGuardRegistration; issue?: (event: FormEvent<HTMLFormElement>) => void; issuing: boolean;
+  onOpenIssueReview?: () => void;
 }) {
   const [preview, setPreview] = useState<Preview>();
   const [error, setError] = useState('');
@@ -207,9 +208,22 @@ export function DraftEditor({invoice, search, refresh, registerGuard, issue, iss
       <div className="invoice-actions"><button className="pc-button" disabled={busy || invoice.requiresRecalculation}>Lưu thay đổi</button>
         <button type="button" disabled={busy} onClick={() => {if (window.confirm('Bỏ các thay đổi chưa lưu?')) {resetForm(); setEditing(false);}}}>Hủy chỉnh sửa</button></div>
     </form>}
-    <form onSubmit={issue}><button className="pc-button"
-      disabled={!invoice.canIssue || issuing || busy || editing || !!preview || waiverOpen || deleting}>
-      {issuing ? 'Đang phát hành…' : 'Phát hành hóa đơn'}</button></form>
+    {onOpenIssueReview ? (
+      <div className="invoice-actions">
+        <button
+          type="button"
+          className="pc-button"
+          onClick={onOpenIssueReview}
+          disabled={!invoice.canIssue || issuing || busy || editing || !!preview || waiverOpen || deleting}
+        >
+          {issuing ? 'Đang phát hành…' : 'Phát hành hóa đơn'}
+        </button>
+      </div>
+    ) : (
+      <form onSubmit={issue}><button className="pc-button"
+        disabled={!invoice.canIssue || issuing || busy || editing || !!preview || waiverOpen || deleting}>
+        {issuing ? 'Đang phát hành…' : 'Phát hành hóa đơn'}</button></form>
+    )}
     {calculation && <>
       <p className="invoice-draft-total">{calculation.status === 'COMPLETE' ? 'Tổng hóa đơn: ' + draftMoney(calculation.total)
         : 'Tổng tạm tính: ' + draftMoney(calculation.subtotal)}</p>
