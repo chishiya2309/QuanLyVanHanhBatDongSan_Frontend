@@ -13,6 +13,7 @@ const decimals = new Set([
   'total', 'paid_amount', 'paidAmount', 'remaining', 'expectedRemaining',
   'subtotalBeforeDiscounts', 'surchargeTotal', 'discountTotal',
   'totalEligibleAmount', 'totalExpectedRemaining', 'totalIssuedAmount',
+  'totalReceivable', 'totalPaid', 'totalRemaining',
   'amount', 'quantity', 'unitPrice', 'subtotal', 'totalDelta',
   'startIndex', 'endIndex', 'consumption', 'manualAmount', 'prorateFactor', 'start_index', 'end_index',
 ]);
