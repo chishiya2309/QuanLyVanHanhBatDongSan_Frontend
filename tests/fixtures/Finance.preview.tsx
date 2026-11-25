@@ -1,3 +1,4 @@
+import type { FinancialExportConfig } from '../../src/services/financialExportApi';
 import { parseExpenseBreakdownRoute } from '../../src/utils/expenseBreakdownNavigation';
 import { createRoot } from 'react-dom/client';
 import App from '../../src/App';
@@ -34,6 +35,42 @@ window.fetch = async (input, init) => {
   if (url.pathname === '/api/v1/buildings') return envelope([{ ...property, id: buildingId, areaId, name: 'Tòa nhà A' }]);
   if (url.pathname.endsWith('/rooms')) return envelope([{ ...property, id: roomId, buildingId, code: 'A101', name: 'Phòng A101' }]);
   if (url.pathname === '/api/v1/funding-sources') return fsReply([{ ...fsCash, id: sourceId }]);
+  if (url.pathname === '/api/v1/reports/finance/export/preview' || url.pathname === '/api/v1/reports/finance/export') {
+    calls.push(url.pathname);
+    const body = JSON.parse(String(init?.body));
+    const config: FinancialExportConfig = body.configuration ?? body;
+    const filter = { ...config.filter, transactionCategory: config.filter.transactionCategory ?? [] };
+    const changes = [];
+    if (config.type !== 'CASH_FLOW' && filter.sourceId) {
+      changes.push('Báo cáo sẽ sử dụng toàn bộ nguồn tiền.');
+      delete filter.sourceId;
+    }
+    if (config.type === 'EXPENSE_BREAKDOWN' || config.type === 'COMBINED') filter.periodType ??= 'CUSTOM';
+    const scope = { filter, comparisonFrom: filter.periodType ? '2026-10-01' : null,
+      comparisonTo: filter.periodType ? '2026-10-24' : null };
+    if (url.pathname.endsWith('/preview')) return envelope({ scope, changes, confirmationToken: 'preview-fixture' });
+    if (body.confirmationToken !== 'preview-fixture') return envelope(null, 400, 'Cần xác nhận phạm vi.');
+    const params = new URLSearchParams();
+    Object.entries(filter).forEach(([key, value]) => {
+      if (typeof value === 'string') params.set(key, value);
+    });
+    filter.transactionCategory.forEach(value => params.append('transactionCategory', value));
+    async function report(path: string) {
+      const response = await window.fetch('/api/v1/reports/' + path + '?' + params);
+      return (await response.json()).data;
+    }
+    const cashFlow = config.type === 'CASH_FLOW' || config.type === 'COMBINED' ? await report('finance') : null;
+    if (cashFlow) { cashFlow.totalIn = 123456789; cashFlow.cashFlow = cashFlow.totalIn - cashFlow.totalOut; }
+    const profitLoss = config.type === 'PROFIT_LOSS' || config.type === 'COMBINED' ? await report('profit-loss') : null;
+    const expenseBreakdown = config.type === 'EXPENSE_BREAKDOWN' || config.type === 'COMBINED' ? await report('expense-breakdown') : null;
+    const data = { scope, capturedAt: '2026-11-24T00:00:00Z', dataPolicy: 'LATEST_AT_EXPORT', cashFlow, profitLoss, expenseBreakdown };
+    const mime = config.format === 'PDF' ? 'application/pdf' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+    const extension = config.format.toLowerCase();
+    return new Response('--uc76\r\nContent-Type: application/json\r\nContent-Disposition: inline; name="snapshot"\r\n\r\n'
+      + JSON.stringify(data) + '\r\n--uc76\r\nContent-Type: ' + mime
+      + '\r\nContent-Disposition: attachment; name="file"; filename="Bao-cao.' + extension + '"\r\n\r\n'
+      + 'fixture bytes\r\n--uc76--\r\n', { headers: { 'Content-Type': 'multipart/mixed; boundary=uc76' } });
+  }
   if (url.pathname === '/api/v1/reports/expense-breakdown') {
     calls.push(url.pathname + url.search);
     if (q.get('areaId') === 'foreign') return envelope(null, 404, 'Khu vực ngoài phạm vi quản lý.');

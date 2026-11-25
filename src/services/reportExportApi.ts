@@ -14,14 +14,14 @@ export type ReportExportRequest = {
 };
 
 const base = (import.meta.env.VITE_API_URL || '/api/v1').replace(/\/+$/, '');
-const mime = {
+export const reportMime = {
   XLSX: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
   PDF: 'application/pdf',
 };
 
-function downloadName(header: string | null, format: ReportFormat): string {
+export function downloadName(header: string | null, format: ReportFormat, fallbackStem = 'bao-cao-bat-dong-san'): string {
   const extension = '.' + format.toLowerCase();
-  const fallback = 'bao-cao-bat-dong-san' + extension;
+  const fallback = fallbackStem + extension;
   const encoded = header?.match(/(?:^|;)\s*filename\*=UTF-8''([^;]+)/i)?.[1];
   const plain = header?.match(/(?:^|;)\s*filename=(?:"([^"]*)"|([^;]+))/i);
   let name = plain?.[1] ?? plain?.[2];
@@ -48,7 +48,7 @@ export async function exportReport(request: ReportExportRequest, signal: AbortSi
     throw new AuthApiError(response.status, isRecord(body) && typeof body.message === 'string' ? body.message : '');
   }
   const contentType = response.headers.get('Content-Type')?.split(';')[0].trim().toLowerCase();
-  if (response.status !== 200 || contentType !== mime[request.format]) {
+  if (response.status !== 200 || contentType !== reportMime[request.format]) {
     throw new Error('Phản hồi không chứa tệp báo cáo đúng định dạng.');
   }
   const blob = await response.blob();
