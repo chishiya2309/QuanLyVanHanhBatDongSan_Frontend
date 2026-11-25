@@ -1,0 +1,13 @@
+/* Hallmark · component: financial export dialog · genre: modern-minimal · theme: existing coral tokens · states: 8 · v2.0.0 */
+/* Critique: Keep the confirmed scope beside the action that uses it. */
+.financial-export-entry { display: grid; justify-items: start; gap: var(--space-2xs); }
+.financial-export-entry small { color: var(--color-muted); }
+.financial-export-dialog .financial-export-check { display: flex; align-items: center; gap: var(--space-xs); min-block-size: 44px; }
+.financial-export-dialog .financial-export-check input { min-block-size: 0; inline-size: auto; accent-color: var(--color-accent-primary); }
+.financial-export-dialog h3 { margin: 0; font-size: var(--text-sm); }
+.financial-export-summary { margin: 0; display: grid; gap: var(--space-2xs); }
+.financial-export-summary div { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); gap: var(--space-xs); }
+.financial-export-summary dd { margin: 0; overflow-wrap: anywhere; }
+.financial-export-summary dt { color: var(--color-muted); }
+.financial-export-warning { border-inline-start: 2px solid var(--color-accent-primary); padding-inline-start: var(--space-sm); }
+.financial-export-warning ul { margin: 0; padding-inline-start: var(--space-md); }

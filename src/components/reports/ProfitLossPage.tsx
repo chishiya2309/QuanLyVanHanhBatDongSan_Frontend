@@ -1,8 +1,10 @@
+import { FinancialExportButton } from './FinancialExportDialog';
+import { profitLossSnapshotPage, sameFinancialScope } from './financialExportPresentation';
 import { FinancePending } from './FinancePending';
 import { useFinanceRequest } from './useFinanceRequest';
 import { expenseBreakdownUrl } from '../../utils/expenseBreakdownNavigation';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { getProfitLossDetails, getProfitLossReport } from '../../services/financeApi';
+import { getProfitLossDetails, getProfitLossReport, type ProfitLossReport } from '../../services/financeApi';
 import { getAreas, getBuildings, getRoomsByBuilding } from '../../services/propertiesApi';
 import type { Room } from '../../types/properties';
 import { validFinanceDates } from '../../utils/financeNavigation';
@@ -55,7 +57,11 @@ export function ProfitLossPage({ route, onNavigate, onSessionExpired }: {
   const valid = validFinanceDates({ ...scope, transactionCategory: [] });
   const reportLoad = useFinanceRequest(valid ? String(queryParams(filter)) : undefined,
     signal => getProfitLossReport(filter, signal), onSessionExpired, unavailable);
-  const report = reportLoad.data;
+  const [snapshot, setSnapshot] = useState<{ source: ProfitLossReport; report: ProfitLossReport }>();
+  const loaded = reportLoad.data;
+  const fullSnapshot = snapshot && snapshot.source === loaded ? snapshot.report : undefined;
+  const report = fullSnapshot ? profitLossSnapshotPage(fullSnapshot, filter) : loaded;
+  const exportFilter = loaded ? { ...scope, fromDate: loaded.fromDate, toDate: loaded.toDate } : undefined;
   const selectedFilter = { ...scope, fromDate: report?.fromDate, toDate: report?.toDate,
     buildingId: selectedBuilding, roomPage: selectedRoomPage, groupSize: filter.groupSize };
   const roomsLoad = useFinanceRequest(selectedBuilding && report ? String(queryParams(selectedFilter)) : undefined,
@@ -70,7 +76,8 @@ export function ProfitLossPage({ route, onNavigate, onSessionExpired }: {
   const draftBuilding = roomDraft?.filterKey === filterKey ? roomDraft.id : filter.buildingId;
   const roomOptions = useFinanceRequest(draftBuilding, () => getRoomsByBuilding(draftBuilding!), onSessionExpired, unavailable);
   const roomsByBuilding: Record<string, Room[]> = draftBuilding && roomOptions.data ? { [draftBuilding]: roomOptions.data } : {};
-  const currentRooms = selectedBuilding ? roomsLoad.data : report;
+  const currentRooms = selectedBuilding
+    ? fullSnapshot ? profitLossSnapshotPage(fullSnapshot, selectedFilter) : roomsLoad.data : report;
   const detailScope = { ...scope, fromDate: report?.fromDate, toDate: report?.toDate };
   const detailRegion = useRef<HTMLElement>(null);
   const detailSelection = detail && String(queryParams({ ...detail, page: undefined }));
@@ -95,6 +102,14 @@ export function ProfitLossPage({ route, onNavigate, onSessionExpired }: {
 
   return <section className="finance-page profit-loss-page" aria-labelledby="profit-loss-title">
     <header className="finance-heading"><h1 id="profit-loss-title">Doanh thu &amp; Lời lỗ</h1>
+      <FinancialExportButton type="PROFIT_LOSS" routeKey={profitLossUrl(route)} filter={exportFilter} unavailable={reportLoad.error}
+        labels={Object.fromEntries([...(catalogLoad.data?.areas ?? []), ...(catalogLoad.data?.buildings ?? [])]
+          .map(item => [item.id, item.name]).concat((roomOptions.data ?? []).map(item => [item.id, item.code])))}
+        onSessionExpired={onSessionExpired} onSnapshot={result => {
+          if (loaded && exportFilter && result.profitLoss && sameFinancialScope(exportFilter, result.scope.filter, 'PROFIT_LOSS')) {
+            setSnapshot({ source: loaded, report: result.profitLoss });
+          }
+        }} />
       {report && <p className="finance-period">{dateLabel(report.fromDate)} – {dateLabel(report.toDate)}</p>}
       {report && <button type="button" onClick={() => onNavigate(expenseBreakdownUrl({
         kind: 'expense-breakdown', filter: { ...detailScope }, view: 'composition',

@@ -1,3 +1,5 @@
+import { FinancialExportButton } from './FinancialExportDialog';
+import { orderExpenseSnapshot, sameFinancialScope } from './financialExportPresentation';
 import { useState, type FormEvent, type MouseEvent, type ReactNode } from 'react';
 import { getExpenseBreakdown, type ExpenseBreakdownReport, type ExpenseCategory, type ExpenseTrace } from '../../services/financeApi';
 import { getAreas, getBuildings, getRoomsByBuilding } from '../../services/propertiesApi';
@@ -35,17 +37,21 @@ function follow(event: MouseEvent<HTMLAnchorElement>, onNavigate: (url: string) 
   onNavigate(event.currentTarget.getAttribute('href')!);
 }
 
-function ExpenseFilters({ filter, apply, reset, expired }: {
+function useExpenseCatalog(expired: () => void) {
+  return useFinanceRequest('expense-property-options', async () => {
+    const [areas, buildings] = await Promise.all([getAreas(), getBuildings()]);
+    return { areas, buildings };
+  }, expired, 'Không thể tải danh mục bất động sản.');
+}
+
+function ExpenseFilters({ filter, apply, reset, expired, catalog }: {
   filter: ExpenseFilter; apply: (filter: ExpenseFilter) => void; reset: () => void; expired: () => void;
+  catalog: ReturnType<typeof useExpenseCatalog>;
 }) {
   const [draft, setDraft] = useState(filter);
   const [invalid, setInvalid] = useState(false);
   const periodType = draft.periodType ?? (draft.fromDate || draft.toDate ? 'CUSTOM' : 'MONTH');
   const today = calendar.format(new Date());
-  const catalog = useFinanceRequest('expense-property-options', async () => {
-    const [areas, buildings] = await Promise.all([getAreas(), getBuildings()]);
-    return { areas, buildings };
-  }, expired, 'Không thể tải danh mục bất động sản.');
   const buildingId = draft.buildingId;
   const rooms = useFinanceRequest(buildingId, () => getRoomsByBuilding(buildingId!), expired, 'Không thể tải danh sách phòng.');
   const buildings = catalog.data?.buildings ?? [];
@@ -199,11 +205,19 @@ export function ExpenseBreakdownPage({ route, onNavigate, onSessionExpired }: {
   route: ExpenseBreakdownRoute; onNavigate: (url: string) => void; onSessionExpired: () => void;
 }) {
   const { filter, view } = route;
+  const catalog = useExpenseCatalog(onSessionExpired);
   const query = String(expenseParams(filter));
   const valid = validFinanceDates({ ...filter, transactionCategory: [] })
     && (filter.periodType !== 'CUSTOM' || Boolean(filter.fromDate && filter.toDate));
   const load = useFinanceRequest(valid ? query : undefined, signal => getExpenseBreakdown(filter, signal), onSessionExpired, unavailable);
-  const report = load.data;
+  const [snapshot, setSnapshot] = useState<{ source: ExpenseBreakdownReport; report: ExpenseBreakdownReport }>();
+  const loaded = load.data;
+  const report = snapshot && snapshot.source === loaded ? orderExpenseSnapshot(snapshot.report, filter) : loaded;
+  const exportFilter = loaded ? {
+    areaId: filter.areaId, buildingId: filter.buildingId, roomId: filter.roomId,
+    fromDate: loaded.current.fromDate, toDate: loaded.current.toDate,
+    periodType: filter.periodType ?? (filter.fromDate ? 'CUSTOM' as const : 'MONTH' as const),
+  } : undefined;
   const sort = filter.sort ?? 'NET_EXPENSE';
   const order = filter.order ?? 'DESC';
   const navigate = (next: Partial<ExpenseBreakdownRoute>) => onNavigate(expenseBreakdownUrl({ ...route, ...next }));
@@ -215,8 +229,20 @@ export function ExpenseBreakdownPage({ route, onNavigate, onSessionExpired }: {
   };
 
   return <section className="finance-page expense-breakdown-page" aria-labelledby="expense-title">
-    <header className="finance-heading"><h1 id="expense-title">Cơ cấu chi phí</h1></header>
-    <ExpenseFilters key={String(expenseParams({ ...filter, sort: undefined, order: undefined }))} filter={filter} expired={onSessionExpired}
+    <header className="finance-heading"><h1 id="expense-title">Cơ cấu chi phí</h1>
+      <FinancialExportButton type="EXPENSE_BREAKDOWN" routeKey={expenseBreakdownUrl(route)} filter={exportFilter} unavailable={load.error}
+        comparison={loaded ? [loaded.previous.fromDate, loaded.previous.toDate] : undefined}
+        labels={Object.fromEntries([...(catalog.data?.areas ?? []), ...(catalog.data?.buildings ?? [])]
+          .map(item => [item.id, item.name]))}
+        onSessionExpired={onSessionExpired} onSnapshot={result => {
+          if (loaded && exportFilter && result.expenseBreakdown
+            && sameFinancialScope(exportFilter, result.scope.filter, 'EXPENSE_BREAKDOWN')
+            && loaded.previous.fromDate === result.scope.comparisonFrom && loaded.previous.toDate === result.scope.comparisonTo) {
+            setSnapshot({ source: loaded, report: result.expenseBreakdown });
+          }
+        }} />
+    </header>
+    <ExpenseFilters key={String(expenseParams({ ...filter, sort: undefined, order: undefined }))} filter={filter} expired={onSessionExpired} catalog={catalog}
       apply={next => navigate({ filter: { ...next, sort, order } })} reset={() => navigate({ filter: {}, view: 'composition' })} />
     {!valid ? <p role="alert">Chọn đủ hai ngày và kiểm tra thứ tự khoảng thời gian.</p>
       : !report && <div className="finance-panel"><FinancePending label="Đang tải báo cáo…" error={load.error} retry={load.retry} /></div>}

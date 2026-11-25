@@ -1,3 +1,5 @@
+import { FinancialExportButton } from './FinancialExportDialog';
+import { sameFinancialScope } from './financialExportPresentation';
 import { useCallback, useEffect, useRef, useState, type MouseEvent, type ReactNode } from 'react';
 import { AuthApiError } from '../../services/authErrors';
 import { FinanceApiError, getCashLedger, getFinanceReport, type FinanceGroup, type FinanceReport, type LedgerPage } from '../../services/financeApi';
@@ -222,9 +224,23 @@ export function FinancePage({ route, onNavigate, onSessionExpired }: {
   const error = !validFinanceDates(route.filter) ? 'Khoảng thời gian trong bộ lọc không hợp lệ.'
     : current && 'error' in current ? current.error : undefined;
 
+  const exportFilter = report?.filter.fromDate && report.filter.toDate ? {
+    fromDate: report.filter.fromDate, toDate: report.filter.toDate,
+    areaId: report.filter.areaId, buildingId: report.filter.buildingId, roomId: report.filter.roomId,
+    sourceId: report.filter.sourceId, transactionCategory: report.filter.transactionCategory,
+  } : undefined;
+  const exportLabels = Object.fromEntries([...catalog.areas, ...catalog.buildings, ...catalog.sources]
+    .map(item => [item.id, item.name]).concat(Object.values(rooms).flat().map(item => [item.id, item.code])));
+
   return <section className="finance-page" aria-labelledby="finance-title">
     <header className="finance-heading">
       <h1 id="finance-title">{isReport ? 'Phân tích thu chi và dòng tiền' : 'Sổ thu chi'}</h1>
+      {isReport && <FinancialExportButton type="CASH_FLOW" routeKey={financeUrl(route)} filter={exportFilter} unavailable={error}
+        labels={exportLabels} onSessionExpired={onSessionExpired} onSnapshot={snapshot => {
+          if (exportFilter && snapshot.cashFlow && sameFinancialScope(exportFilter, snapshot.scope.filter, 'CASH_FLOW')) {
+            setResult({ route, revision, data: { payload: { kind: 'finance', report: snapshot.cashFlow } } });
+          }
+        }} />}
       {!isReport && <FinanceLink href={returnToFinance(route)} navigate={onNavigate}>Quay lại báo cáo</FinanceLink>}
     </header>
     {!route.financial && <FinanceFilters key={route.kind + financeParams(route.filter)} applied={route.filter}
