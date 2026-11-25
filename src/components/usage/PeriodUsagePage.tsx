@@ -117,13 +117,13 @@ export function PeriodUsagePage({
 
   const handleTabChange = (nextTab: PeriodUsageTab) => {
     setTab(nextTab);
-    onNavigate(periodUsageUrl({ buildingId, roomId, periodId: periodIdInput, tab: nextTab }));
+    onNavigate(periodUsageUrl({ buildingId, roomId, periodId: periodIdInput, tab: nextTab, returnTo: route.returnTo }));
   };
 
   const handlePeriodSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (periodIdInput.trim()) {
-      onNavigate(periodUsageUrl({ buildingId, roomId, periodId: periodIdInput.trim(), tab }));
+      onNavigate(periodUsageUrl({ buildingId, roomId, periodId: periodIdInput.trim(), tab, returnTo: route.returnTo }));
       loadContext(periodIdInput.trim());
     }
   };
@@ -132,6 +132,7 @@ export function PeriodUsagePage({
     <main className="pu-container">
       <header className="pu-header">
         <h1 className="pu-title">Ghi nhận số lượng, phí và giảm trừ theo kỳ</h1>
+        {route.returnTo && <a href={route.returnTo}>Về hóa đơn nháp</a>}
         <p className="pu-subtitle">Ghi mới số lượng dịch vụ, phí thực tế riêng và khoản giảm trừ cho phòng trong kỳ tính phí.</p>
       </header>
 

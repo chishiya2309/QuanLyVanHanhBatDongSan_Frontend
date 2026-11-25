@@ -289,7 +289,7 @@ function AuthenticatedDashboard({
         onNavigateHostAccounts={() => onNavigateHost(null)}
       >
         {isInvoicePath(window.location.pathname) ? (
-          <InvoicePage key={window.location.href} accountRole={user.role} pathname={window.location.pathname} search={window.location.search} />
+          <InvoicePage key={window.location.href} registerGuard={registerGuard} accountRole={user.role} pathname={window.location.pathname} search={window.location.search} />
         ) : templateRoute ? (
           user.role !== 'HOST' ? (
             <section className="templates-page">

@@ -3,16 +3,23 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { invoicePath, invoiceRequest, type InvoiceRole } from '../../services/invoiceApi';
 import '../provisional/provisionalCharges.css';
 import './invoice.css';
+import { DraftSchedule } from './DraftSchedule';
+import { draftDate as date } from './invoiceDraftFormat';
+import { DraftEditor, LineBasis, type DraftContext } from './DraftEditor';
+import type { DraftReview, DraftLine } from '../../services/invoiceDraftApi';
+import type { NavigationGuardRegistration } from '../../hooks/useServiceCatalog';
+import './invoiceDraft.css';
 import { CashPayment, type CashResult } from './CashPayment';
 
-type Invoice = {
+type Invoice = DraftContext & Partial<DraftReview> & {
+  scheduledBillingDate?: string; draft_created_at?: string;
   id: string; number: string | null; lifecycle: 'DRAFT' | 'ISSUED';
   from_date: string; to_date: string; due_date: string | null; issued_at: string | null;
   room_code: string; building_name: string; customer_name: string;
   total: string | null; paid_amount: string; remaining: string | null;
   payment_status: string | null; is_overdue: boolean;
 };
-type Line = { name: string; quantity: string | null; unitPrice: string | null; amount: string | null };
+type Line = DraftLine;
 type Payment = { id: string; paid_at: string; amount: string; method: string; status: string; receipt_id: string | null };
 type Transfer = { status: string; bankName: string; accountNumber: string; accountHolder: string; reference: string; amount: string; png: string | null };
 type Detail = { invoice: Invoice; lines: Line[]; payments: Payment[]; transfer: Transfer; missingSnapshot: boolean };
@@ -21,7 +28,6 @@ type Page = { items: Invoice[]; page: number; hasNext: boolean };
 
 const vnd = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' });
 const money = (value: string | null) => value == null ? '—' : vnd.format(/^-?\d+$/.test(value) ? BigInt(value) : Number(value));
-const date = (value: string | null) => value ? value.slice(0, 10).split('-').reverse().join('/') : '—';
 const timestamp = (value: string) => new Date(value).toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' });
 const statuses: Record<string, string> = {
   UNPAID: 'Chưa thanh toán', PARTIALLY_PAID: 'Đã trả một phần', PAID: 'Đã tất toán',
@@ -30,16 +36,21 @@ const statuses: Record<string, string> = {
 const status = (invoice: Invoice) => invoice.lifecycle === 'DRAFT' ? 'Nháp' :
   invoice.total === '0' ? 'Không còn nghĩa vụ thanh toán' : statuses[invoice.payment_status ?? ''] || 'Thiếu dữ liệu';
 const message = (error: unknown) => error instanceof Error ? error.message : 'Chưa thể tải dữ liệu hóa đơn.';
-const vietnamToday = () => new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Ho_Chi_Minh' }).format(new Date());
 
-export function InvoicePage({ accountRole, pathname, search }: { accountRole: string; pathname: string; search: string }) {
+export function InvoicePage({ accountRole, pathname, search, registerGuard }: { accountRole: string; pathname: string; search: string; registerGuard?: NavigationGuardRegistration }) {
   const [, , role, id] = pathname.split('/');
   if (accountRole.toLowerCase() !== role || (role !== 'host' && role !== 'customer')) {
     return <section className="pc-page"><p role="alert">Bạn không có quyền truy cập hóa đơn này.</p></section>;
   }
   return <section className="pc-page invoice-page">
     <header className="pc-page-heading"><h1>{role === 'host' ? 'Quản lý hóa đơn' : 'Hóa đơn của tôi'}</h1></header>
-    {id ? <InvoiceDetail key={id} role={role} id={id} search={search} /> : <InvoiceList role={role} search={search} />}
+    {role === 'host' && !id && <nav className="invoice-actions invoice-drafts" aria-label="Chế độ quản lý hóa đơn">
+      <a href="/invoices/host" aria-current={new URLSearchParams(search).get('view') !== 'schedule' ? 'page' : undefined}>Hóa đơn</a>
+      <a href="/invoices/host?view=schedule" aria-current={new URLSearchParams(search).get('view') === 'schedule' ? 'page' : undefined}>Lịch lập hóa đơn</a>
+      <a className="pc-button" href="/invoices/host?view=schedule">Lập hóa đơn nháp</a>
+    </nav>}
+    {id ? <InvoiceDetail key={id} role={role} id={id} search={search} registerGuard={registerGuard}/> :
+      role === 'host' && new URLSearchParams(search).get('view') === 'schedule' ? <DraftSchedule search={search}/> : <InvoiceList role={role} search={search} />}
   </section>;
 }
 
@@ -204,7 +215,7 @@ function InvoiceList({ role, search }: { role: InvoiceRole; search: string }) {
   </>;
 }
 
-function InvoiceDetail({ role, id, search }: { role: InvoiceRole; id: string; search: string }) {
+function InvoiceDetail({ role, id, search, registerGuard }: { role: InvoiceRole; id: string; search: string; registerGuard?: NavigationGuardRegistration }) {
   const path = invoicePath(role);
   const endpoint = path + '/' + encodeURIComponent(id);
   const cash = useCashPayment();
@@ -221,10 +232,17 @@ function InvoiceDetail({ role, id, search }: { role: InvoiceRole; id: string; se
     return () => request.abort();
   }, [endpoint, loadVersion, cash.revision]);
 
+  useEffect(() => {
+    function resume(event: PageTransitionEvent) {if (event.persisted) setLoadVersion(value => value + 1);}
+    window.addEventListener('pageshow', resume);
+    return () => window.removeEventListener('pageshow', resume);
+  }, []);
+
   async function issue(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (busy) return;
-    const dueDate = new FormData(event.currentTarget).get('dueDate');
+    if (!detail?.invoice.canIssue) return;
+    const dueDate = detail.invoice.dueDate;
     setBusy(true);
     setError('');
     try { setDetail(await invoiceRequest<Detail>(endpoint + '/issue', undefined, { dueDate })); }
@@ -233,11 +251,16 @@ function InvoiceDetail({ role, id, search }: { role: InvoiceRole; id: string; se
   }
 
   const invoice = detail?.invoice;
+  const isDraft = invoice?.lifecycle === 'DRAFT' && role === 'host';
+  const refresh = () => setLoadVersion(v => v + 1);
+  const listParams = new URLSearchParams(search);
+  listParams.delete('existing');
   return <>
     <div className="invoice-actions">
-      <a href={path + search}>Về danh sách</a>
+      <a href={path + (listParams.size ? '?' + listParams : '')}>Về danh sách</a>
       <button className="pc-button" type="button" disabled={busy} onClick={() => { setError(''); setDetail(undefined); setLoadVersion(v => v + 1); }}>Tải lại</button>
     </div>
+    {new URLSearchParams(search).get('existing') === '1' && <p role="status">Kỳ đã có hóa đơn. Đang xem hóa đơn hiện có.</p>}
     <CashFeedback result={cash.result} />
     {cash.target && <CashPayment endpoint={endpoint} opener={cash.target.opener} onClose={cash.close} onRefresh={cash.refresh}
       onSuccess={result => {
@@ -255,9 +278,11 @@ function InvoiceDetail({ role, id, search }: { role: InvoiceRole; id: string; se
         <p>{invoice.room_code} · {invoice.building_name} · {date(invoice.from_date)} – {date(invoice.to_date)}</p>
         <p>{status(invoice)}{invoice.is_overdue && <strong className="invoice-overdue">Quá hạn</strong>}</p>
         <dl className="invoice-facts">
-          <div><dt>Hạn thanh toán</dt><dd>{date(invoice.due_date)}</dd></div>
+          <div><dt>Hạn thanh toán</dt><dd>{date(invoice.dueDate ?? invoice.due_date)}</dd></div>
+          {invoice.scheduledBillingDate && <div><dt>Ngày dự kiến lập</dt><dd>{date(invoice.scheduledBillingDate)}</dd></div>}
+          {invoice.draft_created_at && <div><dt>Tạo nháp</dt><dd>{timestamp(invoice.draft_created_at)}</dd></div>}
           {invoice.issued_at && <div><dt>Phát hành</dt><dd>{timestamp(invoice.issued_at)}</dd></div>}
-          <div><dt>{invoice.lifecycle === 'DRAFT' ? 'Tạm tính' : 'Tổng tiền'}</dt><dd>{money(invoice.total)}</dd></div>
+          {!isDraft && <div><dt>Tổng tiền</dt><dd>{money(invoice.total)}</dd></div>}
           {invoice.lifecycle === 'ISSUED' && <>
             <div><dt>Đã thanh toán</dt><dd>{money(invoice.paid_amount)}</dd></div>
             <div><dt>Còn phải trả</dt><dd>{money(invoice.remaining)}</dd></div>
@@ -265,15 +290,14 @@ function InvoiceDetail({ role, id, search }: { role: InvoiceRole; id: string; se
         </dl>
         {role === 'host' && mayTakeCash(invoice) && <button type="button" className="pc-button"
           onClick={event => cash.open(invoice, event.currentTarget)}>Ghi nhận thanh toán tiền mặt</button>}
-        {role === 'host' && invoice.lifecycle === 'DRAFT' && <form onSubmit={issue} className="invoice-actions">
-          <label>Hạn thanh toán <input required type="date" name="dueDate" min={vietnamToday()} /></label>
-          <button className="pc-button" disabled={busy}>{busy ? 'Đang phát hành…' : 'Phát hành hóa đơn'}</button>
-        </form>}
       </section>
-      <section className="pc-state"><h2>Dòng chi phí</h2>{detail.missingSnapshot ? <p>Chứng từ đã phát hành thiếu dữ liệu lưu trữ.</p>
+      {isDraft && invoice.version != null && <DraftEditor invoice={invoice as Invoice & DraftReview} search={search}
+        refresh={refresh} registerGuard={registerGuard} issue={issue} issuing={busy}/>}
+      {isDraft && invoice.version == null && <p role="status">Chưa tải được trạng thái tính toán của nháp.</p>}
+      {!isDraft && <><section className="pc-state"><h2>Dòng chi phí</h2>{detail.missingSnapshot ? <p>Chứng từ đã phát hành thiếu dữ liệu lưu trữ.</p>
         : <div className="invoice-table"><table>
           <thead><tr><th>Khoản phí</th><th>Số lượng / tỷ lệ</th><th>Đơn giá</th><th>Thành tiền</th></tr></thead>
-          <tbody>{detail.lines.map((line, index) => <tr key={index}><td>{line.name}</td><td>{line.quantity ?? '—'}</td>
+          <tbody>{detail.lines.map((line, index) => <tr key={index}><td>{line.name}<LineBasis line={line}/></td><td>{line.quantity ?? '—'}</td>
             <td>{money(line.unitPrice)}</td><td>{line.amount === null ? 'Thiếu dữ liệu' : money(line.amount)}</td></tr>)}</tbody>
         </table></div>}</section>
       <section className="pc-state"><h2>Lịch sử thanh toán</h2>{!detail.payments.length ? <p>Chưa ghi nhận đợt thanh toán nào cho hóa đơn này.</p>
@@ -282,7 +306,7 @@ function InvoiceDetail({ role, id, search }: { role: InvoiceRole; id: string; se
           <tbody>{detail.payments.map(payment => <tr key={payment.id}><td>{timestamp(payment.paid_at)}</td><td>{money(payment.amount)}</td>
             <td>{payment.method === 'CASH' ? 'Tiền mặt' : 'Chuyển khoản'}</td><td>{statuses[payment.status]}</td><td>{payment.receipt_id || '—'}</td></tr>)}</tbody>
         </table></div>}</section>
-      <TransferPanel key={detail.transfer.status + ':' + detail.transfer.amount} transfer={detail.transfer} number={invoice.number || invoice.id} />
+      <TransferPanel key={detail.transfer.status + ':' + detail.transfer.amount} transfer={detail.transfer} number={invoice.number || invoice.id} /></>}
     </>}
   </>;
 }
