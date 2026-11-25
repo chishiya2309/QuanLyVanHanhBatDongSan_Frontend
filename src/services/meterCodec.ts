@@ -45,7 +45,8 @@ export function decodeMeterItem(v: unknown): MeterItem {
     || (item.periodStatus === 'SEALED' && (item.canCreate || item.canUpdate)) || (item.initialStartAllowed && item.startIndex !== null)) fail();
   if (!item.readingId && (item.endIndex !== null || item.consumption !== null)) fail();
   if (item.readingId && item.endIndex === null) fail();
-  if (item.startIndex !== null && item.endIndex !== null && compareMeterDecimal(item.endIndex, item.startIndex) < 0) fail();
+  if (item.startIndex !== null && item.endIndex !== null && compareMeterDecimal(item.endIndex, item.startIndex) < 0
+    && (!item.readingId || item.canUpdate || item.consumption === null)) fail();
   return item;
 }
 export function decodeMeterPage<T>(v: unknown, decode: (item: unknown) => T): MeterPage<T> {

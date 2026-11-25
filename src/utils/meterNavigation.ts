@@ -5,6 +5,10 @@ export function isMeterDate(value: string) {
   const date = new Date(value + 'T00:00:00Z');
   return Number.isFinite(date.valueOf()) && date.toISOString().slice(0, 10) === value;
 }
+export function hostInvoiceReturn(value: string | null) {
+  return value && /^\/invoices\/host\/[a-f0-9-]{36}(?:\?[^\s#]*)?$/i.test(value)
+    && isAssetId(value.split('?')[0].split('/').at(-1) ?? '') ? value : undefined;
+}
 export function parseMeterRoute(path: string, search: string): MeterRoute | null {
   const match = /^\/meter-readings(?:\/([^/]+))?\/?$/.exec(path);
   if (!match) return null;
@@ -24,12 +28,16 @@ export function parseMeterRoute(path: string, search: string): MeterRoute | null
   const buildingId = params.get('buildingId') || '', view = params.get('view') || 'single';
   if ((fromDate && !isMeterDate(fromDate)) || (toDate && !isMeterDate(toDate)) || (fromDate && toDate && fromDate >= toDate)
     || (buildingId && !isAssetId(buildingId)) || !['single', 'batch', 'progress'].includes(view) || (match[1] && !isAssetId(match[1]))) invalid = true;
-  return { view: view === 'batch' || view === 'progress' ? view : 'single', fromDate, toDate, buildingId,
+  const roomServiceId = params.get('roomServiceId');
+  if (roomServiceId && !isAssetId(roomServiceId)) invalid = true;
+  return { ...(roomServiceId ? {roomServiceId} : {}), ...(hostInvoiceReturn(params.get('returnTo')) ? {returnTo: hostInvoiceReturn(params.get('returnTo'))} : {}), view: view === 'batch' || view === 'progress' ? view : 'single', fromDate, toDate, buildingId,
     roomIds: ids('roomIds'), periodIds: ids('periodIds'), page: page('page'), periodPage: page('periodPage'), readingId: match[1] || null, invalid };
 }
 export function meterUrl(route: MeterRoute): string {
   const params = new URLSearchParams();
   for (const key of ['fromDate', 'toDate', 'buildingId'] as const) if (route[key]) params.set(key, route[key]);
+  if (route.roomServiceId) params.set('roomServiceId', route.roomServiceId);
+  if (route.returnTo) params.set('returnTo', route.returnTo);
   if (route.view !== 'single') params.set('view', route.view);
   for (const key of ['periodIds', 'roomIds'] as const) if (route[key].length) params.set(key, route[key].join(','));
   for (const key of ['page', 'periodPage'] as const) if (route[key]) params.set(key, String(route[key]));

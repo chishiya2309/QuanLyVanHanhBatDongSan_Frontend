@@ -22,6 +22,7 @@ const messages: Record<string, string> = {
 function apiError(status: number, v: unknown, write: boolean, fallback: string) {
   const value = isRecord(v) && safeInteger(v.status) === status ? v : {};
   let code = typeof value.code === 'string' ? value.code : '', message = messages[code] || fallback;
+  if (code.startsWith('UC41_') && typeof value.message === 'string' && value.message.trim()) message = value.message;
   if (status === 401) { code = 'SESSION_INVALID'; message = m.session; }
   if (status === 403) {
     if (code.includes('CSRF') || typeof value.message === 'string' && value.message.includes('CSRF')) { code = 'CSRF_INVALID'; message = m.csrf; clearCsrfCache(); }
@@ -37,7 +38,8 @@ function apiError(status: number, v: unknown, write: boolean, fallback: string) 
   if (code === 'FUNDING_BANK_ACCOUNT_DUPLICATE') fieldErrors.accountNumber = message;
   return new FundingApiError(status, code, message, fieldErrors, write ? 'write' : 'read');
 }
-async function request<T>(path: string, decode: (v: unknown) => T, fallback: string, init: RequestInit = {}, current = () => true): Promise<T> {
+async function request<T>(path: string, decode: (v: unknown) => T, fallback: string, init: RequestInit = {}, current = () => true,
+  statuses = [init.method === 'POST' ? 201 : 200]): Promise<T> {
   const write = init.method === 'POST' || init.method === 'PATCH';
   let response: Response;
   try { response = await authenticatedFetch(base + path, { ...init, credentials: 'include', cache: 'no-store', headers: { Accept: 'application/json', ...init.headers } }, { shouldSend: current, trackNavigation: write }); }
@@ -52,13 +54,12 @@ async function request<T>(path: string, decode: (v: unknown) => T, fallback: str
   if (init.signal?.aborted || !current()) throw new DOMException('Stale funding request', 'AbortError');
   if (!response.ok) {
     // Only a recognized storage failure confirms rollback; an intermediary's 5xx is ambiguous.
-    if (write && response.status >= 500 && (!isRecord(body) || body.code !== 'FUNDING_STORAGE_FAILURE'))
+    if (write && response.status >= 500 && (!isRecord(body) || !['FUNDING_STORAGE_FAILURE', 'UC41_PROVIDER_UNAVAILABLE'].includes(String(body.code))))
       throw new FundingApiError(response.status, 'FUNDING_UNCERTAIN', m.uncertain, {}, 'uncertain');
     throw apiError(response.status, body, write, fallback);
   }
   try {
-    const expected = init.method === 'POST' ? 201 : 200;
-    if (response.status !== expected || !isRecord(body) || safeInteger(body.status) !== expected || typeof body.message !== 'string' || !Object.hasOwn(body, 'data')) throw new Error('Invalid envelope');
+    if (!statuses.includes(response.status) || !isRecord(body) || safeInteger(body.status) !== response.status || typeof body.message !== 'string' || !Object.hasOwn(body, 'data')) throw new Error('Invalid envelope');
     return decode(body.data);
   } catch { throw new FundingApiError(response.status, 'FUNDING_INVALID_RESPONSE', write ? m.uncertain : fallback, {}, write ? 'uncertain' : 'read'); }
 }
@@ -70,7 +71,8 @@ export function listFundingSources(filters: Pick<FundingRoute, 'type' | 'active'
 export const listBanks = (signal?: AbortSignal) => request('/banks', decodeBanks, m.bankFailure, { signal });
 export const getFundingSource = (id: string, signal?: AbortSignal) => request(sourcePath(id), v => { const s = decodeFundingSource(v); if (s.id !== id) throw new Error('Wrong source'); return s; }, m.detailFailure, { signal });
 export const getDeactivationImpact = (id: string, signal?: AbortSignal) => request(sourcePath(id) + '/deactivation-impact', v => { const s = decodeImpact(v); if (s.sourceId !== id) throw new Error('Wrong source'); return s; }, m.impactFailure, { signal });
-async function mutation(path: string, method: 'POST' | 'PATCH', fields: Record<string, unknown>, check: (s: FundingSource) => boolean, current: () => boolean) {
+async function fundingWrite<T>(path: string, method: 'POST' | 'PATCH', fields: Record<string, unknown>,
+  decode: (v: unknown) => T, current: () => boolean, statuses?: number[]) {
   const body = encodeFundingBody(fields), guard = sessionGuard(current);
   let csrf: { headerName: string; token: string };
   try {
@@ -81,8 +83,58 @@ async function mutation(path: string, method: 'POST' | 'PATCH', fields: Record<s
     clearCsrfCache(); throw new FundingApiError(0, 'CSRF_UNAVAILABLE', m.csrf, {}, 'csrf');
   }
   if (!guard()) throw new DOMException('Stale funding request', 'AbortError');
-  return request(path, v => { const s = decodeFundingSource(v); if (!check(s)) throw new Error('Wrong mutation result'); return s; }, m.saveFailure,
-    { method, body, headers: { 'Content-Type': 'application/json', [csrf.headerName]: csrf.token } }, guard);
+  return request(path, decode, m.saveFailure,
+    { method, body, headers: { 'Content-Type': 'application/json', [csrf.headerName]: csrf.token } }, guard, statuses);
+}
+function mutation(path: string, method: 'POST' | 'PATCH', fields: Record<string, unknown>, check: (s: FundingSource) => boolean, current: () => boolean) {
+  return fundingWrite(path, method, fields, v => {
+    const source = decodeFundingSource(v);
+    if (!check(source)) throw new Error('Wrong mutation result');
+    return source;
+  }, current);
+}
+
+export type BankHubAccountType = 'individual' | 'enterprise' | 'business_household';
+export interface BankHubStatus {
+  mode: string;
+  state: string;
+  eligibility: string;
+  enabled: boolean;
+  reason: string | null;
+  guidance: string | null;
+  sessionId: string | null;
+  sessionState: string | null;
+  lastCheckedAt: string | null;
+  actions: string[];
+}
+export interface BankHubSetup { hostedLinkUrl: string; sessionId: string; expiresAt: string }
+function decodeBankHubStatus(id: string, value: unknown): BankHubStatus {
+  if (!isRecord(value) || value.sourceId !== id || typeof value.mode !== 'string' || typeof value.state !== 'string'
+      || typeof value.eligibility !== 'string' || typeof value.enabled !== 'boolean'
+      || !Array.isArray(value.actions) || !value.actions.every(action => typeof action === 'string')) throw new Error('Invalid Bank Hub status');
+  const optional = (v: unknown) => typeof v === 'string' ? v : null;
+  return { mode: value.mode, state: value.state, eligibility: value.eligibility, enabled: value.enabled, actions: value.actions,
+    reason: optional(value.reason), guidance: optional(value.guidance), sessionId: optional(value.sessionId),
+    sessionState: optional(value.sessionState), lastCheckedAt: optional(value.lastCheckedAt) };
+}
+function decodeBankHubResult(id: string, value: unknown): BankHubStatus | BankHubSetup {
+  if (!isRecord(value) || !Object.hasOwn(value, 'hostedLinkUrl')) return decodeBankHubStatus(id, value);
+  if (value.mode !== 'SANDBOX' || typeof value.hostedLinkUrl !== 'string' || typeof value.sessionId !== 'string'
+      || !isAssetId(value.sessionId) || typeof value.expiresAt !== 'string' || !Number.isFinite(Date.parse(value.expiresAt))) throw new Error('Invalid Bank Hub session');
+  const url = new URL(value.hostedLinkUrl);
+  if (url.protocol !== 'https:' || url.username || url.password) throw new Error('Invalid Hosted Link');
+  return { hostedLinkUrl: url.href, sessionId: value.sessionId, expiresAt: value.expiresAt };
+}
+export function getBankHubStatus(id: string, accountType: BankHubAccountType | '', signal?: AbortSignal) {
+  return request(sourcePath(id) + '/automatic-payment' + (accountType ? '?' + new URLSearchParams({ accountType }) : ''),
+    value => decodeBankHubStatus(id, value), 'Chưa thể tải kết nối Bank Hub.', { signal });
+}
+export function changeBankHub(id: string, action: 'sessions' | 'check' | 'pause' | 'resume' | 'unlink' | 'cancel',
+  accountType: BankHubAccountType | '', current: () => boolean, sessionId?: string) {
+  if (action === 'cancel' && !isAssetId(sessionId ?? null)) throw new Error('Phiên kết nối không hợp lệ.');
+  const operation = action === 'cancel' ? 'sessions/' + encodeURIComponent(sessionId!) + '/cancel' : action;
+  return fundingWrite(sourcePath(id) + '/automatic-payment/' + operation, 'POST', { confirmed: true, ...(accountType ? { accountType } : {}) },
+    value => decodeBankHubResult(id, value), current, [200, 201, 202]);
 }
 export function createFundingSource(type: FundingSource['type'], fields: FundingFields, banks: SupportedBank[], current = () => true) {
   const errors = validateFundingFields(fields, type === 'BANK', banks);

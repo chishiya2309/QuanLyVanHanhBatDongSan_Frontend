@@ -1,4 +1,5 @@
 import type { PeriodUsageRoute, PeriodUsageTab } from '../types/periodUsage';
+import { hostInvoiceReturn } from './meterNavigation';
 import { isAssetId } from './assetNavigation';
 
 export function parsePeriodUsageRoute(path: string, search: string): PeriodUsageRoute | null {
@@ -24,6 +25,7 @@ export function parsePeriodUsageRoute(path: string, search: string): PeriodUsage
     roomId,
     periodId,
     tab,
+    ...(hostInvoiceReturn(params.get('returnTo')) ? {returnTo: hostInvoiceReturn(params.get('returnTo'))} : {}),
     invalid
   };
 }
@@ -33,6 +35,7 @@ export function periodUsageUrl(route: Partial<PeriodUsageRoute>): string {
   if (route.buildingId) params.set('buildingId', route.buildingId);
   if (route.roomId) params.set('roomId', route.roomId);
   if (route.periodId) params.set('periodId', route.periodId);
+  if (route.returnTo) params.set('returnTo', route.returnTo);
   if (route.tab && route.tab !== 'quantity') params.set('tab', route.tab);
   return '/period-usages' + (params.size ? '?' + params.toString() : '');
 }
