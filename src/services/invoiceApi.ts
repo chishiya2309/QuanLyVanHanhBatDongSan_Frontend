@@ -9,7 +9,13 @@ const base = (import.meta.env.VITE_API_URL || '/api/v1').replace(/\/+$/, '');
 export type InvoiceRole = 'host' | 'customer';
 export const invoicePath = (role: InvoiceRole) => '/invoices/' + role;
 export const isInvoicePath = (path: string) => /^\/invoices\/(host|customer)(\/[^/]+)?\/?$/.test(path);
-const decimals = new Set(['total', 'paid_amount', 'paidAmount', 'remaining', 'amount', 'quantity', 'unitPrice', 'subtotal', 'totalDelta', 'startIndex', 'endIndex', 'consumption', 'manualAmount', 'prorateFactor', 'start_index', 'end_index']);
+const decimals = new Set([
+  'total', 'paid_amount', 'paidAmount', 'remaining', 'expectedRemaining',
+  'subtotalBeforeDiscounts', 'surchargeTotal', 'discountTotal',
+  'totalEligibleAmount', 'totalExpectedRemaining', 'totalIssuedAmount',
+  'amount', 'quantity', 'unitPrice', 'subtotal', 'totalDelta',
+  'startIndex', 'endIndex', 'consumption', 'manualAmount', 'prorateFactor', 'start_index', 'end_index',
+]);
 
 export async function invoiceRequest<T>(path: string, signal?: AbortSignal, body?: object, idempotencyKey?: string, method = body ? 'POST' : 'GET'): Promise<T> {
   const current = sessionGuard(() => !signal?.aborted);

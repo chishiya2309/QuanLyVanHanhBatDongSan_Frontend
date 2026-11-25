@@ -1,11 +1,17 @@
 import { createPortal } from 'react-dom';
 import { useEffect, useState, type FormEvent } from 'react';
 import { invoicePath, invoiceRequest, type InvoiceRole } from '../../services/invoiceApi';
+import { getIssuanceStatus } from '../../services/invoiceIssuanceApi';
+import type { IssuanceResult } from '../../types/invoiceIssuance';
+import { formatNotificationStatusLabel } from '../../utils/invoiceIssuanceHelpers';
 import '../provisional/provisionalCharges.css';
 import './invoice.css';
+import './invoiceIssuance.css';
 import { DraftSchedule } from './DraftSchedule';
 import { draftDate as date } from './invoiceDraftFormat';
 import { DraftEditor, LineBasis, type DraftContext } from './DraftEditor';
+import { IssuanceReviewPanel } from './IssuanceReviewPanel';
+import { BatchIssuancePanel } from './BatchIssuancePanel';
 import type { DraftReview, DraftLine } from '../../services/invoiceDraftApi';
 import type { NavigationGuardRegistration } from '../../hooks/useServiceCatalog';
 import './invoiceDraft.css';
@@ -15,6 +21,7 @@ type Invoice = DraftContext & Partial<DraftReview> & {
   scheduledBillingDate?: string; draft_created_at?: string;
   id: string; number: string | null; lifecycle: 'DRAFT' | 'ISSUED';
   from_date: string; to_date: string; due_date: string | null; issued_at: string | null;
+  issued_by?: string | null; payment_reference?: string | null;
   room_code: string; building_name: string; customer_name: string;
   total: string | null; paid_amount: string; remaining: string | null;
   payment_status: string | null; is_overdue: boolean;
@@ -22,7 +29,7 @@ type Invoice = DraftContext & Partial<DraftReview> & {
 type Line = DraftLine;
 type Payment = { id: string; paid_at: string; amount: string; method: string; status: string; receipt_id: string | null };
 type Transfer = { status: string; bankName: string; accountNumber: string; accountHolder: string; reference: string; amount: string; png: string | null };
-type Detail = { invoice: Invoice; lines: Line[]; payments: Payment[]; transfer: Transfer; missingSnapshot: boolean };
+type Detail = { invoice: Invoice; lines: Line[]; payments: Payment[]; transfer: Transfer; missingSnapshot: boolean; issuance?: IssuanceResult };
 type Location = { building_id: string; building_name: string; room_id: string; room_code: string };
 type Page = { items: Invoice[]; page: number; hasNext: boolean };
 
@@ -34,7 +41,7 @@ const statuses: Record<string, string> = {
   CONFIRMED: 'Đã xác nhận', PENDING: 'Đang chờ', VOIDED: 'Đã hủy',
 };
 const status = (invoice: Invoice) => invoice.lifecycle === 'DRAFT' ? 'Nháp' :
-  invoice.total === '0' ? 'Không còn nghĩa vụ thanh toán' : statuses[invoice.payment_status ?? ''] || 'Thiếu dữ liệu';
+  invoice.total === '0' ? 'Không cần thanh toán' : statuses[invoice.payment_status ?? ''] || 'Thiếu dữ liệu';
 const message = (error: unknown) => error instanceof Error ? error.message : 'Chưa thể tải dữ liệu hóa đơn.';
 
 export function InvoicePage({ accountRole, pathname, search, registerGuard }: { accountRole: string; pathname: string; search: string; registerGuard?: NavigationGuardRegistration }) {
@@ -134,6 +141,13 @@ function InvoiceList({ role, search }: { role: InvoiceRole; search: string }) {
   const filters = new URLSearchParams(search);
   const [building, setBuilding] = useState(filters.get('buildingId') || '');
   const [room, setRoom] = useState(filters.get('roomId') || '');
+  const [selectedDraftIds, setSelectedDraftIds] = useState<string[]>(() => {
+    const raw = filters.get('ids');
+    return raw ? raw.split(',').filter(Boolean).slice(0, 100) : [];
+  });
+  const [batchOpen, setBatchOpen] = useState(() =>
+    role === 'host' && filters.get('view') === 'batch-issue' && Boolean(filters.get('ids')),
+  );
 
   useEffect(() => {
     const request = new AbortController();
@@ -148,6 +162,41 @@ function InvoiceList({ role, search }: { role: InvoiceRole; search: string }) {
     return () => request.abort();
   }, [path, role, search, cash.revision]);
 
+  const draftItems = page?.items.filter(item => item.lifecycle === 'DRAFT') ?? [];
+  const allVisibleDraftsSelected = draftItems.length > 0 && draftItems.every(item => selectedDraftIds.includes(item.id));
+
+  function toggleAllVisibleDrafts(checked: boolean) {
+    if (!draftItems.length) return;
+    if (checked) {
+      setSelectedDraftIds(current => [...new Set([...current, ...draftItems.map(item => item.id)])].slice(0, 100));
+    } else {
+      const visibleSet = new Set(draftItems.map(item => item.id));
+      setSelectedDraftIds(current => current.filter(id => !visibleSet.has(id)));
+    }
+  }
+
+  function toggleDraftSelection(invoiceId: string, checked: boolean) {
+    setSelectedDraftIds(current => {
+      if (!checked) return current.filter(id => id !== invoiceId);
+      if (current.includes(invoiceId) || current.length >= 100) return current;
+      return [...current, invoiceId];
+    });
+  }
+
+  function syncBatchUrl(open: boolean, ids: string[]) {
+    if (typeof window === 'undefined' || window.location.pathname !== path) return;
+    const next = new URLSearchParams(window.location.search);
+    if (open && ids.length) {
+      next.set('view', 'batch-issue');
+      next.set('ids', ids.join(','));
+    } else {
+      next.delete('view');
+      next.delete('ids');
+    }
+    const qs = next.toString();
+    window.history.replaceState(null, '', path + (qs ? '?' + qs : ''));
+  }
+
   const go = (index: number) => {
     const next = new URLSearchParams(search);
     next.set('page', String(index));
@@ -160,6 +209,22 @@ function InvoiceList({ role, search }: { role: InvoiceRole; search: string }) {
       if (typeof value === 'string' && value.trim()) next.set(name, value.trim());
     }
     window.location.assign(path + '?' + next.toString());
+  }
+
+  if (batchOpen && selectedDraftIds.length && role === 'host') {
+    return (
+      <BatchIssuancePanel
+        invoiceIds={selectedDraftIds}
+        search={search}
+        onClose={() => {
+          setBatchOpen(false);
+          setSelectedDraftIds([]);
+          syncBatchUrl(false, []);
+          cash.refresh();
+        }}
+        onCompleted={() => cash.refresh()}
+      />
+    );
   }
 
   const buildings = new Map(locations.map(item => [item.building_id, item.building_name]));
@@ -187,6 +252,27 @@ function InvoiceList({ role, search }: { role: InvoiceRole; search: string }) {
         <div className="invoice-actions"><button className="pc-button">Lọc</button><a href={path}>Đặt lại bộ lọc</a></div>
       </div>
     </form>}
+    {role === 'host' && (draftItems.length > 0 || selectedDraftIds.length > 0) && (
+      <div className="uc50-batch-bar" role="region" aria-label="Thao tác phát hành hàng loạt">
+        <span className="uc50-num" role="status">Đã chọn {selectedDraftIds.length}/100 hóa đơn nháp</span>
+        <div className="uc50-actions">
+          <button
+            type="button"
+            className="uc50-btn uc50-btn--primary"
+            disabled={!selectedDraftIds.length}
+            onClick={() => {
+              setBatchOpen(true);
+              syncBatchUrl(true, selectedDraftIds);
+            }}
+          >
+            Phát hành hàng loạt ({selectedDraftIds.length})
+          </button>
+          {selectedDraftIds.length > 0 && (
+            <button type="button" className="uc50-btn" onClick={() => setSelectedDraftIds([])}>Bỏ chọn</button>
+          )}
+        </div>
+      </div>
+    )}
     <CashFeedback result={cash.result} />
     {cash.target && <CashPayment endpoint={path + '/' + encodeURIComponent(cash.target.id)}
       opener={cash.target.opener} onClose={cash.close} onRefresh={cash.refresh} onSuccess={result => {
@@ -199,13 +285,42 @@ function InvoiceList({ role, search }: { role: InvoiceRole; search: string }) {
     {!page ? !error && <p role="status">Đang tải hóa đơn…</p>
       : !page.items.length ? <p className="pc-state">Không tìm thấy hóa đơn phù hợp.</p>
         : <div className="invoice-table"><table>
-          <thead><tr><th>Số hóa đơn</th><th>Phòng</th><th>Kỳ tính tiền</th><th>Tổng tiền</th><th>Hạn thanh toán</th><th>Trạng thái</th>{role === 'host' && <th>Thao tác</th>}</tr></thead>
+          <thead><tr>
+            {role === 'host' && <th className="uc50-select-cell">
+              <input
+                type="checkbox"
+                aria-label="Chọn tất cả hóa đơn nháp trên trang"
+                disabled={!draftItems.length}
+                checked={allVisibleDraftsSelected}
+                onChange={e => toggleAllVisibleDrafts(e.target.checked)}
+              />
+            </th>}
+            <th>Số hóa đơn</th><th>Phòng</th><th>Kỳ tính tiền</th><th>Tổng tiền</th><th>Hạn thanh toán</th><th>Trạng thái</th>{role === 'host' && <th>Thao tác</th>}
+          </tr></thead>
           <tbody>{page.items.map(item => <tr key={item.id}>
+            {role === 'host' && <td className="uc50-select-cell">
+              {item.lifecycle === 'DRAFT' && (
+                <input
+                  type="checkbox"
+                  aria-label={`Chọn hóa đơn nháp ${item.room_code} ${date(item.from_date)}`}
+                  checked={selectedDraftIds.includes(item.id)}
+                  disabled={!selectedDraftIds.includes(item.id) && selectedDraftIds.length >= 100}
+                  onChange={e => toggleDraftSelection(item.id, e.target.checked)}
+                />
+              )}
+            </td>}
             <td><a href={path + '/' + item.id + search}>{item.number || 'Xem hóa đơn'}</a></td>
-            <td>{item.room_code} · {item.building_name}</td><td>{date(item.from_date)} – {date(item.to_date)}</td>
-            <td>{money(item.total)}</td><td>{date(item.due_date)}</td><td>{status(item)}{item.is_overdue && <strong className="invoice-overdue">Quá hạn</strong>}</td>
-            {role === 'host' && <td>{mayTakeCash(item) && <button type="button" className="pc-button"
-              onClick={event => cash.open(item, event.currentTarget)}>Ghi nhận thanh toán tiền mặt</button>}</td>}
+            <td>{item.room_code} · {item.building_name}</td><td>{date(item.from_date)} đến {date(item.to_date)}</td>
+            <td className="uc50-num">{money(item.total)}</td><td>{date(item.due_date)}</td><td>{status(item)}{item.is_overdue && <strong className="invoice-overdue">Quá hạn</strong>}</td>
+            {role === 'host' && <td>
+              {item.lifecycle === 'DRAFT' && (
+                <a className="uc50-btn" href={path + '/' + encodeURIComponent(item.id) + '?action=issue'}>
+                  Rà soát và phát hành
+                </a>
+              )}
+              {mayTakeCash(item) && <button type="button" className="pc-button"
+                onClick={event => cash.open(item, event.currentTarget)}>Ghi nhận thanh toán tiền mặt</button>}
+            </td>}
           </tr>)}</tbody>
         </table></div>}
     {page && (page.page > 0 || page.hasNext) && <nav aria-label="Trang hóa đơn" className="invoice-actions">
@@ -220,6 +335,13 @@ function InvoiceDetail({ role, id, search, registerGuard }: { role: InvoiceRole;
   const endpoint = path + '/' + encodeURIComponent(id);
   const cash = useCashPayment();
   const [detail, setDetail] = useState<Detail>();
+  const [issuanceResult, setIssuanceResult] = useState<IssuanceResult>();
+  const [issueReviewOpen, setIssueReviewOpen] = useState(() =>
+    role === 'host' && new URLSearchParams(search).get('action') === 'issue',
+  );
+  const [notificationLoading, setNotificationLoading] = useState(false);
+  const [notificationError, setNotificationError] = useState('');
+  const [copyFeedback, setCopyFeedback] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [loadVersion, setLoadVersion] = useState(0);
@@ -238,16 +360,78 @@ function InvoiceDetail({ role, id, search, registerGuard }: { role: InvoiceRole;
     return () => window.removeEventListener('pageshow', resume);
   }, []);
 
+  // A3: refresh once shortly after issuance if notification dispatch is still pending asynchronously.
+  useEffect(() => {
+    if (role !== 'host' || !issuanceResult?.notificationRequested) return;
+    if (issuanceResult.notificationStatus !== 'PENDING' && issuanceResult.notificationStatus !== 'PROCESSING') return;
+    const ac = new AbortController();
+    const timer = window.setTimeout(() => {
+      getIssuanceStatus(id, ac.signal).then(
+        updated => { if (!ac.signal.aborted) setIssuanceResult(updated); },
+        () => {},
+      );
+    }, 900);
+    return () => {
+      window.clearTimeout(timer);
+      ac.abort();
+    };
+  }, [id, role, issuanceResult?.notificationRequested, issuanceResult?.notificationStatus]);
+
+  function syncIssueActionUrl(open: boolean) {
+    if (typeof window === 'undefined' || window.location.pathname !== endpoint) return;
+    const next = new URLSearchParams(window.location.search);
+    if (open) next.set('action', 'issue');
+    else next.delete('action');
+    const qs = next.toString();
+    window.history.replaceState(null, '', endpoint + (qs ? '?' + qs : ''));
+  }
+
+  async function refreshNotificationStatus() {
+    if (notificationLoading) return;
+    setNotificationLoading(true);
+    setNotificationError('');
+    try {
+      setIssuanceResult(await getIssuanceStatus(id));
+    } catch (e) {
+      setNotificationError(message(e));
+    } finally {
+      setNotificationLoading(false);
+    }
+  }
+
+  async function copyInvoiceSummary(inv: Invoice) {
+    const summary = [
+      `Hóa đơn: ${inv.number || inv.id}`,
+      `Phòng: ${inv.room_code} (${inv.building_name})`,
+      `Kỳ: ${date(inv.from_date)} - ${date(inv.to_date)}`,
+      `Tổng tiền: ${money(inv.total)}`,
+      `Còn phải thanh toán: ${money(inv.remaining)}`,
+      `Hạn thanh toán: ${date(inv.dueDate ?? inv.due_date)}`,
+      inv.payment_reference ? `Mã thanh toán: ${inv.payment_reference}` : '',
+    ].filter(Boolean).join('\n');
+    try {
+      await navigator.clipboard.writeText(summary);
+      setCopyFeedback('Đã sao chép thông tin hóa đơn.');
+    } catch {
+      setCopyFeedback('Không thể tự động sao chép. Vui lòng chọn trực tiếp thông tin trên màn hình.');
+    }
+  }
+
   async function issue(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (busy) return;
     if (!detail?.invoice.canIssue) return;
-    const dueDate = detail.invoice.dueDate;
     setBusy(true);
     setError('');
-    try { setDetail(await invoiceRequest<Detail>(endpoint + '/issue', undefined, { dueDate })); }
-    catch (e) { setError(message(e)); }
-    finally { setBusy(false); }
+    try {
+      const issued = await invoiceRequest<Detail>(endpoint + '/issue', undefined, { dueDate: detail.invoice.dueDate });
+      setDetail(issued);
+      if (issued.issuance) setIssuanceResult(issued.issuance);
+    } catch (e) {
+      setError(message(e));
+    } finally {
+      setBusy(false);
+    }
   }
 
   const invoice = detail?.invoice;
@@ -255,6 +439,7 @@ function InvoiceDetail({ role, id, search, registerGuard }: { role: InvoiceRole;
   const refresh = () => setLoadVersion(v => v + 1);
   const listParams = new URLSearchParams(search);
   listParams.delete('existing');
+  listParams.delete('action');
   return <>
     <div className="invoice-actions">
       <a href={path + (listParams.size ? '?' + listParams : '')}>Về danh sách</a>
@@ -275,13 +460,16 @@ function InvoiceDetail({ role, id, search, registerGuard }: { role: InvoiceRole;
     {!invoice || !detail ? !error && <p role="status">Đang tải chi tiết hóa đơn…</p> : <>
       <section className="pc-state">
         <h2>{invoice.number || 'Chi tiết hóa đơn'}</h2>
-        <p>{invoice.room_code} · {invoice.building_name} · {date(invoice.from_date)} – {date(invoice.to_date)}</p>
+        <p>{invoice.room_code}, {invoice.building_name}, kỳ {date(invoice.from_date)} đến {date(invoice.to_date)}</p>
         <p>{status(invoice)}{invoice.is_overdue && <strong className="invoice-overdue">Quá hạn</strong>}</p>
         <dl className="invoice-facts">
           <div><dt>Hạn thanh toán</dt><dd>{date(invoice.dueDate ?? invoice.due_date)}</dd></div>
           {invoice.scheduledBillingDate && <div><dt>Ngày dự kiến lập</dt><dd>{date(invoice.scheduledBillingDate)}</dd></div>}
           {invoice.draft_created_at && <div><dt>Tạo nháp</dt><dd>{timestamp(invoice.draft_created_at)}</dd></div>}
           {invoice.issued_at && <div><dt>Phát hành</dt><dd>{timestamp(invoice.issued_at)}</dd></div>}
+          {invoice.lifecycle === 'ISSUED' && (invoice.payment_reference || issuanceResult?.paymentReference) && (
+            <div><dt>Mã thanh toán</dt><dd className="uc50-code">{invoice.payment_reference ?? issuanceResult?.paymentReference}</dd></div>
+          )}
           {!isDraft && <div><dt>Tổng tiền</dt><dd>{money(invoice.total)}</dd></div>}
           {invoice.lifecycle === 'ISSUED' && <>
             <div><dt>Đã thanh toán</dt><dd>{money(invoice.paid_amount)}</dd></div>
@@ -291,9 +479,74 @@ function InvoiceDetail({ role, id, search, registerGuard }: { role: InvoiceRole;
         {role === 'host' && mayTakeCash(invoice) && <button type="button" className="pc-button"
           onClick={event => cash.open(invoice, event.currentTarget)}>Ghi nhận thanh toán tiền mặt</button>}
       </section>
-      {isDraft && invoice.version != null && <DraftEditor invoice={invoice as Invoice & DraftReview} search={search}
-        refresh={refresh} registerGuard={registerGuard} issue={issue} issuing={busy}/>}
-      {isDraft && invoice.version == null && <p role="status">Chưa tải được trạng thái tính toán của nháp.</p>}
+
+      {role === 'host' && invoice.lifecycle === 'ISSUED' && (
+        <section className="pc-state uc50-confirm-group" aria-label="Trạng thái phát hành và thông báo UC61">
+          <div className="uc50-actions">
+            <span className="uc50-badge uc50-badge--ready">Đã phát hành chính thức và niêm phong kỳ</span>
+            {issuanceResult && (
+              <span className={
+                issuanceResult.notificationStatus === 'SUCCEEDED' ? 'uc50-badge uc50-badge--success'
+                  : issuanceResult.notificationStatus === 'FAILED' || issuanceResult.notificationStatus === 'PARTIAL_FAILED' ? 'uc50-badge uc50-badge--danger'
+                    : 'uc50-badge uc50-badge--info'
+              }>
+                {formatNotificationStatusLabel(issuanceResult.notificationStatus)}
+              </span>
+            )}
+          </div>
+          {issuanceResult && <p>{issuanceResult.message}</p>}
+          {notificationError && <p role="alert" className="uc50-helper uc50-helper--error">{notificationError}</p>}
+          <div className="uc50-actions">
+            <button type="button" className="uc50-btn" disabled={notificationLoading} onClick={() => void refreshNotificationStatus()}>
+              {notificationLoading ? 'Đang kiểm tra…' : 'Kiểm tra trạng thái thông báo'}
+            </button>
+            {issuanceResult?.notificationStatus === 'NO_CHANNEL' && (
+              <button type="button" className="uc50-btn" onClick={() => void copyInvoiceSummary(invoice)}>
+                Sao chép thông tin hóa đơn
+              </button>
+            )}
+          </div>
+          {copyFeedback && <p role="status">{copyFeedback}</p>}
+        </section>
+      )}
+
+      {isDraft && issueReviewOpen && (
+        <IssuanceReviewPanel<Detail>
+          invoiceId={id}
+          onCancel={() => {
+            setIssueReviewOpen(false);
+            syncIssueActionUrl(false);
+          }}
+          onIssued={issued => {
+            setDetail(issued);
+            if (issued.issuance) setIssuanceResult(issued.issuance);
+            setIssueReviewOpen(false);
+            syncIssueActionUrl(false);
+          }}
+          onAlreadyIssued={result => {
+            if (result) setIssuanceResult(result);
+            setIssueReviewOpen(false);
+            syncIssueActionUrl(false);
+            refresh();
+          }}
+        />
+      )}
+
+      {isDraft && !issueReviewOpen && invoice.version != null && (
+        <DraftEditor
+          invoice={invoice as Invoice & DraftReview}
+          search={search}
+          refresh={refresh}
+          registerGuard={registerGuard}
+          issue={issue}
+          issuing={busy}
+          onOpenIssueReview={() => {
+            setIssueReviewOpen(true);
+            syncIssueActionUrl(true);
+          }}
+        />
+      )}
+      {isDraft && !issueReviewOpen && invoice.version == null && <p role="status">Chưa tải được trạng thái tính toán của nháp.</p>}
       {!isDraft && <><section className="pc-state"><h2>Dòng chi phí</h2>{detail.missingSnapshot ? <p>Chứng từ đã phát hành thiếu dữ liệu lưu trữ.</p>
         : <div className="invoice-table"><table>
           <thead><tr><th>Khoản phí</th><th>Số lượng / tỷ lệ</th><th>Đơn giá</th><th>Thành tiền</th></tr></thead>
