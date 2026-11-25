@@ -1,5 +1,5 @@
 import { createPortal } from 'react-dom';
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent, type MouseEvent } from 'react';
 import { invoicePath, invoiceRequest, type InvoiceRole } from '../../services/invoiceApi';
 import { getIssuanceStatus } from '../../services/invoiceIssuanceApi';
 import {
@@ -32,6 +32,10 @@ import type { DraftReview } from '../../services/invoiceDraftApi';
 import type { NavigationGuardRegistration } from '../../hooks/useServiceCatalog';
 import './invoiceDraft.css';
 import { CashPayment, type CashResult } from './CashPayment';
+import {
+  DraftInvoicePreview, InvoiceBatchExport, IssuedInvoiceExport, invoiceBatchExportLimit,
+  type InvoiceExportSelection,
+} from './InvoiceExportControls';
 
 const vnd = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' });
 const money = (value: string | number | null | undefined) => {
@@ -247,10 +251,13 @@ function InvoiceSummaryStrip({ summary }: { summary: InvoiceSummary }) {
   );
 }
 
-function InvoiceList({ role, search }: { role: InvoiceRole; search: string }) {
+function InvoiceList({ role, search: initialSearch }: { role: InvoiceRole; search: string }) {
   const path = invoicePath(role);
   const cash = useCashPayment();
+  const [pageSearch, setPageSearch] = useState(initialSearch);
+  const search = role === 'host' ? pageSearch : initialSearch;
   const [page, setPage] = useState<InvoicePageResponse>();
+  const [selectedExports, setSelectedExports] = useState<InvoiceExportSelection[]>([]);
   const [locations, setLocations] = useState<InvoiceLocationItem[]>([]);
   const [error, setError] = useState('');
   const [locationError, setLocationError] = useState('');
@@ -332,6 +339,28 @@ function InvoiceList({ role, search }: { role: InvoiceRole; search: string }) {
     next.set('page', String(index));
     return path + '?' + next.toString();
   };
+
+  function paginate(event: MouseEvent<HTMLAnchorElement>) {
+    if (role !== 'host' || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    event.preventDefault();
+    const target = event.currentTarget;
+    window.history.pushState(null, '', target.href);
+    setPage(undefined);
+    setError('');
+    setSelectedDraftIds([]);
+    setPageSearch(target.search);
+  }
+
+  function toggleExport(item: InvoiceListItem, checked: boolean) {
+    setSelectedExports(current => {
+      if (!checked) return current.filter(selected => selected.id !== item.id);
+      if (current.length >= invoiceBatchExportLimit || current.some(selected => selected.id === item.id)) return current;
+      const label = item.number
+        ? `${item.number} – ${item.room_code}`
+        : `${item.room_code} (${date(item.from_date)} đến ${date(item.to_date)})`;
+      return [...current, { id: item.id, label }];
+    });
+  }
 
   function filter(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -491,6 +520,9 @@ function InvoiceList({ role, search }: { role: InvoiceRole; search: string }) {
       )}
 
       {role === 'host' && page?.summary && <InvoiceSummaryStrip summary={page.summary} />}
+      {role === 'host' && (selectedExports.length > 0 || page?.items.some(item => item.lifecycle === 'ISSUED')) && (
+        <InvoiceBatchExport selected={selectedExports} onClear={() => setSelectedExports([])} />
+      )}
 
       {role === 'host' && (draftItems.length > 0 || selectedDraftIds.length > 0) && (
         <div className="uc50-batch-bar" role="region" aria-label="Thao tác phát hành hàng loạt">
@@ -575,7 +607,8 @@ function InvoiceList({ role, search }: { role: InvoiceRole; search: string }) {
                     />
                   </th>
                 )}
-                <th>Số hóa đơn</th>
+                {role === 'host' && <th scope="col">Chọn xuất</th>}
+                <th scope="col" className="uc53-invoice-number">Số hóa đơn</th>
                 <th>Phòng</th>
                 {role === 'host' && <th>Khách thuê</th>}
                 <th>Kỳ tính tiền</th>
@@ -584,7 +617,7 @@ function InvoiceList({ role, search }: { role: InvoiceRole; search: string }) {
                 <th>Còn nợ</th>
                 <th>Hạn thanh toán</th>
                 <th>Trạng thái</th>
-                {role === 'host' && <th>Thao tác</th>}
+                <th>Thao tác</th>
               </tr>
             </thead>
             <tbody>
@@ -606,7 +639,18 @@ function InvoiceList({ role, search }: { role: InvoiceRole; search: string }) {
                         )}
                       </td>
                     )}
-                    <td>
+                    {role === 'host' && (
+                      <td className="uc50-select-cell uc53-selection">
+                        {item.lifecycle === 'ISSUED' && (
+                          <input type="checkbox" aria-label={`Chọn xuất hóa đơn ${item.number || item.room_code}`}
+                            checked={selectedExports.some(selected => selected.id === item.id)}
+                            disabled={selectedExports.length >= invoiceBatchExportLimit
+                              && !selectedExports.some(selected => selected.id === item.id)}
+                            onChange={event => toggleExport(item, event.target.checked)} />
+                        )}
+                      </td>
+                    )}
+                    <td className="uc53-invoice-number">
                       <a href={path + '/' + item.id + search}>{item.number || 'Xem hóa đơn'}</a>
                     </td>
                     <td>
@@ -628,8 +672,9 @@ function InvoiceList({ role, search }: { role: InvoiceRole; search: string }) {
                         {rentalNote && <span className="uc52-tag uc52-tag--muted">{rentalNote}</span>}
                       </div>
                     </td>
-                    {role === 'host' && (
-                      <td>
+                    <td>
+                      {item.lifecycle === 'ISSUED' && <IssuedInvoiceExport role={role} id={item.id} />}
+                      {role === 'host' && (
                         <div className="invoice-actions">
                           {item.lifecycle === 'DRAFT' && (
                             <a className="uc50-btn" href={path + '/' + encodeURIComponent(item.id) + '?action=issue'}>
@@ -646,8 +691,8 @@ function InvoiceList({ role, search }: { role: InvoiceRole; search: string }) {
                             </button>
                           )}
                         </div>
-                      </td>
-                    )}
+                      )}
+                    </td>
                   </tr>
                 );
               })}
@@ -657,9 +702,9 @@ function InvoiceList({ role, search }: { role: InvoiceRole; search: string }) {
       )}
       {page && (page.page > 0 || page.hasNext) && (
         <nav aria-label="Trang hóa đơn" className="invoice-actions">
-          {page.page > 0 && <a href={go(page.page - 1)}>Trang trước</a>}
+          {page.page > 0 && <a href={go(page.page - 1)} onClick={paginate}>Trang trước</a>}
           <span>Trang {page.page + 1}</span>
-          {page.hasNext && <a href={go(page.page + 1)}>Trang sau</a>}
+          {page.hasNext && <a href={go(page.page + 1)} onClick={paginate}>Trang sau</a>}
         </nav>
       )}
     </>
@@ -948,6 +993,8 @@ function InvoiceDetail({
                 {invoice.pending_transfer_notice}
               </p>
             )}
+            {invoice.lifecycle === 'ISSUED' && <IssuedInvoiceExport role={role} id={invoice.id} />}
+            {isDraft && <DraftInvoicePreview id={invoice.id} />}
             {role === 'host' && mayTakeCash(invoice) && (
               <button
                 type="button"

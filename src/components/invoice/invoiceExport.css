@@ -1,0 +1,106 @@
+/* Hallmark v2.0.0 | app screen | existing invoice design tokens | export controls and results */
+/* Critique: keep the primary action beside the invoice and keep batch failures beside the ZIP. */
+.invoice-page .invoice-filters :is(select, input:not([type="checkbox"])) {
+  border-color: var(--color-muted);
+}
+
+.uc53-invoice-number {
+  white-space: nowrap;
+}
+
+@media screen and (max-width: 48rem) {
+  .uc53-invoice-number {
+    position: sticky;
+    inset-inline-start: 0;
+    z-index: 1;
+    background: var(--color-surface);
+  }
+}
+
+.uc53-controls {
+  display: grid;
+  gap: var(--space-xs);
+  min-inline-size: 0;
+}
+
+.uc53-controls p,
+.uc53-dialog p {
+  margin: 0;
+}
+
+.uc53-dialog {
+  box-sizing: border-box;
+  inline-size: min(36rem, calc(100% - 2rem));
+  max-block-size: calc(100dvh - 2rem);
+  overflow: auto;
+  padding: var(--space-lg);
+  border: 1px solid var(--color-rule-2);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  color: var(--color-ink);
+  font-family: var(--font-body);
+}
+
+.uc53-dialog[open],
+.uc53-dialog form,
+.uc53-dialog label {
+  display: grid;
+  gap: var(--space-sm);
+}
+
+.uc53-dialog::backdrop {
+  background: var(--color-profile-backdrop);
+}
+
+.uc53-dialog h2 {
+  margin: 0;
+  overflow-wrap: break-word;
+  min-width: 0;
+  text-wrap: balance;
+}
+
+.uc53-dialog select {
+  inline-size: 100%;
+  min-block-size: 44px;
+  padding: var(--space-xs);
+  border: 1px solid var(--color-muted);
+  border-radius: var(--radius-input);
+  background: var(--color-surface);
+  color: var(--color-ink);
+  font: inherit;
+}
+
+.uc53-error {
+  color: var(--color-error);
+}
+
+.uc53-list {
+  max-block-size: 15rem;
+  overflow: auto;
+  margin: 0;
+  padding-inline-start: 1.5rem;
+  overflow-wrap: anywhere;
+}
+
+.uc53-dialog--preview {
+  inline-size: min(64rem, calc(100% - 2rem));
+}
+
+.uc53-dialog iframe {
+  display: block;
+  inline-size: 100%;
+  block-size: 65dvh;
+  border: 1px solid var(--color-rule-2);
+}
+
+.uc53-controls :focus-visible,
+.uc53-dialog :focus-visible,
+.uc53-selection :focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.uc53-controls button:enabled:active,
+.uc53-dialog button:enabled:active {
+  box-shadow: inset 0 0 0 1px var(--color-focus);
+}
