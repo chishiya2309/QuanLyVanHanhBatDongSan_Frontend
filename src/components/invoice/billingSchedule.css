@@ -1,0 +1,115 @@
+/* Hallmark v2.0.0 | scope: app | shape: app screen | theme: existing coral | signature: bảng ngày chốt và thao tác theo kỳ */
+/* Critique: đặt ngày chốt và thao tác trên cùng dòng để Host đối chiếu trước khi lập hóa đơn. */
+.billing-schedule {
+  display: grid;
+  gap: var(--space-lg);
+  inline-size: 100%;
+  min-inline-size: 0;
+  max-inline-size: var(--container);
+  margin-inline: auto;
+  container-type: inline-size;
+}
+.billing-schedule h1 { max-inline-size: none; font-size: var(--text-2xl); text-wrap: balance; }
+.billing-stats {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  margin: 0;
+  border-block: 1px solid var(--color-rule);
+  background: var(--color-surface);
+}
+.billing-stats > div { min-inline-size: 0; padding: var(--space-sm) var(--space-md); }
+.billing-stats > div + div { border-inline-start: 1px solid var(--color-rule); }
+.billing-stats dt { color: var(--color-muted); font-size: var(--text-sm); }
+.billing-stats dd { margin: 0; font-size: var(--text-2xl); font-weight: 600; font-variant-numeric: tabular-nums; }
+.billing-stats [data-status="QUA_HAN"] dd { color: var(--color-status-overdue-ink); }
+.billing-filters, .billing-batch { display: flex; flex-wrap: wrap; align-items: end; gap: var(--space-xs) var(--space-md); }
+.billing-filters > label, .billing-filters form label { display: grid; gap: var(--space-3xs); font-size: var(--text-sm); }
+.billing-filters > label:first-child { min-inline-size: min(13rem, 100%); }
+.billing-filters input[type="number"] { inline-size: 8rem; }
+.billing-filters > details { position: relative; }
+.billing-filters > details fieldset {
+  position: absolute;
+  z-index: var(--z-dropdown);
+  min-inline-size: max-content;
+  margin: var(--space-2xs) 0 0;
+  padding: var(--space-2xs) var(--space-sm);
+  border: 1px solid var(--color-rule);
+  border-radius: var(--radius-input);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-card);
+}
+.billing-filters fieldset label, .billing-check { display: flex; align-items: center; gap: var(--space-xs); min-block-size: 44px; cursor: pointer; }
+.billing-schedule input[type="checkbox"] { accent-color: var(--color-accent-primary); inline-size: 1rem; block-size: 1rem; cursor: pointer; }
+.billing-filters :is(select, input[type="number"], summary), .billing-action {
+  min-block-size: 44px;
+  padding: var(--space-2xs) var(--space-sm);
+  border: 1px solid var(--color-field-border);
+  border-radius: var(--radius-input);
+  background: var(--color-surface);
+  color: var(--color-ink);
+}
+.billing-filters summary { padding-block-start: var(--space-xs); cursor: pointer; }
+.billing-action { display: inline-flex; align-items: center; justify-content: center; font-size: var(--text-sm); font-weight: 600; cursor: pointer; white-space: nowrap; }
+.billing-action:hover:not(:disabled), .billing-filters summary:hover { background: var(--color-surface-hover); }
+.billing-action:active:not(:disabled), .billing-filters summary:active {
+  box-shadow: inset 0 0 0 1px var(--color-focus);
+}
+.billing-schedule :is(button, a, input, select, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+.billing-action:disabled { opacity: .55; cursor: not-allowed; }
+.billing-action--primary { background: var(--color-accent-primary); border-color: var(--color-accent-primary); color: var(--color-white); }
+.billing-action--primary:hover:not(:disabled) { background: var(--color-accent-hover); }
+.billing-batch { align-items: center; }
+.billing-batch > span { color: var(--color-muted); font-size: var(--text-sm); font-variant-numeric: tabular-nums; }
+.billing-batch .billing-action--primary { margin-inline-start: auto; }
+.billing-notice { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-xs) var(--space-md); padding: var(--space-md); background: var(--color-status-info-wash); }
+.billing-notice[role="alert"] { background: var(--color-error-wash); }
+.billing-skeleton { display: grid; gap: var(--space-sm); color: var(--color-muted); }
+.billing-skeleton > span { min-block-size: 3.25rem; background: var(--color-surface-subtle); border-block-end: 1px solid var(--color-rule); }
+.billing-table { overflow-x: auto; }
+.billing-table table { border-collapse: collapse; inline-size: 100%; background: var(--color-surface); }
+.billing-table :is(th, td) { border-block-end: 1px solid var(--color-rule); padding: var(--space-sm) var(--space-xs); text-align: start; }
+.billing-table th { color: var(--color-muted); white-space: nowrap; font-size: var(--text-xs); font-weight: 600; }
+.billing-table td { vertical-align: top; font-size: var(--text-sm); }
+.billing-table td strong { font-weight: 600; }
+.billing-table td:nth-child(4) { white-space: nowrap; }
+.billing-table td:first-child { padding-inline-start: var(--space-sm); }
+.billing-table td:last-child { padding-inline-end: var(--space-sm); }
+.billing-table tbody tr:hover { background: var(--color-paper); }
+.billing-date { font-variant-numeric: tabular-nums; }
+.billing-secondary { display: block; color: var(--color-muted); }
+.billing-status { display: inline-block; padding: var(--space-3xs) var(--space-xs); background: var(--color-surface-subtle); border-radius: var(--radius-input); }
+.billing-status[data-status="QUA_HAN"] { background: var(--color-status-overdue-bg); color: var(--color-status-overdue-ink); }
+.billing-status[data-status="DEN_KY"] { background: var(--color-status-maint-bg); color: var(--color-status-warn-ink); }
+.billing-status[data-status="SAP_DEN_KY"], .billing-status[data-status="DA_CO_BAN_NHAP"] { background: var(--color-status-info-wash); color: var(--color-status-info-ink); }
+.billing-status[data-status="DA_PHAT_HANH"] { background: var(--color-status-success-wash); color: var(--color-status-success); }
+.billing-warning { margin-block-start: var(--space-2xs); padding: var(--space-2xs) var(--space-xs); color: var(--color-status-warn-ink); background: var(--color-status-maint-bg); }
+.billing-cycle-segments { margin-block-start: var(--space-2xs); }
+.billing-cycle-segments summary { display: list-item; align-content: center; min-block-size: 44px; cursor: pointer; color: var(--color-accent-primary); }
+.billing-cycle-segments ul { margin: 0; padding-inline-start: var(--space-md); }
+.billing-handoff-summary { display: grid; gap: var(--space-xs); }
+.billing-handoff-summary li + li { margin-block-start: var(--space-xs); }
+
+@container (max-width: 59rem) {
+  .billing-table thead { position: absolute; clip-path: inset(50%); inline-size: 1px; block-size: 1px; overflow: clip; }
+  .billing-table :is(table, tbody) { display: block; }
+  .billing-table tr { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); padding: var(--space-xs); border-block-end: 1px solid var(--color-rule); }
+  .billing-table td { border: 0; padding: var(--space-2xs) var(--space-xs); font-size: var(--text-md); overflow-wrap: anywhere; }
+  .billing-table td::before { content: attr(data-label); display: block; font-size: var(--text-sm); color: var(--color-muted); }
+  .billing-table td:nth-child(2) { grid-column: 1; grid-row: 1; }
+  .billing-table td:last-child { grid-column: 2; grid-row: 1; justify-self: end; }
+  .billing-table td:first-child { grid-column: 1 / -1; padding-inline-start: var(--space-xs); }
+  .billing-table td:is(:first-child, :last-child, :nth-child(2))::before { content: none; }
+  .billing-table td:first-child:not(:has(input)) { visibility: hidden; padding: 0; }
+  .billing-check { inline-size: 44px; }
+}
+@container (max-width: 32rem) {
+  .billing-stats { display: flex; flex-wrap: wrap; }
+  .billing-stats > div { flex: 1 0 33%; border-block-end: 1px solid var(--color-rule); }
+  .billing-filters > label:first-child { inline-size: 100%; }
+  .billing-filters :is(select, input[type="number"]) { font-size: var(--text-md); }
+  .billing-batch .billing-action--primary { margin-inline-start: 0; }
+  .billing-schedule h1 { font-size: var(--text-xl); }
+}

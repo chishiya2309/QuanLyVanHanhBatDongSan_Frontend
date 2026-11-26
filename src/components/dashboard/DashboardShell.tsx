@@ -21,6 +21,7 @@ interface DashboardShellProps {
   showRentalProfile?: boolean; rentalProfileActive?: boolean; onNavigateRentalProfile?: () => void;
   showProvisionalCharges?: boolean; provisionalChargesActive?: boolean; provisionalChargesPath?: string; onNavigateProvisionalCharges?: () => void;
   invoiceLink?: { path: string; label: string; active: boolean };
+  billingScheduleLink?: { path: string; label: string; active: boolean };
   showPeriodUsages?: boolean; periodUsagesActive?: boolean; onNavigatePeriodUsages?: () => void;
   showMeterReadings?: boolean; meterReadingsActive?: boolean; onNavigateMeterReadings?: () => void;
   showServices?: boolean; servicesActive?: boolean; onNavigateServices?: () => void;
@@ -71,6 +72,7 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
   showRentalProfile = false, rentalProfileActive = false, onNavigateRentalProfile,
   showProvisionalCharges = false, provisionalChargesActive = false, provisionalChargesPath = '/provisional-charges', onNavigateProvisionalCharges,
   invoiceLink,
+  billingScheduleLink,
   showPeriodUsages = false, periodUsagesActive = false, onNavigatePeriodUsages,
   showMeterReadings = false, meterReadingsActive = false, onNavigateMeterReadings,
   showServices = false, servicesActive = false, onNavigateServices,
@@ -230,7 +232,7 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
     setTimeout(() => setToastMessage(null), 3000);
   };
 
-  const isCustomView = invoiceLink?.active || rentalProfileActive || fundingSourcesActive || provisionalChargesActive || meterReadingsActive || hostAccountsActive || assetsActive || propertiesActive || roomsActive || financeActive || expenseBreakdownActive || profitLossActive || occupancyAnalysisActive || occupancyActive || expiringLeasesActive || servicesActive || customersActive || documentTemplatesActive;
+  const isCustomView = billingScheduleLink?.active || invoiceLink?.active || rentalProfileActive || fundingSourcesActive || provisionalChargesActive || meterReadingsActive || hostAccountsActive || assetsActive || propertiesActive || roomsActive || financeActive || expenseBreakdownActive || profitLossActive || occupancyAnalysisActive || occupancyActive || expiringLeasesActive || servicesActive || customersActive || documentTemplatesActive;
 
   return (
     <div className={`dashboard-root${hostAccountsActive ? ' dashboard-root--admin' : ''}${assetsActive ? ' dashboard-root--assets' : ''}`}>
@@ -259,6 +261,7 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
           { label: rentalProfileTitle, path: rentalProfilePath, active: rentalProfileActive, action: onNavigateRentalProfile, show: showRentalProfile },
           { label: 'Tạm tính dịch vụ', path: provisionalChargesPath, active: provisionalChargesActive, action: onNavigateProvisionalCharges, show: showProvisionalCharges },
           ...(invoiceLink ? [{ ...invoiceLink, show: true }] : []),
+          ...(billingScheduleLink ? [{ ...billingScheduleLink, show: true }] : []),
           { label: 'Danh mục dịch vụ', path: '/services', active: servicesActive, action: onNavigateServices, show: showServices },
           { label: 'Cơ sở & Tòa nhà', path: '/properties', active: propertiesActive, action: onNavigateProperties, show: propertiesActive },
           { label: 'Cơ cấu chi phí', path: '/reports/expense-breakdown', active: expenseBreakdownActive,
@@ -285,6 +288,7 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
           onNavigateRentalProfile={mobileNavigate(onNavigateRentalProfile)}
           showProvisionalCharges={showProvisionalCharges}
           invoiceLink={invoiceLink}
+          billingScheduleLink={billingScheduleLink}
           provisionalChargesActive={provisionalChargesActive}
           onNavigateProvisionalCharges={mobileNavigate(onNavigateProvisionalCharges)}
           showMeterReadings={showMeterReadings}
