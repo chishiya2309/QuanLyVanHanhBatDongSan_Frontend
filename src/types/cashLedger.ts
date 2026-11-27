@@ -139,3 +139,58 @@ export interface CashLedgerDetail {
   toSourceName?: string;
   attachments: CashLedgerAttachmentItem[];
 }
+
+export type ManualPaymentMethod = 'CASH' | 'BANK_TRANSFER' | 'PAYOS' | 'OTHER';
+
+export interface ManualCashCategoryOption {
+  code: string;
+  name: string;
+  direction: CashLedgerDirection;
+  affectsProfit: boolean;
+}
+
+export interface ManualCashFundingSourceOption {
+  id: string;
+  name: string;
+  type: 'CASH' | 'BANK';
+  availableBalance: bigint;
+}
+
+export interface ManualCashInitData {
+  idempotencyKey: string;
+  categories: ManualCashCategoryOption[];
+  fundingSources: ManualCashFundingSourceOption[];
+}
+
+export interface StagedAttachmentItem {
+  tempId: string;
+  fileName: string;
+  contentType: string;
+  fileSize: number;
+  previewUrl: string;
+}
+
+export interface CreateManualCashPayload {
+  sourceId: string;
+  amount: number;
+  method: ManualPaymentMethod;
+  occurredAt: string;
+  category: string;
+  direction: CashLedgerDirection;
+  areaId?: string;
+  buildingId?: string;
+  roomId?: string;
+  note?: string;
+  attachmentIds: string[];
+  confirmOverdraft: boolean;
+}
+
+export interface ManualCashConfirmation {
+  entryId: string;
+  direction: CashLedgerDirection;
+  amount: bigint;
+  affectsProfit: boolean;
+  resultingSourceBalance: bigint;
+  attachmentCount: number;
+  reversalHint: string;
+}
