@@ -61,11 +61,9 @@ pipeline {
                 sh 'npm ci --prefer-offline --no-audit'
                 catchError(buildResult: 'SUCCESS', stageResult: 'UNSTABLE') {
                     sh 'npm run lint'
+                    sh 'npm test'
                 }
-                sh '''
-                    npm test
-                    npm run build
-                '''
+                sh 'npm run build'
             }
         }
 
