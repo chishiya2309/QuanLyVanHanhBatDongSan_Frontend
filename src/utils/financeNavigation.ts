@@ -8,7 +8,7 @@ export type FinancialLedgerFilter = {
 export const financePath = '/reports/finance';
 export const ledgerPath = '/cash-ledger';
 
-const filterKeys = ['fromDate', 'toDate', 'areaId', 'buildingId', 'roomId', 'sourceId', 'dimension', 'groupKey'] as const;
+const filterKeys = ['fromDate', 'toDate', 'areaId', 'buildingId', 'roomId', 'sourceId', 'dimension', 'groupKey', 'direction', 'origin', 'scopeType', 'affectsProfit'] as const;
 export type FinanceFilter = Partial<Record<typeof filterKeys[number], string>> & { transactionCategory: string[] };
 export type FinanceRoute = {
   kind: 'finance' | 'cash-ledger';
