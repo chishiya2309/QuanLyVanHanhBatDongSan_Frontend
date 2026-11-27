@@ -1,10 +1,12 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useCashLedger } from '../../hooks/useCashLedger';
 import { returnToFinance, type FinanceRoute } from '../../utils/financeNavigation';
 import { CashLedgerDetailDrawer } from './CashLedgerDetailDrawer';
 import { CashLedgerFilters } from './CashLedgerFilters';
 import { CashLedgerSummaryCards } from './CashLedgerSummaryCards';
 import { CashLedgerTable } from './CashLedgerTable';
+import { CashLedgerToast, type ToastNotification } from './CashLedgerToast';
+import { ManualCashDrawer } from './ManualCashDrawer';
 import './cashLedger.css';
 
 interface Props {
@@ -40,7 +42,11 @@ export const CashLedgerPage: React.FC<Props> = ({
     resetFilters,
     openDetail,
     closeDetail,
+    reload,
   } = useCashLedger(route, onSessionExpired);
+
+  const [manualOpen, setManualOpen] = useState(false);
+  const [toast, setToast] = useState<ToastNotification | null>(null);
 
   const hasDrillDownBack = Boolean(route.reportSearch || route.profitLossSearch || route.expenseBreakdownSearch);
 
@@ -64,15 +70,24 @@ export const CashLedgerPage: React.FC<Props> = ({
           </p>
         </div>
 
-        {hasDrillDownBack && (
+        <div className="cl-header-actions">
+          {hasDrillDownBack && (
+            <button
+              type="button"
+              className="cl-back-link"
+              onClick={() => onNavigate(returnToFinance(route))}
+            >
+              Quay lại báo cáo
+            </button>
+          )}
           <button
             type="button"
-            className="cl-back-link"
-            onClick={() => onNavigate(returnToFinance(route))}
+            className="cl-btn cl-btn-primary"
+            onClick={() => setManualOpen(true)}
           >
-            Quay lại báo cáo
+            Thêm giao dịch thu chi
           </button>
-        )}
+        </div>
       </header>
 
       {data && (
@@ -119,6 +134,27 @@ export const CashLedgerPage: React.FC<Props> = ({
         onSelectRelatedEntry={openDetail}
         onOpenInvoice={onOpenInvoice}
       />
+
+      <ManualCashDrawer
+        open={manualOpen}
+        onClose={() => setManualOpen(false)}
+        onSuccess={(confirmation) => {
+          setManualOpen(false);
+          setToast({
+            id: confirmation.entryId,
+            tone: 'success',
+            title:
+              confirmation.direction === 'IN'
+                ? 'Ghi nhận giao dịch thu tiền thành công.'
+                : 'Ghi nhận giao dịch chi tiền thành công.',
+            detail: confirmation.reversalHint,
+          });
+          reload();
+        }}
+        onSessionExpired={onSessionExpired}
+      />
+
+      <CashLedgerToast toast={toast} onDismiss={() => setToast(null)} />
     </section>
   );
 };
