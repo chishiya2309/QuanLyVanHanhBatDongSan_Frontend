@@ -8,6 +8,12 @@ import type {
   CashLedgerFilterState,
   CashLedgerPageData,
   CashLedgerSummary,
+  CreateManualCashPayload,
+  ManualCashCategoryOption,
+  ManualCashConfirmation,
+  ManualCashFundingSourceOption,
+  ManualCashInitData,
+  StagedAttachmentItem,
 } from '../types/cashLedger';
 import type { FinancialLedgerFilter } from '../utils/financeNavigation';
 import { appendFinancialParams } from '../utils/financeNavigation';
@@ -20,10 +26,12 @@ const FORBIDDEN_MESSAGE = 'Bạn không có quyền truy cập vào sổ thu chi
 
 export class CashLedgerApiError extends Error {
   readonly status: number;
+  readonly code?: string;
 
-  constructor(status: number, message: string) {
+  constructor(status: number, message: string, code?: string) {
     super(message);
     this.status = status;
+    this.code = code;
   }
 }
 
@@ -267,4 +275,148 @@ export async function fetchAttachmentBlob(
   }
   const blob = await response.blob();
   return { blob, objectUrl: URL.createObjectURL(blob) };
+}
+
+function decodeManualCategory(value: unknown): ManualCashCategoryOption {
+  const row = asRecord(value);
+  return {
+    code: asText(row.code),
+    name: asText(row.name),
+    direction: decodeDirection(row.direction),
+    affectsProfit: asBool(row.affectsProfit),
+  };
+}
+
+function decodeManualFundingSource(value: unknown): ManualCashFundingSourceOption {
+  const row = asRecord(value);
+  const type = row.type === 'BANK' ? 'BANK' : 'CASH';
+  return {
+    id: asText(row.id),
+    name: asText(row.name),
+    type,
+    availableBalance: decodeFinanceMoney(row.availableBalance),
+  };
+}
+
+function decodeManualCashInit(value: unknown): ManualCashInitData {
+  const row = asRecord(value);
+  return {
+    idempotencyKey: asText(row.idempotencyKey),
+    categories: asList(row.categories, decodeManualCategory),
+    fundingSources: asList(row.fundingSources, decodeManualFundingSource),
+  };
+}
+
+function decodeStagedAttachment(value: unknown): StagedAttachmentItem {
+  const row = asRecord(value);
+  return {
+    tempId: asText(row.tempId),
+    fileName: asText(row.fileName),
+    contentType: asText(row.contentType),
+    fileSize: asCount(row.fileSize),
+    previewUrl: asText(row.previewUrl),
+  };
+}
+
+function decodeManualCashConfirmation(value: unknown): ManualCashConfirmation {
+  const row = asRecord(value);
+  return {
+    entryId: asText(row.entryId),
+    direction: decodeDirection(row.direction),
+    amount: decodeFinanceMoney(row.amount),
+    affectsProfit: asBool(row.affectsProfit),
+    resultingSourceBalance: decodeFinanceMoney(row.resultingSourceBalance),
+    attachmentCount: asCount(row.attachmentCount),
+    reversalHint: asText(row.reversalHint),
+  };
+}
+
+async function parseErrorResponse(response: Response, fallbackMessage: string): Promise<CashLedgerApiError> {
+  const body: unknown = await response.json().catch(() => null);
+  const serverMessage = isRecord(body) && typeof body.message === 'string' ? body.message : '';
+  const serverCode = isRecord(body) && typeof body.code === 'string' ? body.code : undefined;
+  if (response.status === 403) {
+    return new CashLedgerApiError(403, serverMessage || FORBIDDEN_MESSAGE, serverCode);
+  }
+  return new CashLedgerApiError(response.status, serverMessage || fallbackMessage, serverCode);
+}
+
+export function fetchManualCashInit(signal?: AbortSignal): Promise<ManualCashInitData> {
+  return requestJson(`${BASE_URL}/cash-ledger/manual/init`, decodeManualCashInit, signal);
+}
+
+export async function stageManualAttachments(files: File[], signal?: AbortSignal): Promise<StagedAttachmentItem[]> {
+  const formData = new FormData();
+  for (const file of files) {
+    formData.append('files', file);
+  }
+  const response = await authenticatedFetch(`${BASE_URL}/cash-ledger/manual/attachments`, {
+    method: 'POST',
+    signal,
+    credentials: 'include',
+    cache: 'no-store',
+    body: formData,
+  });
+  if (!response.ok) {
+    throw await parseErrorResponse(response, 'Không thể tải lên tệp chứng từ.');
+  }
+  const parsed = asRecord(parse(await response.text()));
+  if (asCount(parsed.status) !== 200) invalid();
+  return asList(parsed.data, decodeStagedAttachment);
+}
+
+export async function fetchStagedAttachmentPreviewUrl(tempId: string, signal?: AbortSignal): Promise<string> {
+  const response = await authenticatedFetch(
+    `${BASE_URL}/cash-ledger/manual/attachments/${encodeURIComponent(tempId)}/preview`,
+    {
+      signal,
+      credentials: 'include',
+      cache: 'no-store',
+    },
+  );
+  if (!response.ok) {
+    throw await parseErrorResponse(response, 'Không thể tải xem trước chứng từ.');
+  }
+  const blob = await response.blob();
+  return URL.createObjectURL(blob);
+}
+
+export async function discardStagedAttachments(tempIds: string[]): Promise<void> {
+  if (tempIds.length === 0) return;
+  const response = await authenticatedFetch(`${BASE_URL}/cash-ledger/manual/attachments`, {
+    method: 'DELETE',
+    credentials: 'include',
+    cache: 'no-store',
+    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+    body: JSON.stringify(tempIds),
+    keepalive: true,
+  });
+  if (!response.ok && response.status !== 404) {
+    throw await parseErrorResponse(response, 'Không thể dọn dẹp chứng từ tạm.');
+  }
+}
+
+export async function createManualCashEntry(
+  idempotencyKey: string,
+  payload: CreateManualCashPayload,
+  signal?: AbortSignal,
+): Promise<ManualCashConfirmation> {
+  const response = await authenticatedFetch(`${BASE_URL}/cash-ledger/manual`, {
+    method: 'POST',
+    signal,
+    credentials: 'include',
+    cache: 'no-store',
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+      'Idempotency-Key': idempotencyKey,
+    },
+    body: JSON.stringify(payload),
+  });
+  if (!response.ok) {
+    throw await parseErrorResponse(response, 'Không thể lưu giao dịch thu chi thủ công.');
+  }
+  const parsed = asRecord(parse(await response.text()));
+  if (asCount(parsed.status) !== 200) invalid();
+  return decodeManualCashConfirmation(parsed.data);
 }

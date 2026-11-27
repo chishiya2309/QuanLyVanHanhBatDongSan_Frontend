@@ -1,11 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   CashLedgerApiError,
+  createManualCashEntry,
   decodeCashLedgerDetail,
   decodeCashLedgerPage,
+  discardStagedAttachments,
   fetchAttachmentBlob,
   fetchCashLedger,
   fetchCashLedgerDetail,
+  fetchManualCashInit,
+  stageManualAttachments,
 } from '../src/services/cashLedgerApi';
 import { authenticatedFetch } from '../src/services/sessionClient';
 
@@ -136,5 +140,77 @@ describe('cashLedgerApi', () => {
     });
     expect(detail.fromSourceName).toBe('Tiền mặt');
     expect(detail.toSourceName).toBe('Vietcombank');
+  });
+
+  it('fetches manual init, stages/discards attachments, and handles 409 overdraft', async () => {
+    vi.mocked(authenticatedFetch).mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          status: 200,
+          data: {
+            idempotencyKey: 'idem-1',
+            categories: [{ code: 'REPAIR', name: 'Sửa chữa', direction: 'OUT', affectsProfit: true }],
+            fundingSources: [{ id: 'src-1', name: 'Quỹ tiền mặt', type: 'CASH', availableBalance: 1000000 }],
+          },
+        }),
+        { status: 200 },
+      ),
+    );
+    const init = await fetchManualCashInit();
+    expect(init.idempotencyKey).toBe('idem-1');
+    expect(init.fundingSources[0].availableBalance).toBe(1000000n);
+
+    vi.mocked(authenticatedFetch).mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          status: 200,
+          data: [
+            {
+              tempId: 'tmp-1',
+              fileName: 'hoa-don.jpg',
+              contentType: 'image/jpeg',
+              fileSize: 2048,
+              previewUrl: '/api/v1/cash-ledger/manual/attachments/tmp-1/preview',
+            },
+          ],
+        }),
+        { status: 200 },
+      ),
+    );
+    const staged = await stageManualAttachments([new File(['abc'], 'hoa-don.jpg', { type: 'image/jpeg' })]);
+    expect(staged[0].tempId).toBe('tmp-1');
+
+    vi.mocked(authenticatedFetch).mockResolvedValueOnce(new Response(JSON.stringify({ status: 200 }), { status: 200 }));
+    await discardStagedAttachments(['tmp-1']);
+
+    vi.mocked(authenticatedFetch).mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          status: 409,
+          code: 'OVERDRAFT_CONFIRMATION_REQUIRED',
+          message: 'Số tiền chi vượt quá số dư hiện có của nguồn tiền.',
+        }),
+        { status: 409 },
+      ),
+    );
+
+    try {
+      await createManualCashEntry('idem-1', {
+        sourceId: 'src-1',
+        amount: 2000000,
+        method: 'CASH',
+        occurredAt: '2026-11-27T10:00:00.000Z',
+        category: 'REPAIR',
+        direction: 'OUT',
+        attachmentIds: [],
+        confirmOverdraft: false,
+      });
+      expect.fail('Expected 409 error');
+    } catch (err) {
+      expect(err).toBeInstanceOf(CashLedgerApiError);
+      const apiErr = err as CashLedgerApiError;
+      expect(apiErr.status).toBe(409);
+      expect(apiErr.code).toBe('OVERDRAFT_CONFIRMATION_REQUIRED');
+    }
   });
 });
