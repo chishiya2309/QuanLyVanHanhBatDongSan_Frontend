@@ -85,7 +85,7 @@ export const RentalContractDetailDrawer: React.FC<RentalContractDetailDrawerProp
                   padding: '6px 12px',
                 }}
                 onClick={() => onExport(contract)}
-                title="Xuất hợp đồng thuê (UC34)"
+                title="Xuất hợp đồng thuê"
               >
                 📥 Xuất hợp đồng
               </button>
@@ -458,7 +458,7 @@ export const RentalContractDetailDrawer: React.FC<RentalContractDetailDrawerProp
                 onClose();
                 onHandover(contract);
               }}
-              title="Ghi nhận hoặc xem biên bản bàn giao nhận phòng (UC32)"
+              title="Ghi nhận hoặc xem biên bản bàn giao nhận phòng"
             >
               Bàn giao nhận phòng
             </button>
@@ -478,7 +478,7 @@ export const RentalContractDetailDrawer: React.FC<RentalContractDetailDrawerProp
                 onClose();
                 onMoveOutHandover(contract);
               }}
-              title="Ghi nhận đối soát bàn giao trả phòng (UC33)"
+              title="Ghi nhận đối soát bàn giao trả phòng"
             >
               Bàn giao trả phòng
             </button>

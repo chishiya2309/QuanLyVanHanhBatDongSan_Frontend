@@ -76,12 +76,6 @@
 .asset-skeleton-row { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: var(--space-lg); padding-block: var(--space-lg); border-bottom: 1px solid var(--color-rule); }
 .asset-skeleton-row span { height: 1rem; border-radius: var(--radius-input); background: var(--color-paper-3); }
 .asset-mobile-nav { display: none; }
-.dashboard-root--assets .dash-canvas { min-width: 0; }
-.dashboard-root--assets .dash-nav-item { min-height: 44px; }.dashboard-root--assets .dash-nav-header { text-transform: none; letter-spacing: normal; }
-.dashboard-root--assets .logout-btn { min-height: 44px; height: auto; }
-.dashboard-root--assets .dash-brand { min-height: 44px; }
-.dashboard-root--assets .user-role-tag { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
-.dashboard-root--assets .user-info { min-width: 0; overflow: hidden; }
 @media (max-width: 1199px) {
   .asset-table-wrap { display: none; }.asset-mobile-records { display: grid; gap: var(--space-md); }
   .asset-mobile-records li { min-width: 0; padding: var(--space-lg); border: 1px solid var(--color-rule); border-radius: var(--radius-subcard); background: var(--color-surface); }

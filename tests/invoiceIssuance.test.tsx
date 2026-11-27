@@ -251,7 +251,7 @@ it('requires past-due reason (3a), cash-only confirmation (2b), and handles 0-VN
 
     render(<InvoicePage accountRole="HOST" pathname={hostEndpoint} search="?action=issue" />);
     await screen.findByText(/Hóa đơn kỳ cuối \/ hợp đồng đã kết thúc/);
-    expect(screen.getByRole('link', { name: 'Cập nhật tài khoản nhận tiền (UC42)' }).getAttribute('href'))
+    expect(screen.getByRole('link', { name: 'Cập nhật tài khoản nhận tiền' }).getAttribute('href'))
       .toContain('/rooms/' + roomId + '/payment-policy');
 
     fireEvent.click(screen.getByRole('button', { name: 'Xác nhận phát hành' }));

@@ -301,7 +301,7 @@ export const TransferRoomModal: React.FC<TransferRoomModalProps> = ({
                 lineHeight: 1.5,
               }}
             >
-              <strong>Quy trình chuyển phòng (UC30):</strong> Phòng cũ sẽ chuyển về trạng thái <strong>Trống (VACANT)</strong>,
+              <strong>Quy trình chuyển phòng:</strong> Phòng cũ sẽ chuyển về trạng thái <strong>Trống (VACANT)</strong>,
               phòng mới chuyển sang <strong>Đang thuê (OCCUPIED)</strong>. Hệ thống lưu trữ chỉ số điện nước bàn giao và lịch sử lượt ở,
               hợp đồng tiếp tục duy trì trạng thái <strong>Đang hiệu lực (ACTIVE)</strong>.
             </div>

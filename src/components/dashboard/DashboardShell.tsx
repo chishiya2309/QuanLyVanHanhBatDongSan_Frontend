@@ -9,6 +9,8 @@ import {
 } from '../../mocks/dashboardMockData';
 import { Topbar } from './Topbar';
 import { Sidebar } from './Sidebar';
+import { HostNotificationDrawer } from './HostNotificationDrawer';
+import { useHostNotifications } from '../../hooks/useAutoDraftBilling';
 import { QuickActionBar } from './QuickActionBar';
 import { MetricSection } from './MetricSection';
 import { RevenueCashflowChart } from './RevenueCashflowChart';
@@ -20,8 +22,9 @@ interface DashboardShellProps {
   showFundingSources?: boolean; fundingSourcesActive?: boolean; onNavigateFundingSources?: () => void;
   showRentalProfile?: boolean; rentalProfileActive?: boolean; onNavigateRentalProfile?: () => void;
   showProvisionalCharges?: boolean; provisionalChargesActive?: boolean; provisionalChargesPath?: string; onNavigateProvisionalCharges?: () => void;
-  invoiceLink?: { path: string; label: string; active: boolean };
-  billingScheduleLink?: { path: string; label: string; active: boolean };
+  invoiceLink?: { path: string; label: string; active: boolean; onNavigate?: () => void };
+  billingScheduleLink?: { path: string; label: string; active: boolean; onNavigate?: () => void };
+  onNavigatePath?: (path: string) => void;
   showPeriodUsages?: boolean; periodUsagesActive?: boolean; onNavigatePeriodUsages?: () => void;
   showMeterReadings?: boolean; meterReadingsActive?: boolean; onNavigateMeterReadings?: () => void;
   showServices?: boolean; servicesActive?: boolean; onNavigateServices?: () => void;
@@ -31,6 +34,9 @@ interface DashboardShellProps {
   children?: React.ReactNode;
   hostAccountsActive?: boolean;
   showHostAccounts?: boolean;
+  showAutoDraftJobs?: boolean;
+  autoDraftJobsActive?: boolean;
+  onNavigateAutoDraftJobs?: () => void;
   assetsActive?: boolean;
   showAssets?: boolean;
   onNavigateAssets?: () => void;
@@ -73,6 +79,7 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
   showProvisionalCharges = false, provisionalChargesActive = false, provisionalChargesPath = '/provisional-charges', onNavigateProvisionalCharges,
   invoiceLink,
   billingScheduleLink,
+  onNavigatePath,
   showPeriodUsages = false, periodUsagesActive = false, onNavigatePeriodUsages,
   showMeterReadings = false, meterReadingsActive = false, onNavigateMeterReadings,
   showServices = false, servicesActive = false, onNavigateServices,
@@ -82,6 +89,9 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
   children,
   hostAccountsActive = false,
   showHostAccounts = false,
+  showAutoDraftJobs = false,
+  autoDraftJobsActive = false,
+  onNavigateAutoDraftJobs,
   assetsActive = false,
   showAssets = false,
   onNavigateAssets,
@@ -128,6 +138,18 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
   }, []);
   const mobileNavigate = (action?: () => void) => () => { setMobileOpen(false); action?.(); };
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const hostNotifications = useHostNotifications(user.role === 'HOST');
+
+  useEffect(() => {
+    const openDrawer = () => {
+      if (user.role === 'HOST') {
+        setNotificationsOpen(true);
+      }
+    };
+    window.addEventListener('rentops:open-host-notifications', openDrawer);
+    return () => window.removeEventListener('rentops:open-host-notifications', openDrawer);
+  }, [user.role]);
 
   // Formatted Vietnamese Date
   const todayFormatted = useMemo(() => {
@@ -232,10 +254,10 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
     setTimeout(() => setToastMessage(null), 3000);
   };
 
-  const isCustomView = billingScheduleLink?.active || invoiceLink?.active || rentalProfileActive || fundingSourcesActive || provisionalChargesActive || meterReadingsActive || hostAccountsActive || assetsActive || propertiesActive || roomsActive || financeActive || expenseBreakdownActive || profitLossActive || occupancyAnalysisActive || occupancyActive || expiringLeasesActive || servicesActive || customersActive || documentTemplatesActive;
+  const isCustomView = autoDraftJobsActive || billingScheduleLink?.active || invoiceLink?.active || rentalProfileActive || fundingSourcesActive || provisionalChargesActive || meterReadingsActive || hostAccountsActive || assetsActive || propertiesActive || roomsActive || financeActive || expenseBreakdownActive || profitLossActive || occupancyAnalysisActive || occupancyActive || expiringLeasesActive || servicesActive || customersActive || documentTemplatesActive;
 
   return (
-    <div className={`dashboard-root${hostAccountsActive ? ' dashboard-root--admin' : ''}${assetsActive ? ' dashboard-root--assets' : ''}`}>
+    <div className={`dashboard-root${hostAccountsActive || autoDraftJobsActive ? ' dashboard-root--admin' : ''}${assetsActive ? ' dashboard-root--assets' : ''}`}>
       {/* Top Navigation */}
       <Topbar
         user={user}
@@ -244,9 +266,27 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
         onLogout={onLogout}
         onOpenProfile={onOpenProfile}
         showPropertySwitcher={!isCustomView}
-        showNotifications={!isCustomView}
+        showNotifications={user.role === 'HOST'}
+        unreadNotificationsCount={hostNotifications.unreadCount}
+        notificationsOpen={notificationsOpen}
+        onOpenNotifications={() => setNotificationsOpen(true)}
         onNavigateOverview={onNavigateOverview}
       />
+      {user.role === 'HOST' && (
+        <HostNotificationDrawer
+          open={notificationsOpen}
+          items={hostNotifications.items}
+          loading={hostNotifications.loading}
+          error={hostNotifications.error}
+          hasNext={hostNotifications.hasNext}
+          markingId={hostNotifications.markingId}
+          onClose={() => setNotificationsOpen(false)}
+          onMarkAsRead={(id) => void hostNotifications.markAsRead(id)}
+          onLoadMore={hostNotifications.loadMore}
+          onRefresh={hostNotifications.refresh}
+          onNavigate={onNavigatePath}
+        />
+      )}
 
       {/* Main Layout: Sidebar + Canvas */}
       <button type="button" className="dash-mobile-menu-toggle" aria-expanded={mobileOpen} aria-controls="rentops-navigation" onClick={() => setMobileOpen((open) => !open)}>Điều hướng</button>
@@ -260,8 +300,8 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
           { label: 'Quản lý nguồn tiền', path: '/funding-sources', active: fundingSourcesActive, action: onNavigateFundingSources, show: showFundingSources },
           { label: rentalProfileTitle, path: rentalProfilePath, active: rentalProfileActive, action: onNavigateRentalProfile, show: showRentalProfile },
           { label: 'Tạm tính dịch vụ', path: provisionalChargesPath, active: provisionalChargesActive, action: onNavigateProvisionalCharges, show: showProvisionalCharges },
-          ...(invoiceLink ? [{ ...invoiceLink, show: true }] : []),
-          ...(billingScheduleLink ? [{ ...billingScheduleLink, show: true }] : []),
+          ...(invoiceLink ? [{ ...invoiceLink, action: invoiceLink.onNavigate, show: true }] : []),
+          ...(billingScheduleLink ? [{ ...billingScheduleLink, action: billingScheduleLink.onNavigate, show: true }] : []),
           { label: 'Danh mục dịch vụ', path: '/services', active: servicesActive, action: onNavigateServices, show: showServices },
           { label: 'Cơ sở & Tòa nhà', path: '/properties', active: propertiesActive, action: onNavigateProperties, show: propertiesActive },
           { label: 'Cơ cấu chi phí', path: '/reports/expense-breakdown', active: expenseBreakdownActive,
@@ -287,8 +327,8 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
           rentalProfileActive={rentalProfileActive}
           onNavigateRentalProfile={mobileNavigate(onNavigateRentalProfile)}
           showProvisionalCharges={showProvisionalCharges}
-          invoiceLink={invoiceLink}
-          billingScheduleLink={billingScheduleLink}
+          invoiceLink={invoiceLink ? { ...invoiceLink, onNavigate: mobileNavigate(invoiceLink.onNavigate) } : undefined}
+          billingScheduleLink={billingScheduleLink ? { ...billingScheduleLink, onNavigate: mobileNavigate(billingScheduleLink.onNavigate) } : undefined}
           provisionalChargesActive={provisionalChargesActive}
           onNavigateProvisionalCharges={mobileNavigate(onNavigateProvisionalCharges)}
           showMeterReadings={showMeterReadings}
@@ -304,6 +344,9 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
           onNavigateServices={mobileNavigate(onNavigateServices)}
           showHostAccounts={showHostAccounts}
           hostAccountsActive={hostAccountsActive}
+          showAutoDraftJobs={showAutoDraftJobs}
+          autoDraftJobsActive={autoDraftJobsActive}
+          onNavigateAutoDraftJobs={mobileNavigate(onNavigateAutoDraftJobs)}
           showAssets={showAssets}
           assetsActive={assetsActive}
           onNavigateAssets={mobileNavigate(onNavigateAssets)}

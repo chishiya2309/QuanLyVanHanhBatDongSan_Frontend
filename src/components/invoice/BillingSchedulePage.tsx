@@ -11,8 +11,10 @@ import {
 } from '../../utils/billingScheduleNavigation';
 import { buildRentalContractUrl } from '../../utils/rentalContractNavigation';
 import { invoicePath } from '../../services/invoiceApi';
+import { useAutoDraftSettings } from '../../hooks/useAutoDraftBilling';
 import { draftDate, draftError } from './invoiceDraftFormat';
 import './billingSchedule.css';
+import './autoDraftBilling.css';
 
 const statusLabels: Record<BillingScheduleStatus, string> = {
   CHUA_DEN_KY: 'Chưa đến kỳ', SAP_DEN_KY: 'Sắp đến kỳ', DEN_KY: 'Đến kỳ',
@@ -54,7 +56,8 @@ function ScheduleAction({ item, onCreate }: { item: BillingScheduleItem; onCreat
 
 type ScheduleResult = { key: string; data: BillingScheduleOverview } | { key: string; error: string };
 
-export function BillingSchedulePage({ accountId }: { accountId: string }) {
+export function BillingSchedulePage({ accountId, onOpenNotifications }: { accountId: string; onOpenNotifications?: () => void }) {
+  const autoDraft = useAutoDraftSettings();
   const [search, setSearch] = useState(() => window.location.search);
   const [selected, setSelected] = useState<string[]>([]);
   const [result, setResult] = useState<ScheduleResult>();
@@ -126,6 +129,50 @@ export function BillingSchedulePage({ accountId }: { accountId: string }) {
 
   return <section className="billing-schedule" aria-labelledby="billing-schedule-title">
     <header><h1 id="billing-schedule-title">Lịch lập hóa đơn</h1></header>
+    <section className="uc55-settings-bar" aria-label="Cấu hình tự động lập hóa đơn nháp">
+      <div className="uc55-settings-copy">
+        <div className="uc55-settings-title-row">
+          <strong id="uc55-auto-draft-label">Tự động lập hóa đơn nháp khi đến kỳ</strong>
+          <span className={`uc55-badge ${autoDraft.settings?.autoDraftEnabled ? 'uc55-badge--accent' : 'uc55-badge--neutral'}`}>
+            {autoDraft.loading ? 'Đang tải' : autoDraft.settings?.autoDraftEnabled ? 'Đang bật' : 'Đang tắt'}
+          </span>
+        </div>
+        <p className="uc55-settings-desc">
+          {autoDraft.settings?.autoDraftEnabled
+            ? 'Hệ thống tự động quét và tạo hóa đơn nháp lúc 01:00 AM (UTC+7) hằng ngày, hỗ trợ bù kỳ và tách lát cắt chuyển phòng giữa kỳ.'
+            : 'Đang tắt tự động: bạn tự theo dõi lịch đến kỳ tại đây và lập hóa đơn nháp thủ công khi cần.'}
+        </p>
+        {autoDraft.settings?.updatedAt && (
+          <p className="uc55-settings-time">
+            Cập nhật lần cuối: {new Intl.DateTimeFormat('vi-VN', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(autoDraft.settings.updatedAt))}
+          </p>
+        )}
+        {autoDraft.error && (
+          <p className="uc55-settings-error" role="alert">{autoDraft.error}</p>
+        )}
+      </div>
+      <div className="uc55-settings-actions">
+        {onOpenNotifications && (
+          <button type="button" className="uc55-btn uc55-btn--ghost" onClick={onOpenNotifications}>
+            Hòm thư tổng kết
+          </button>
+        )}
+        <button
+          type="button"
+          role="switch"
+          aria-labelledby="uc55-auto-draft-label"
+          aria-checked={Boolean(autoDraft.settings?.autoDraftEnabled)}
+          disabled={autoDraft.loading || autoDraft.saving || !autoDraft.settings}
+          className={`uc55-switch${autoDraft.settings?.autoDraftEnabled ? ' is-checked' : ''}`}
+          onClick={() => void autoDraft.toggle(!autoDraft.settings?.autoDraftEnabled)}
+        >
+          <span className="uc55-switch-thumb" aria-hidden="true" />
+          <span className="uc55-switch-text">
+            {autoDraft.saving ? 'Đang lưu...' : autoDraft.settings?.autoDraftEnabled ? 'Tắt tự động' : 'Bật tự động'}
+          </span>
+        </button>
+      </div>
+    </section>
     <dl className="billing-stats" aria-label="Tổng hợp lịch lập hóa đơn" aria-busy={!current}>
       {summaryFields.map(([field, status]) => <div key={field} data-status={status}>
         <dt>{statusLabels[status]}</dt><dd>{data?.summary[field] ?? '—'}</dd>

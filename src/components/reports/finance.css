@@ -34,10 +34,11 @@ html:has(.finance-page), body:has(.finance-page) { overflow-x: clip; }
   padding: var(--space-md);
 }
 .finance-panel { display: grid; gap: var(--space-sm); }
-.finance-filter-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(min(100%, 9.5rem),1fr)); gap: var(--space-sm); }
+.finance-filter-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 11.5rem), 1fr)); gap: var(--space-md); }
 .finance-filters, .finance-field { display: grid; gap: var(--space-xs); }
 .finance-filters { gap: var(--space-sm); }
 .finance-field { min-width: 0; font-size: var(--text-sm); }
+.finance-field :is(select, input[type=date]) { width: 100%; min-width: 0; box-sizing: border-box; }
 .finance-page :is(button, select, input[type=date], summary) {
   min-height: 36px;
   max-width: 100%;
