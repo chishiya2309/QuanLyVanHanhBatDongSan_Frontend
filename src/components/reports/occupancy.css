@@ -30,7 +30,9 @@
 .occupancy label { display: grid; gap: var(--space-2xs); font-size: var(--text-sm); }
 .occupancy button, .occupancy select {
   min-height: 44px;
+  min-width: 0;
   max-width: 100%;
+  box-sizing: border-box;
   padding: var(--space-2xs) var(--space-sm);
   border: 1px solid var(--color-field-border);
   border-radius: var(--radius-input);

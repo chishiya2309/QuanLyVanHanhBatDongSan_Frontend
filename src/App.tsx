@@ -23,6 +23,12 @@ import type { AuthenticatedUserResponse } from './types/auth';
 import type { UserProfile } from './types/dashboard';
 import { profileMessages } from './types/profile';
 import { HostAccountsPage, HostAccountsForbidden } from './components/admin/HostAccountsPage';
+import { resolveAuthDocumentTitle, resolveDashboardDocumentTitle } from './utils/documentTitle';
+import {
+  AutoDraftJobsForbidden,
+  AutoDraftJobsPage,
+} from './components/admin/AutoDraftJobsPage';
+import { AUTO_DRAFT_JOBS_PATH, isAutoDraftJobsPath } from './types/autoDraftBilling';
 import { parseHostAccountRoute } from './utils/hostAccountNavigation';
 import { HOST_ACCOUNTS_PATH, hostAccountMessages, type HostAccountRoute } from './types/hostAccounts';
 import { AssetsPage, AssetsForbidden } from './components/assets/AssetsPage';
@@ -96,6 +102,7 @@ function isProtectedPath(pathname: string, search: string): boolean {
   return Boolean(
     isInvoicePath(pathname)
     || isBillingSchedulePath(pathname)
+    || isAutoDraftJobsPath(pathname)
     || isRentalProfilePath(pathname)
     || parseFundingRoute(pathname, search)
     || parseProvisionalRoute(pathname, search)
@@ -153,6 +160,7 @@ function AuthenticatedDashboard({
   onNavigateProvisional,
   customerRoute,
   onNavigateCustomers,
+  onNavigatePath,
   registerGuard,
 }: {
   user: AuthenticatedUserResponse;
@@ -192,9 +200,41 @@ function AuthenticatedDashboard({
   onNavigateProvisional: (url: string) => void;
   customerRoute: CustomerRoute | null;
   onNavigateCustomers: (url: string, replace?: boolean) => void;
+  onNavigatePath: (url: string) => void;
   registerGuard: NavigationGuardRegistration;
 }) {
   const profileController = useProfile(onSessionExpired);
+
+  const occupancyKind = occupancyRoute && 'kind' in occupancyRoute ? occupancyRoute.kind : null;
+  const currentPathname = window.location.pathname;
+  useEffect(() => {
+    document.title = resolveDashboardDocumentTitle({
+      pathname: currentPathname,
+      role: user.role,
+      templateActive: templateRoute !== null,
+      fundingActive: fundingRoute !== null,
+      rentalProfileActive,
+      provisionalActive: provisionalRoute !== null,
+      periodUsageActive: periodUsageRoute !== null,
+      meterActive: meterRoute !== null,
+      customerActive: customerRoute !== null,
+      policyActive: policyRoute !== null,
+      catalogActive: catalogRoute !== null,
+      contractActive: contractRoute !== null,
+      rentalContractActive: rentalContractRoute !== null,
+      propertiesActive: propertiesRoute !== null,
+      occupancyKind,
+      occupancyActive: occupancyRoute !== null,
+      roomsActive: roomsRoute !== null,
+      assetActive: assetRoute !== null,
+      hostActive: hostRoute !== null,
+    });
+  }, [
+    currentPathname, user.role, templateRoute, fundingRoute, rentalProfileActive,
+    provisionalRoute, periodUsageRoute, meterRoute, customerRoute, policyRoute,
+    catalogRoute, contractRoute, rentalContractRoute, propertiesRoute,
+    occupancyKind, occupancyRoute, roomsRoute, assetRoute, hostRoute,
+  ]);
   const [accountModal, setAccountModal] = useState<'profile' | 'password' | null>(null);
   const [focusChangePassword, setFocusChangePassword] = useState(false);
   const [adminDenied, setAdminDenied] = useState(false);
@@ -232,6 +272,12 @@ function AuthenticatedDashboard({
         }}
         hostAccountsActive={hostRoute !== null}
         showHostAccounts={user.role === 'ADMIN' && !adminDenied}
+        autoDraftJobsActive={isAutoDraftJobsPath(window.location.pathname)}
+        showAutoDraftJobs={user.role === 'ADMIN' && !adminDenied}
+        onNavigateAutoDraftJobs={() => {
+          window.history.pushState(null, '', AUTO_DRAFT_JOBS_PATH);
+          window.dispatchEvent(new PopStateEvent('popstate'));
+        }}
         assetsActive={assetRoute !== null}
         showAssets={user.role === 'HOST' && !assetsDenied}
         onNavigateAssets={() => onNavigateAssets('/assets')}
@@ -278,12 +324,15 @@ function AuthenticatedDashboard({
           path: invoicePath(user.role === 'HOST' ? 'host' : 'customer'),
           label: user.role === 'HOST' ? 'Quản lý hóa đơn' : 'Hóa đơn của tôi',
           active: isInvoicePath(window.location.pathname),
+          onNavigate: () => onNavigatePath(invoicePath(user.role === 'HOST' ? 'host' : 'customer')),
         } : undefined}
         billingScheduleLink={user.role === 'HOST' ? {
           path: billingSchedulePath,
           label: 'Lịch lập hóa đơn',
           active: isBillingSchedulePath(window.location.pathname),
+          onNavigate: () => onNavigatePath(billingSchedulePath),
         } : undefined}
+        onNavigatePath={onNavigatePath}
         showProvisionalCharges={user.role === 'HOST' || user.role === 'CUSTOMER'}
         provisionalChargesActive={provisionalRoute !== null}
         provisionalChargesPath={provisionalPath(user.role === 'CUSTOMER' ? 'CUSTOMER' : 'HOST')}
@@ -296,8 +345,15 @@ function AuthenticatedDashboard({
         onNavigateOverview={onOverview}
         onNavigateHostAccounts={() => onNavigateHost(null)}
       >
-        {isBillingSchedulePath(window.location.pathname) ? (
-          user.role === 'HOST' ? <BillingSchedulePage accountId={user.accountId} /> : (
+        {isAutoDraftJobsPath(window.location.pathname) ? (
+          user.role === 'ADMIN' ? <AutoDraftJobsPage /> : <AutoDraftJobsForbidden onOverview={onOverview} />
+        ) : isBillingSchedulePath(window.location.pathname) ? (
+          user.role === 'HOST' ? (
+            <BillingSchedulePage
+              accountId={user.accountId}
+              onOpenNotifications={() => window.dispatchEvent(new CustomEvent('rentops:open-host-notifications'))}
+            />
+          ) : (
             <section className="pc-page"><p role="alert">Bạn không có quyền xem lịch lập hóa đơn.</p></section>
           )
         ) : isInvoicePath(window.location.pathname) ? (
@@ -552,6 +608,15 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
   const navigationGuard = useRef<(() => boolean) | null>(null);
   const registerGuard = useCallback<NavigationGuardRegistration>((guard) => { navigationGuard.current = guard; }, []);
   const permitNavigation = useCallback(() => navigationGuard.current?.() !== false, []);
+  const [, setLocationVersion] = useState(0);
+  const navigateSpaPath = useCallback((url: string) => {
+    if (!permitNavigation()) return;
+    if (window.location.pathname + window.location.search !== url) {
+      window.history.pushState(null, '', url);
+    }
+    window.dispatchEvent(new PopStateEvent('popstate'));
+  }, [permitNavigation]);
+
   const lastUrl = useRef(window.location.pathname + window.location.search);
   useLayoutEffect(() => {
     lastUrl.current = window.location.pathname + window.location.search;
@@ -559,6 +624,11 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
   const googleEntry = useRef(isGoogleEntry());
   const [authCheck, setAuthCheck] = useState<'checking' | 'ready' | 'error'>(() => isGoogleEntry() ? 'ready' : 'checking');
   const [authRetry, setAuthRetry] = useState(0);
+
+  useEffect(() => {
+    if (view === 'dashboard' && currentUser) return;
+    document.title = resolveAuthDocumentTitle(recovery.path, view, authCheck);
+  }, [recovery.path, view, authCheck, currentUser]);
 
   // Khi đăng nhập thành công: Nối tạm trực tiếp vào dashboard hiện có
   const handleAuthSuccess = useCallback((user: AuthenticatedUserResponse) => {
@@ -659,6 +729,7 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
       setContractRoute(parseDepositContractRoute(window.location.pathname, window.location.search));
       setRentalContractRoute(parseRentalContractRoute(window.location.pathname, window.location.search));
       setTemplateRoute(parseDocumentTemplateRoute(window.location.pathname, window.location.search));
+      setLocationVersion((version) => version + 1);
 
       // Private navigation preserves the authenticated user and pending session check.
       if (!next.path && !wasRecovery) return;
@@ -1093,6 +1164,7 @@ export default function App({ initialRecovery }: { initialRecovery?: RecoveryBoo
         onNavigateProvisional={navigateProvisional}
         customerRoute={customerRoute}
         onNavigateCustomers={navigateCustomers}
+        onNavigatePath={navigateSpaPath}
         registerGuard={registerGuard}
       />
     );

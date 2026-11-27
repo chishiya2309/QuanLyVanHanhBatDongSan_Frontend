@@ -261,7 +261,7 @@ export function BatchIssuancePanel({
                 <th>Số hóa đơn / ID</th>
                 <th>Kết quả phát hành</th>
                 <th>Tổng tiền / Còn lại</th>
-                <th>Trạng thái thông báo (UC61)</th>
+                <th>Trạng thái thông báo</th>
                 <th>Chi tiết</th>
               </tr>
             </thead>
@@ -496,7 +496,7 @@ export function BatchIssuancePanel({
             checked={sendNotification}
             onChange={e => setSendNotification(e.target.checked)}
           />
-          Gửi thông báo hóa đơn mới (UC61) cho các hóa đơn phát hành thành công
+          Gửi thông báo hóa đơn mới cho các hóa đơn phát hành thành công
         </label>
 
         {validationError && (

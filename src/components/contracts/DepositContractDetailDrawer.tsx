@@ -63,7 +63,7 @@ export const DepositContractDetailDrawer: React.FC<DepositContractDetailDrawerPr
                   padding: '6px 12px',
                 }}
                 onClick={() => onExport(contract)}
-                title="Xuất hợp đồng đặt cọc (UC34)"
+                title="Xuất hợp đồng đặt cọc"
               >
                 📥 Xuất hợp đồng cọc
               </button>

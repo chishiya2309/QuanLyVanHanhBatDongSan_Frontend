@@ -853,7 +853,7 @@ export const RentalContractsPage: React.FC<RentalContractsPageProps> = ({
                                 fontWeight: 500,
                               }}
                               onClick={() => handleOpenTransfer(c)}
-                              title="Chuyển phòng thuê (UC30)"
+                              title="Chuyển phòng thuê"
                             >
                               Chuyển phòng
                             </button>
@@ -873,7 +873,7 @@ export const RentalContractsPage: React.FC<RentalContractsPageProps> = ({
                                 fontWeight: 500,
                               }}
                               onClick={() => handleOpenExtend(c)}
-                              title="Gia hạn hợp đồng thuê (UC29)"
+                              title="Gia hạn hợp đồng thuê"
                             >
                               Gia hạn
                             </button>
@@ -893,7 +893,7 @@ export const RentalContractsPage: React.FC<RentalContractsPageProps> = ({
                                 fontWeight: 500,
                               }}
                               onClick={() => handleOpenHandover(c)}
-                              title="Ghi nhận hoặc xem biên bản bàn giao nhận phòng (UC32)"
+                              title="Ghi nhận hoặc xem biên bản bàn giao nhận phòng"
                             >
                               Nhận phòng
                             </button>
@@ -913,7 +913,7 @@ export const RentalContractsPage: React.FC<RentalContractsPageProps> = ({
                                 fontWeight: 500,
                               }}
                               onClick={() => handleOpenMoveOut(c)}
-                              title="Ghi nhận đối soát bàn giao trả phòng (UC33)"
+                              title="Ghi nhận đối soát bàn giao trả phòng"
                             >
                               Trả phòng
                             </button>
@@ -933,7 +933,7 @@ export const RentalContractsPage: React.FC<RentalContractsPageProps> = ({
                                 fontWeight: 500,
                               }}
                               onClick={() => handleOpenTerminate(c)}
-                              title="Thanh lý hợp đồng thuê (UC31)"
+                              title="Thanh lý hợp đồng thuê"
                             >
                               Thanh lý
                             </button>
@@ -1131,7 +1131,7 @@ export const RentalContractsPage: React.FC<RentalContractsPageProps> = ({
                               fontWeight: 500,
                             }}
                             onClick={() => handleOpenExtend(c)}
-                            title="Gia hạn hợp đồng thuê (UC29)"
+                            title="Gia hạn hợp đồng thuê"
                           >
                             Gia hạn
                           </button>
@@ -1148,7 +1148,7 @@ export const RentalContractsPage: React.FC<RentalContractsPageProps> = ({
                               fontWeight: 500,
                             }}
                             onClick={() => handleOpenHandover(c)}
-                            title="Bàn giao nhận phòng (UC32)"
+                            title="Bàn giao nhận phòng"
                           >
                             Nhận phòng
                           </button>
@@ -1165,7 +1165,7 @@ export const RentalContractsPage: React.FC<RentalContractsPageProps> = ({
                               fontWeight: 500,
                             }}
                             onClick={() => handleOpenMoveOut(c)}
-                            title="Bàn giao trả phòng (UC33)"
+                            title="Bàn giao trả phòng"
                           >
                             Trả phòng
                           </button>
@@ -1181,7 +1181,7 @@ export const RentalContractsPage: React.FC<RentalContractsPageProps> = ({
                               fontWeight: 500,
                             }}
                             onClick={() => handleOpenTerminate(c)}
-                            title="Thanh lý hợp đồng thuê (UC31)"
+                            title="Thanh lý hợp đồng thuê"
                           >
                             Thanh lý
                           </button>

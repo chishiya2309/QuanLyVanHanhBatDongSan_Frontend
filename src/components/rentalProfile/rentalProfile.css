@@ -14,7 +14,7 @@
 .rp-page h1, .rp-page h2 { min-width: 0; margin: 0; overflow-wrap: break-word; text-wrap: balance; }
 .rp-page h1 { font-size: var(--text-2xl); }
 .rp-page h2 { font-size: var(--text-lg); }
-.dash-nav-item.rp-nav-item { height: auto; min-height: 44px; padding: var(--space-2xs) var(--space-sm); line-height: 1.4; }
+.dash-nav-item.rp-nav-item { line-height: 1.4; }
 .rp-nav-item span { min-width: 0; white-space: normal; overflow-wrap: anywhere; }
 .rp-nav-item:focus-visible { outline: 2px solid var(--color-focus); outline-offset: 2px; }
 .rp-nav-item:active { background: var(--color-paper-3); }

@@ -11,6 +11,9 @@ interface TopbarProps {
   onOpenProfile: () => void;
   showPropertySwitcher?: boolean;
   showNotifications?: boolean;
+  unreadNotificationsCount?: number;
+  notificationsOpen?: boolean;
+  onOpenNotifications?: () => void;
   onNavigateOverview?: () => void;
 }
 
@@ -22,6 +25,9 @@ export const Topbar: React.FC<TopbarProps> = ({
   onOpenProfile,
   showPropertySwitcher = true,
   showNotifications = true,
+  unreadNotificationsCount = 0,
+  notificationsOpen = false,
+  onOpenNotifications,
   onNavigateOverview,
 }) => {
 
@@ -68,19 +74,26 @@ export const Topbar: React.FC<TopbarProps> = ({
       </div>
 
       <div className="dash-topbar-right">
-        {/* Notification Bell */}
-        {showNotifications && <button
-          type="button"
-          className="notification-btn"
-          aria-label="Thông báo hệ thống, 4 việc cần xử lý"
-          title="4 thông báo cần xử lý"
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
-            <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
-          </svg>
-          <span className="notification-badge">4</span>
-        </button>}
+        {/* Notification Bell (Host only for UC55 internal inbox) */}
+        {showNotifications && user.role === 'HOST' && (
+          <button
+            type="button"
+            className="notification-btn"
+            aria-label={`Hòm thư lập hóa đơn tự động, ${unreadNotificationsCount} thông báo chưa đọc`}
+            aria-haspopup="dialog"
+            aria-expanded={notificationsOpen}
+            title="Thông báo lập hóa đơn tự động"
+            onClick={onOpenNotifications}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+              <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+            </svg>
+            {unreadNotificationsCount > 0 && (
+              <span className="notification-badge">{unreadNotificationsCount}</span>
+            )}
+          </button>
+        )}
 
         {/* User Identity */}
         <button type="button" className="user-profile-badge" onClick={onOpenProfile}

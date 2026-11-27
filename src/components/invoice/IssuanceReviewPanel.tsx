@@ -94,7 +94,7 @@ export function IssuanceReviewPanel<TIssued extends { issuance?: IssuanceResult 
 
       const needsPastDueConfirmation = review.pastDue && !review.pastDueConfirmed;
       if (needsPastDueConfirmation && !confirmPastDue) {
-        setPastDueReasonError('Vui lòng xác nhận phát hành với ngày đến hạn đã qua hoặc quay lại UC48 sửa hạn.');
+        setPastDueReasonError('Vui lòng xác nhận phát hành với ngày đến hạn đã qua hoặc quay lại sửa hạn thanh toán.');
         invalid = true;
       } else if (needsPastDueConfirmation && confirmPastDue && !pastDueReason.trim()) {
         setPastDueReasonError('Vui lòng nhập lý do xác nhận phát hành quá hạn.');
@@ -103,7 +103,7 @@ export function IssuanceReviewPanel<TIssued extends { issuance?: IssuanceResult 
       }
 
       if (review.transferUnavailable && review.canConfirmCashOnly && !confirmCashOnly) {
-        setPaymentModeError('Hãy cập nhật tài khoản ngân hàng (UC42) hoặc xác nhận phát hành chỉ với tiền mặt.');
+        setPaymentModeError('Hãy cập nhật tài khoản ngân hàng hoặc xác nhận phát hành chỉ với tiền mặt.');
         invalid = true;
       }
 
@@ -183,7 +183,7 @@ export function IssuanceReviewPanel<TIssued extends { issuance?: IssuanceResult 
     return (
       <section className="uc50-panel" aria-label="Rà soát phát hành hóa đơn">
         <div className="pc-skeleton" role="status">
-          <p>Đang kiểm tra điều kiện phát hành và tải bản rà soát UC50…</p>
+          <p>Đang kiểm tra điều kiện phát hành và tải bản rà soát…</p>
           <div />
           <div />
         </div>
@@ -295,7 +295,7 @@ export function IssuanceReviewPanel<TIssued extends { issuance?: IssuanceResult 
       </section>
 
       <section className="uc50-section" aria-label="Chi tiết các dòng chi phí">
-        <h3>Chi tiết dòng chi phí (từ kết quả UC49 đã xác nhận)</h3>
+        <h3>Chi tiết dòng chi phí đã xác nhận</h3>
         <div className="invoice-table" tabIndex={0}>
           <table>
             <thead>
@@ -398,7 +398,7 @@ export function IssuanceReviewPanel<TIssued extends { issuance?: IssuanceResult 
               <div className="uc50-banner uc50-banner--warn" role="status">
                 <strong>Cảnh báo: Ngày đến hạn thanh toán đã qua ({draftDate(review.dueDate)})</strong>
                 <p>
-                  Hóa đơn có thể được đánh dấu quá hạn ngay sau khi phát hành nếu vẫn còn số tiền phải thu. Bạn có thể quay lại UC48 đổi hạn hoặc xác nhận giữ nguyên ngày đến hạn kèm lý do.
+                  Hóa đơn có thể được đánh dấu quá hạn ngay sau khi phát hành nếu vẫn còn số tiền phải thu. Bạn có thể quay lại đổi hạn thanh toán hoặc xác nhận giữ nguyên ngày đến hạn kèm lý do.
                 </p>
               </div>
               <label className="uc50-check-label">
@@ -442,11 +442,11 @@ export function IssuanceReviewPanel<TIssued extends { issuance?: IssuanceResult 
               <div className="uc50-banner uc50-banner--warn" role="status">
                 <strong>Phương thức chuyển khoản hiện không khả dụng</strong>
                 <p>
-                  Tài khoản ngân hàng mặc định của phòng chưa hợp lệ hoặc đã ngừng hoạt động. Hệ thống không tự động sửa cấu hình phòng; bạn cần chọn cập nhật tại UC42 hoặc xác nhận phát hành hóa đơn này chỉ với tiền mặt.
+                  Tài khoản ngân hàng mặc định của phòng chưa hợp lệ hoặc đã ngừng hoạt động. Hệ thống không tự động sửa cấu hình phòng; bạn cần cập nhật tài khoản nhận tiền hoặc xác nhận phát hành hóa đơn này chỉ với tiền mặt.
                 </p>
                 <div className="uc50-actions">
                   <a className="uc50-btn" href={paymentPolicyUrl(review.room.roomId, returnTo)}>
-                    Cập nhật tài khoản nhận tiền (UC42)
+                    Cập nhật tài khoản nhận tiền
                   </a>
                 </div>
               </div>
@@ -476,7 +476,7 @@ export function IssuanceReviewPanel<TIssued extends { issuance?: IssuanceResult 
                 checked={sendNotification}
                 onChange={e => setSendNotification(e.target.checked)}
               />
-              Gửi thông báo hóa đơn mới đến khách thuê sau khi phát hành (UC61)
+              Gửi thông báo hóa đơn mới đến khách thuê sau khi phát hành
             </label>
             <p className="uc50-muted">
               Kênh khả dụng của khách thuê: <strong>{formatChannelList(review.availableNotificationChannels)}</strong>.
