@@ -5,14 +5,19 @@ interface SidebarProps {
   showFundingSources?: boolean; fundingSourcesActive?: boolean; onNavigateFundingSources?: () => void;
   showRentalProfile?: boolean; rentalProfileActive?: boolean; onNavigateRentalProfile?: () => void;
   showProvisionalCharges?: boolean; provisionalChargesActive?: boolean; onNavigateProvisionalCharges?: () => void;
-  invoiceLink?: { path: string; label: string; active: boolean };
+  invoiceLink?: { path: string; label: string; active: boolean; onNavigate?: () => void };
+  billingScheduleLink?: { path: string; label: string; active: boolean; onNavigate?: () => void };
   showMeterReadings?: boolean; meterReadingsActive?: boolean; onNavigateMeterReadings?: () => void;
   showPeriodUsages?: boolean; periodUsagesActive?: boolean; onNavigatePeriodUsages?: () => void;
   showServices?: boolean; servicesActive?: boolean; onNavigateServices?: () => void; mobileOpen?: boolean; markCurrent?: boolean;
   showHostAccounts?: boolean; hostAccountsActive?: boolean;
+  showAutoDraftJobs?: boolean; autoDraftJobsActive?: boolean; onNavigateAutoDraftJobs?: () => void;
   showAssets?: boolean; assetsActive?: boolean; onNavigateAssets?: () => void;
   showProperties?: boolean; propertiesActive?: boolean; onNavigateProperties?: () => void;
+  expenseBreakdownActive?: boolean; onNavigateExpenseBreakdown?: () => void;
+  profitLossActive?: boolean; onNavigateProfitLoss?: () => void;
   financeActive?: boolean; onNavigateFinance?: () => void;
+  cashLedgerActive?: boolean; onNavigateCashLedger?: () => void;
   occupancyAnalysisActive?: boolean; onNavigateOccupancyAnalysis?: () => void;
   occupancyActive?: boolean; onNavigateOccupancy?: () => void;
   expiringLeasesActive?: boolean; onNavigateExpiringLeases?: () => void;
@@ -28,11 +33,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
   showRentalProfile = false, rentalProfileActive = false, onNavigateRentalProfile,
   showProvisionalCharges = false, provisionalChargesActive = false, onNavigateProvisionalCharges,
   invoiceLink,
+  billingScheduleLink,
   showMeterReadings = false, meterReadingsActive = false, onNavigateMeterReadings,
   showPeriodUsages = false, periodUsagesActive = false, onNavigatePeriodUsages,
   showServices = false, servicesActive = false, onNavigateServices, mobileOpen = false, markCurrent = true,
   showHostAccounts = false,
   hostAccountsActive = false,
+  showAutoDraftJobs = false,
+  autoDraftJobsActive = false,
+  onNavigateAutoDraftJobs,
   showAssets = false,
   assetsActive = false,
   showProperties = false,
@@ -41,8 +50,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
   expiringLeasesActive = false,
   onNavigateExpiringLeases,
   occupancyAnalysisActive = false,
+  expenseBreakdownActive, onNavigateExpenseBreakdown,
+  profitLossActive, onNavigateProfitLoss,
   financeActive,
   onNavigateFinance,
+  cashLedgerActive = false,
+  onNavigateCashLedger,
   onNavigateOccupancyAnalysis,
   occupancyActive = false,
   onNavigateOccupancy,
@@ -64,7 +77,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onNavigateOverview,
   onNavigateHostAccounts,
 }) => {
-  const isOverviewActive = !invoiceLink?.active && !rentalProfileActive && !fundingSourcesActive && !provisionalChargesActive && !meterReadingsActive && !periodUsagesActive && !hostAccountsActive && !assetsActive && !propertiesActive && !roomsActive && !financeActive && !occupancyAnalysisActive && !occupancyActive && !expiringLeasesActive && !servicesActive && !customersActive && !contractsActive && !rentalContractsActive && !documentTemplatesActive;
+  const isOverviewActive = !autoDraftJobsActive && !billingScheduleLink?.active && !invoiceLink?.active && !rentalProfileActive && !fundingSourcesActive && !provisionalChargesActive && !meterReadingsActive && !periodUsagesActive && !hostAccountsActive && !assetsActive && !propertiesActive && !roomsActive && !financeActive && !cashLedgerActive && !profitLossActive && !occupancyAnalysisActive && !occupancyActive && !expiringLeasesActive && !servicesActive && !customersActive && !contractsActive && !rentalContractsActive && !documentTemplatesActive;
   return (
     <aside id="rentops-navigation" className={`dash-sidebar${mobileOpen ? ' is-mobile-open' : ''}`} aria-label="Thanh điều hướng chính">
       <div className="dash-nav-group">
@@ -221,9 +234,32 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="M5 3h14v18H5zM8 7h8M8 11h8M8 15h3M14 15h2" /></svg>
           <span>Tạm tính dịch vụ</span>
         </button>}
+        {billingScheduleLink && <span className="dash-nav-header">Hóa đơn &amp; Thu chi</span>}
         {invoiceLink && <a href={invoiceLink.path} className={`dash-nav-item${invoiceLink.active ? ' is-active' : ''}`}
-          aria-current={invoiceLink.active && markCurrent ? 'page' : undefined}>{invoiceLink.label}</a>}
+          aria-current={invoiceLink.active && markCurrent ? 'page' : undefined}
+          onClick={(event) => {
+            if (invoiceLink.onNavigate && event.button === 0 && !event.ctrlKey && !event.metaKey && !event.shiftKey && !event.altKey) {
+              event.preventDefault();
+              invoiceLink.onNavigate();
+            }
+          }}>{invoiceLink.label}</a>}
+        {billingScheduleLink && <a href={billingScheduleLink.path} className={`dash-nav-item${billingScheduleLink.active ? ' is-active' : ''}`}
+          aria-current={billingScheduleLink.active && markCurrent ? 'page' : undefined}
+          onClick={(event) => {
+            if (billingScheduleLink.onNavigate && event.button === 0 && !event.ctrlKey && !event.metaKey && !event.shiftKey && !event.altKey) {
+              event.preventDefault();
+              billingScheduleLink.onNavigate();
+            }
+          }}>{billingScheduleLink.label}</a>}
 
+        {onNavigateCashLedger && <button type="button" className={cashLedgerActive ? 'dash-nav-item is-active' : 'dash-nav-item'}
+          aria-current={cashLedgerActive && markCurrent ? 'page' : undefined} onClick={onNavigateCashLedger}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+          </svg>
+          <span>Sổ thu chi</span>
+        </button>}
         {onNavigateFinance && <button type="button" className={financeActive ? 'dash-nav-item is-active' : 'dash-nav-item'}
           aria-current={financeActive && markCurrent ? 'page' : undefined} onClick={onNavigateFinance}>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -231,6 +267,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
           </svg>
           <span>Thu chi &amp; Dòng tiền</span>
+        </button>}
+        {onNavigateExpenseBreakdown && <button type="button" className={expenseBreakdownActive ? 'dash-nav-item is-active' : 'dash-nav-item'}
+          aria-current={expenseBreakdownActive && markCurrent ? 'page' : undefined} onClick={onNavigateExpenseBreakdown}>
+          Cơ cấu chi phí
+        </button>}
+        {onNavigateProfitLoss && <button type="button" className={profitLossActive ? 'dash-nav-item is-active' : 'dash-nav-item'}
+          aria-current={profitLossActive && markCurrent ? 'page' : undefined} onClick={onNavigateProfitLoss}>
+          <span>Doanh thu &amp; Lời lỗ</span>
         </button>}
         {onNavigateExpiringLeases && (
           <button type="button" className={`dash-nav-item${expiringLeasesActive ? ' is-active' : ''}`}
@@ -285,8 +329,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <span>Tài khoản Host</span>
           </button>
         </>}
+        {showAutoDraftJobs && (
+          <button type="button" className={`dash-nav-item${autoDraftJobsActive ? ' is-active' : ''}`} aria-current={autoDraftJobsActive && markCurrent ? 'page' : undefined} onClick={onNavigateAutoDraftJobs}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 3" /></svg>
+            <span>Tiến trình hóa đơn tự động</span>
+          </button>
+        )}
       </div>
-        {!invoiceLink?.active && !rentalProfileActive && !fundingSourcesActive && !provisionalChargesActive && !hostAccountsActive && !assetsActive && !propertiesActive && !roomsActive && !financeActive && !occupancyAnalysisActive && !occupancyActive && !expiringLeasesActive && !servicesActive && !customersActive && !contractsActive && !rentalContractsActive && !documentTemplatesActive && (
+        {!billingScheduleLink?.active && !invoiceLink?.active && !rentalProfileActive && !fundingSourcesActive && !provisionalChargesActive && !hostAccountsActive && !assetsActive && !propertiesActive && !roomsActive && !financeActive && !profitLossActive && !occupancyAnalysisActive && !occupancyActive && !expiringLeasesActive && !servicesActive && !customersActive && !contractsActive && !rentalContractsActive && !documentTemplatesActive && (
       <div className="dash-sidebar-footer">
         <div className="system-status-box">
           <div>

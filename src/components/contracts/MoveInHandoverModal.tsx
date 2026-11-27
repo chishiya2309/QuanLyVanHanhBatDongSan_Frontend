@@ -373,7 +373,7 @@ export const MoveInHandoverModal: React.FC<MoveInHandoverModalProps> = ({
             <div style={{ fontSize: '12px', color: '#64748b', marginTop: '3px' }}>
               Mã HĐ: <strong style={{ color: '#0f172a' }}>{contract.contractNumber}</strong>
               <span style={{ margin: '0 6px' }}>&bull;</span>
-              Chụp ảnh hiện trạng tài sản & chỉ số công tơ điện nước đầu vào (UC32)
+              Chụp ảnh hiện trạng tài sản & chỉ số công tơ điện nước đầu vào
             </div>
           </div>
           <button
@@ -780,7 +780,7 @@ export const MoveInHandoverModal: React.FC<MoveInHandoverModalProps> = ({
                     fontWeight: 600,
                   }}
                   onClick={() => setExportModalOpen(true)}
-                  title="Xuất biên bản bàn giao nhận phòng (UC35)"
+                  title="Xuất biên bản bàn giao nhận phòng"
                 >
                   📥 Xuất biên bản
                 </button>

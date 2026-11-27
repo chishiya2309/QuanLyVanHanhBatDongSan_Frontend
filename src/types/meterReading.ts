@@ -2,7 +2,7 @@ export type MeterView = 'single' | 'batch' | 'progress';
 export interface MeterRoute {
   view: MeterView; fromDate: string; toDate: string; buildingId: string;
   roomIds: string[]; periodIds: string[]; page: number; periodPage: number;
-  readingId: string | null; invalid: boolean;
+  readingId: string | null; invalid: boolean; roomServiceId?: string; returnTo?: string;
 }
 export interface MeterScope { periodIds: string[]; buildingId?: string; roomIds?: string[] }
 export interface MeterPage<T> { items: T[]; total: number; page: number; size: number }

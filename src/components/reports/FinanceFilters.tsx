@@ -7,7 +7,7 @@ import { transactionCategories } from './financePresentation';
 export type FinanceCatalog = { areas: Area[]; buildings: Building[]; sources: FundingSource[] };
 type Option = { id: string; name: string };
 
-function FilterSelect({ label, value, options, onChange, disabled }: {
+export function FilterSelect({ label, value, options, onChange, disabled }: {
   label: string; value?: string; options: Option[]; onChange: (value?: string) => void; disabled?: boolean;
 }) {
   return <label className="finance-field">{label}
@@ -19,7 +19,8 @@ function FilterSelect({ label, value, options, onChange, disabled }: {
   </label>;
 }
 
-export function FinanceFilters({ applied, defaultFrom, defaultTo, catalog, roomsByBuilding, onApply, onBuilding }: {
+export function FinanceFilters({ applied, defaultFrom, defaultTo, catalog, roomsByBuilding, onApply, onBuilding, propertyOnly = false }: {
+  propertyOnly?: boolean;
   applied: FinanceFilter; defaultFrom?: string; defaultTo?: string; catalog: FinanceCatalog;
   roomsByBuilding: Record<string, Room[]>; onApply: (filter: FinanceFilter) => void; onBuilding: (id?: string) => void;
 }) {
@@ -37,7 +38,7 @@ export function FinanceFilters({ applied, defaultFrom, defaultTo, catalog, rooms
     if (validFinanceDates(draft)) onApply(draft);
   }
 
-  return <form className="finance-filters" onSubmit={submit} aria-label="Bộ lọc thu chi">
+  return <form className="finance-filters" onSubmit={submit} aria-label={propertyOnly ? 'Bộ lọc doanh thu và lời lỗ' : 'Bộ lọc thu chi'}>
     <div className="finance-filter-grid">
       <label className="finance-field">Từ ngày
         <input type="date" value={(editingDates ? draft.fromDate : defaultFrom) ?? ''} aria-invalid={error}
@@ -62,10 +63,10 @@ export function FinanceFilters({ applied, defaultFrom, defaultTo, catalog, rooms
         onBuilding(buildingId);
       }} />
       <FilterSelect label="Phòng" value={draft.roomId} options={rooms} disabled={!draft.buildingId && !draft.roomId} onChange={roomId => setDraft({ ...draft, roomId })} />
-      <FilterSelect label="Nguồn tiền" value={draft.sourceId} options={catalog.sources} onChange={sourceId => setDraft({ ...draft, sourceId })} />
+      {!propertyOnly && <FilterSelect label="Nguồn tiền" value={draft.sourceId} options={catalog.sources} onChange={sourceId => setDraft({ ...draft, sourceId })} />}
     </div>
     <div className="finance-toolbar">
-      <details className="finance-categories">
+      {!propertyOnly && <details className="finance-categories">
         <summary>Danh mục giao dịch{draft.transactionCategory.length ? ' (' + draft.transactionCategory.length + ')' : ''}</summary>
         <div className="finance-category-options" role="group" aria-label="Chọn danh mục">
           {Object.entries(categories).map(([code, label]) => <label key={code}>
@@ -74,7 +75,7 @@ export function FinanceFilters({ applied, defaultFrom, defaultTo, catalog, rooms
                 : draft.transactionCategory.filter(category => category !== code) })} /> {label}
           </label>)}
         </div>
-      </details>
+      </details>}
       <button type="submit" className="finance-primary">Áp dụng</button>
       <button type="button" onClick={() => {
         setDraft({ transactionCategory: [] });

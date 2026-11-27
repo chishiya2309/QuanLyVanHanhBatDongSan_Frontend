@@ -9,6 +9,8 @@ import {
 } from '../../mocks/dashboardMockData';
 import { Topbar } from './Topbar';
 import { Sidebar } from './Sidebar';
+import { HostNotificationDrawer } from './HostNotificationDrawer';
+import { useHostNotifications } from '../../hooks/useAutoDraftBilling';
 import { QuickActionBar } from './QuickActionBar';
 import { MetricSection } from './MetricSection';
 import { RevenueCashflowChart } from './RevenueCashflowChart';
@@ -20,7 +22,9 @@ interface DashboardShellProps {
   showFundingSources?: boolean; fundingSourcesActive?: boolean; onNavigateFundingSources?: () => void;
   showRentalProfile?: boolean; rentalProfileActive?: boolean; onNavigateRentalProfile?: () => void;
   showProvisionalCharges?: boolean; provisionalChargesActive?: boolean; provisionalChargesPath?: string; onNavigateProvisionalCharges?: () => void;
-  invoiceLink?: { path: string; label: string; active: boolean };
+  invoiceLink?: { path: string; label: string; active: boolean; onNavigate?: () => void };
+  billingScheduleLink?: { path: string; label: string; active: boolean; onNavigate?: () => void };
+  onNavigatePath?: (path: string) => void;
   showPeriodUsages?: boolean; periodUsagesActive?: boolean; onNavigatePeriodUsages?: () => void;
   showMeterReadings?: boolean; meterReadingsActive?: boolean; onNavigateMeterReadings?: () => void;
   showServices?: boolean; servicesActive?: boolean; onNavigateServices?: () => void;
@@ -30,6 +34,9 @@ interface DashboardShellProps {
   children?: React.ReactNode;
   hostAccountsActive?: boolean;
   showHostAccounts?: boolean;
+  showAutoDraftJobs?: boolean;
+  autoDraftJobsActive?: boolean;
+  onNavigateAutoDraftJobs?: () => void;
   assetsActive?: boolean;
   showAssets?: boolean;
   onNavigateAssets?: () => void;
@@ -38,8 +45,14 @@ interface DashboardShellProps {
   onNavigateProperties?: () => void;
   showRooms?: boolean;
   expiringLeasesActive?: boolean;
+  expenseBreakdownActive?: boolean;
+  onNavigateExpenseBreakdown?: () => void;
+  profitLossActive?: boolean;
+  onNavigateProfitLoss?: () => void;
   financeActive?: boolean;
   onNavigateFinance?: () => void;
+  cashLedgerActive?: boolean;
+  onNavigateCashLedger?: () => void;
   onNavigateExpiringLeases?: () => void;
   occupancyAnalysisActive?: boolean;
   onNavigateOccupancyAnalysis?: () => void;
@@ -67,6 +80,8 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
   showRentalProfile = false, rentalProfileActive = false, onNavigateRentalProfile,
   showProvisionalCharges = false, provisionalChargesActive = false, provisionalChargesPath = '/provisional-charges', onNavigateProvisionalCharges,
   invoiceLink,
+  billingScheduleLink,
+  onNavigatePath,
   showPeriodUsages = false, periodUsagesActive = false, onNavigatePeriodUsages,
   showMeterReadings = false, meterReadingsActive = false, onNavigateMeterReadings,
   showServices = false, servicesActive = false, onNavigateServices,
@@ -76,6 +91,9 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
   children,
   hostAccountsActive = false,
   showHostAccounts = false,
+  showAutoDraftJobs = false,
+  autoDraftJobsActive = false,
+  onNavigateAutoDraftJobs,
   assetsActive = false,
   showAssets = false,
   onNavigateAssets,
@@ -84,8 +102,14 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
   onNavigateProperties,
   showRooms = false,
   expiringLeasesActive = false,
+  expenseBreakdownActive = false,
+  onNavigateExpenseBreakdown,
+  profitLossActive = false,
+  onNavigateProfitLoss,
   financeActive = false,
   onNavigateFinance,
+  cashLedgerActive = false,
+  onNavigateCashLedger,
   onNavigateExpiringLeases,
   occupancyAnalysisActive = false,
   onNavigateOccupancyAnalysis,
@@ -118,6 +142,18 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
   }, []);
   const mobileNavigate = (action?: () => void) => () => { setMobileOpen(false); action?.(); };
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const hostNotifications = useHostNotifications(user.role === 'HOST');
+
+  useEffect(() => {
+    const openDrawer = () => {
+      if (user.role === 'HOST') {
+        setNotificationsOpen(true);
+      }
+    };
+    window.addEventListener('rentops:open-host-notifications', openDrawer);
+    return () => window.removeEventListener('rentops:open-host-notifications', openDrawer);
+  }, [user.role]);
 
   // Formatted Vietnamese Date
   const todayFormatted = useMemo(() => {
@@ -222,10 +258,10 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
     setTimeout(() => setToastMessage(null), 3000);
   };
 
-  const isCustomView = invoiceLink?.active || rentalProfileActive || fundingSourcesActive || provisionalChargesActive || meterReadingsActive || hostAccountsActive || assetsActive || propertiesActive || roomsActive || financeActive || occupancyAnalysisActive || occupancyActive || expiringLeasesActive || servicesActive || customersActive || documentTemplatesActive;
+  const isCustomView = autoDraftJobsActive || billingScheduleLink?.active || invoiceLink?.active || rentalProfileActive || fundingSourcesActive || provisionalChargesActive || meterReadingsActive || hostAccountsActive || assetsActive || propertiesActive || roomsActive || financeActive || cashLedgerActive || expenseBreakdownActive || profitLossActive || occupancyAnalysisActive || occupancyActive || expiringLeasesActive || servicesActive || customersActive || documentTemplatesActive;
 
   return (
-    <div className={`dashboard-root${hostAccountsActive ? ' dashboard-root--admin' : ''}${assetsActive ? ' dashboard-root--assets' : ''}`}>
+    <div className={`dashboard-root${hostAccountsActive || autoDraftJobsActive ? ' dashboard-root--admin' : ''}${assetsActive ? ' dashboard-root--assets' : ''}`}>
       {/* Top Navigation */}
       <Topbar
         user={user}
@@ -234,9 +270,27 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
         onLogout={onLogout}
         onOpenProfile={onOpenProfile}
         showPropertySwitcher={!isCustomView}
-        showNotifications={!isCustomView}
+        showNotifications={user.role === 'HOST'}
+        unreadNotificationsCount={hostNotifications.unreadCount}
+        notificationsOpen={notificationsOpen}
+        onOpenNotifications={() => setNotificationsOpen(true)}
         onNavigateOverview={onNavigateOverview}
       />
+      {user.role === 'HOST' && (
+        <HostNotificationDrawer
+          open={notificationsOpen}
+          items={hostNotifications.items}
+          loading={hostNotifications.loading}
+          error={hostNotifications.error}
+          hasNext={hostNotifications.hasNext}
+          markingId={hostNotifications.markingId}
+          onClose={() => setNotificationsOpen(false)}
+          onMarkAsRead={(id) => void hostNotifications.markAsRead(id)}
+          onLoadMore={hostNotifications.loadMore}
+          onRefresh={hostNotifications.refresh}
+          onNavigate={onNavigatePath}
+        />
+      )}
 
       {/* Main Layout: Sidebar + Canvas */}
       <button type="button" className="dash-mobile-menu-toggle" aria-expanded={mobileOpen} aria-controls="rentops-navigation" onClick={() => setMobileOpen((open) => !open)}>Điều hướng</button>
@@ -250,9 +304,14 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
           { label: 'Quản lý nguồn tiền', path: '/funding-sources', active: fundingSourcesActive, action: onNavigateFundingSources, show: showFundingSources },
           { label: rentalProfileTitle, path: rentalProfilePath, active: rentalProfileActive, action: onNavigateRentalProfile, show: showRentalProfile },
           { label: 'Tạm tính dịch vụ', path: provisionalChargesPath, active: provisionalChargesActive, action: onNavigateProvisionalCharges, show: showProvisionalCharges },
-          ...(invoiceLink ? [{ ...invoiceLink, show: true }] : []),
+          ...(invoiceLink ? [{ ...invoiceLink, action: invoiceLink.onNavigate, show: true }] : []),
+          ...(billingScheduleLink ? [{ ...billingScheduleLink, action: billingScheduleLink.onNavigate, show: true }] : []),
           { label: 'Danh mục dịch vụ', path: '/services', active: servicesActive, action: onNavigateServices, show: showServices },
           { label: 'Cơ sở & Tòa nhà', path: '/properties', active: propertiesActive, action: onNavigateProperties, show: propertiesActive },
+          { label: 'Cơ cấu chi phí', path: '/reports/expense-breakdown', active: expenseBreakdownActive,
+            action: onNavigateExpenseBreakdown, show: expenseBreakdownActive },
+          { label: 'Doanh thu & Lời lỗ', path: '/reports/profit-loss', active: profitLossActive, action: onNavigateProfitLoss, show: profitLossActive },
+          { label: 'Sổ thu chi', path: '/cash-ledger', active: cashLedgerActive, action: onNavigateCashLedger, show: cashLedgerActive },
           { label: 'Thu chi & Dòng tiền', path: '/reports/finance', active: financeActive, action: onNavigateFinance, show: financeActive },
           { label: 'Phòng sắp trống', path: '/reports/expiring-leases', active: expiringLeasesActive, action: onNavigateExpiringLeases, show: expiringLeasesActive },
           { label: 'Tỷ lệ lấp đầy', path: '/reports/occupancy-analysis', active: occupancyAnalysisActive, action: onNavigateOccupancyAnalysis, show: occupancyAnalysisActive },
@@ -273,7 +332,8 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
           rentalProfileActive={rentalProfileActive}
           onNavigateRentalProfile={mobileNavigate(onNavigateRentalProfile)}
           showProvisionalCharges={showProvisionalCharges}
-          invoiceLink={invoiceLink}
+          invoiceLink={invoiceLink ? { ...invoiceLink, onNavigate: mobileNavigate(invoiceLink.onNavigate) } : undefined}
+          billingScheduleLink={billingScheduleLink ? { ...billingScheduleLink, onNavigate: mobileNavigate(billingScheduleLink.onNavigate) } : undefined}
           provisionalChargesActive={provisionalChargesActive}
           onNavigateProvisionalCharges={mobileNavigate(onNavigateProvisionalCharges)}
           showMeterReadings={showMeterReadings}
@@ -289,6 +349,9 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
           onNavigateServices={mobileNavigate(onNavigateServices)}
           showHostAccounts={showHostAccounts}
           hostAccountsActive={hostAccountsActive}
+          showAutoDraftJobs={showAutoDraftJobs}
+          autoDraftJobsActive={autoDraftJobsActive}
+          onNavigateAutoDraftJobs={mobileNavigate(onNavigateAutoDraftJobs)}
           showAssets={showAssets}
           assetsActive={assetsActive}
           onNavigateAssets={mobileNavigate(onNavigateAssets)}
@@ -297,8 +360,14 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
           onNavigateProperties={mobileNavigate(onNavigateProperties)}
           showRooms={showRooms}
           expiringLeasesActive={expiringLeasesActive}
+          expenseBreakdownActive={expenseBreakdownActive}
+          onNavigateExpenseBreakdown={onNavigateExpenseBreakdown ? mobileNavigate(onNavigateExpenseBreakdown) : undefined}
+          profitLossActive={profitLossActive}
+          onNavigateProfitLoss={onNavigateProfitLoss ? mobileNavigate(onNavigateProfitLoss) : undefined}
           financeActive={financeActive}
           onNavigateFinance={onNavigateFinance ? mobileNavigate(onNavigateFinance) : undefined}
+          cashLedgerActive={cashLedgerActive}
+          onNavigateCashLedger={onNavigateCashLedger ? mobileNavigate(onNavigateCashLedger) : undefined}
           onNavigateExpiringLeases={onNavigateExpiringLeases ? mobileNavigate(onNavigateExpiringLeases) : undefined}
           occupancyAnalysisActive={occupancyAnalysisActive}
           onNavigateOccupancyAnalysis={onNavigateOccupancyAnalysis ? mobileNavigate(onNavigateOccupancyAnalysis) : undefined}

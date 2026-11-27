@@ -35,7 +35,9 @@
 .oa-filter-error { flex-basis: 100%; color: var(--color-error); }
 .occupancy-analysis :is(button, select, input) {
   min-height: 44px;
+  min-width: 0;
   max-width: 100%;
+  box-sizing: border-box;
   padding: var(--space-2xs) var(--space-sm);
   border: 1px solid var(--color-field-border);
   border-radius: var(--radius-input);

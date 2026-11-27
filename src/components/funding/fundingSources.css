@@ -86,3 +86,5 @@
   .fs-button { font-size: 1rem; }
 }
 @media (prefers-reduced-motion: reduce) { .fs-button { transition: none; } }
+.fs-bankhub { width: min(36rem, calc(100% - 2rem)); max-height: calc(100% - 2rem); box-sizing: border-box; border: 1px solid #dbe2ea; border-radius: 12px; padding: 1.25rem; }
+.fs-bankhub::backdrop { background: rgb(15 23 42 / 45%); }

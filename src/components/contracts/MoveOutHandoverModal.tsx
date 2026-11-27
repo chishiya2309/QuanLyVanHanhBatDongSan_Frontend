@@ -429,7 +429,7 @@ export const MoveOutHandoverModal: React.FC<MoveOutHandoverModalProps> = ({
             <div style={{ fontSize: '12px', color: '#64748b', marginTop: '3px' }}>
               Mã HĐ: <strong style={{ color: '#0f172a' }}>{contract.contractNumber}</strong>
               <span style={{ margin: '0 6px' }}>&bull;</span>
-              Đối soát tình trạng tài sản & chốt công tơ điện nước trả phòng (UC33)
+              Đối soát tình trạng tài sản & chốt công tơ điện nước trả phòng
             </div>
           </div>
           <button
@@ -703,7 +703,7 @@ export const MoveOutHandoverModal: React.FC<MoveOutHandoverModalProps> = ({
                     Đối soát hiện trạng tài sản trong phòng ({assetItems.length} tài sản)
                   </label>
                   <span style={{ fontSize: '11px', color: '#64748b' }}>
-                    Đánh dấu tài sản hư hỏng để đưa vào bồi thường thanh lý (UC31)
+                    Đánh dấu tài sản hư hỏng để đưa vào bồi thường thanh lý
                   </span>
                 </div>
 
@@ -831,7 +831,7 @@ export const MoveOutHandoverModal: React.FC<MoveOutHandoverModalProps> = ({
                     Bấm <strong>&quot;Xác nhận bàn giao&quot;</strong> sẽ khóa vĩnh viễn biên bản, đồng bộ chỉ số điện nước chốt cuối vào lượt ở và cập nhật kho tài sản.
                   </li>
                   <li>
-                    Sau khi xác nhận thành công, hệ thống hỗ trợ <strong>chuyển ngay sang Thanh lý hợp đồng thuê (UC31)</strong> với nội dung hư hại tài sản được điền tự động.
+                    Sau khi xác nhận thành công, hệ thống hỗ trợ <strong>chuyển ngay sang Thanh lý hợp đồng thuê</strong> với nội dung hư hại tài sản được điền tự động.
                   </li>
                 </ul>
               </div>
@@ -873,7 +873,7 @@ export const MoveOutHandoverModal: React.FC<MoveOutHandoverModalProps> = ({
                 padding: '8px 16px',
               }}
               onClick={() => setExportModalOpen(true)}
-              title="Xuất biên bản bàn giao trả phòng (UC35)"
+              title="Xuất biên bản bàn giao trả phòng"
             >
               📥 Xuất biên bản
             </button>
@@ -1070,7 +1070,7 @@ export const MoveOutHandoverModal: React.FC<MoveOutHandoverModalProps> = ({
                     onProceedToTerminate(contract, deduction);
                   }}
                 >
-                  Chuyển sang Thanh lý hợp đồng thuê (UC31) &rarr;
+                  Chuyển sang Thanh lý hợp đồng thuê &rarr;
                 </button>
               )}
             </div>

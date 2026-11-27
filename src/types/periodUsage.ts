@@ -6,6 +6,7 @@ export interface PeriodUsageRoute {
   periodId: string;
   tab: PeriodUsageTab;
   invalid: boolean;
+  returnTo?: string;
 }
 
 export interface QuantityServiceItem {

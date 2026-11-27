@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Tám trạng thái của hộp thoại xuất báo cáo tài chính.">
+  <title>Trạng thái xuất báo cáo tài chính</title>
+  <link rel="stylesheet" href="../../tokens.css">
+  <link rel="stylesheet" href="../../base.css">
+  <link rel="stylesheet" href="./report-export.css">
+  <link rel="stylesheet" href="./financial-export.css">
+</head>
+<body>
+  <main class="report-export-dialog financial-export-dialog">
+    <h1>Xuất báo cáo tài chính</h1>
+    <section><h2>Mặc định</h2><button class="report-export-trigger">Xuất báo cáo</button></section>
+    <section><h2>Di chuột</h2><button class="report-export-trigger is-hover">Xuất báo cáo</button></section>
+    <section><h2>Focus bàn phím</h2><button class="report-export-trigger is-focus">Xuất báo cáo</button></section>
+    <section><h2>Đang nhấn</h2><button class="report-export-trigger is-active">Xuất báo cáo</button></section>
+    <section><h2>Vô hiệu hóa</h2><button class="report-export-primary" disabled>Tải báo cáo</button></section>
+    <section><h2>Đang tạo tệp</h2><p role="status">Đang tạo báo cáo tài chính…</p></section>
+    <section><h2>Có lỗi</h2><p role="alert" class="report-export-error">Vui lòng thu hẹp phạm vi xuất.</p></section>
+    <section><h2>Thành công</h2><p class="report-export-success">Báo cáo tài chính đã được tạo thành công.</p></section>
+  </main>
+</body>
+</html>

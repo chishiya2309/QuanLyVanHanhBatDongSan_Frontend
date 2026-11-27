@@ -23,6 +23,39 @@ function setup(mode = 'full', route: FundingRoute = fsRoute, role: 'HOST' | 'CUS
 const table = () => screen.findByRole('table');
 const writes = (f: ReturnType<typeof setup>) => f.calls.filter(c => ['POST', 'PATCH'].includes(c.method));
 const dialog = () => screen.findByRole('dialog');
+it('opens Hosted Link for a supported Bank Hub Sandbox account and waits for verified backend status', async () => {
+  const fallback = fsFixture();
+  const sessionId = fsId(42);
+  let opened = false, verified = false;
+  const sent: string[] = [];
+  setup('full', fsRoute, 'HOST', async (input, init) => {
+    const url = new URL(String(input), location.origin);
+    if (!url.pathname.includes('/automatic-payment')) return fallback.fetcher(input, init);
+    if (url.pathname.endsWith('/sessions')) {
+      sent.push(String(init?.body));
+      opened = true;
+      return fsReply({ mode: 'SANDBOX', hostedLinkUrl: 'https://sandbox.example.test/link', expiresAt: '2030-01-01T00:00:00Z', sessionId }, 201);
+    }
+    const selected = url.searchParams.get('accountType') === 'individual';
+    return fsReply({ sourceId: fsBank.id, mode: 'SANDBOX', state: verified ? 'HEALTHY' : 'NOT_CONFIGURED',
+      enabled: verified, eligibility: selected ? 'SUPPORTED' : 'UNKNOWN', sessionId: opened && !verified ? sessionId : null,
+      sessionState: opened && !verified ? 'OPEN' : null, actions: verified ? ['CHECK'] : opened ? ['CANCEL_SESSION'] : selected ? ['SETUP'] : [] });
+  });
+  const bankRow = (await screen.findAllByRole('row')).find(row => row.textContent?.includes(fsBank.name))!;
+  await userEvent.click(within(bankRow).getByRole('button', { name: 'Xác nhận thanh toán tự động' }));
+  await screen.findByText('Sandbox');
+  await userEvent.selectOptions(screen.getByLabelText('Loại tài khoản'), 'individual');
+  await userEvent.click(await screen.findByRole('button', { name: 'Thiết lập xác nhận tự động' }));
+  await userEvent.click(screen.getByRole('button', { name: 'Xác nhận', exact: true }));
+  const link = await screen.findByRole('link', { name: 'Mở Bank Hub trong tab mới' });
+  expect(link.getAttribute('target')).toBe('_blank');
+  expect(JSON.parse(sent[0])).toEqual({ confirmed: true, accountType: 'individual' });
+  expect(screen.queryByText('Kết nối đã xác minh')).toBeNull();
+  verified = true;
+  fireEvent(window, new Event('focus'));
+  await screen.findByText('Kết nối đã xác minh');
+  expect(screen.queryByRole('link', { name: 'Mở Bank Hub trong tab mới' })).toBeNull();
+});
 async function input(label: string, value: string) { const el = screen.getByLabelText(new RegExp(label)); await userEvent.clear(el); if (value) await userEvent.type(el, value); }
 async function cashDraft() { await userEvent.click(screen.getByRole('button', { name: 'Thêm nguồn tiền mặt', exact: true })); await dialog(); await input('Tên gợi nhớ', 'Quỹ mới'); }
 async function edit(id: string) { const row = (await screen.findAllByRole('row')).find(r => r.textContent?.includes(id === fsLocked.id ? fsLocked.name : fsBank.name))!; await userEvent.click(within(row).getByRole('button', { name: 'Chỉnh sửa' })); await dialog(); await waitFor(() => expect((screen.getByLabelText(/Tên gợi nhớ/) as HTMLInputElement).value).not.toBe('')); }

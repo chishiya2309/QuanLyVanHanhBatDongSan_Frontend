@@ -419,7 +419,7 @@ export const DepositContractsPage: React.FC<DepositContractsPageProps> = ({
                             setContractToExport(c);
                             setExportModalOpen(true);
                           }}
-                          title="Xuất hợp đồng đặt cọc (UC34)"
+                          title="Xuất hợp đồng đặt cọc"
                         >
                           📄 Xuất HĐ
                         </button>
