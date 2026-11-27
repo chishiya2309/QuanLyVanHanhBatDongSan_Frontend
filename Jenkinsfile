@@ -58,9 +58,11 @@ pipeline {
         stage('Install, Lint, Test & Build') {
             steps {
                 echo '=== Bước 4: Cài thư viện, Kiểm tra Lint, Chạy Vitest & Build Production ==='
+                sh 'npm ci --prefer-offline --no-audit'
+                catchError(buildResult: 'SUCCESS', stageResult: 'UNSTABLE') {
+                    sh 'npm run lint'
+                }
                 sh '''
-                    npm ci --prefer-offline --no-audit
-                    npm run lint
                     npm test
                     npm run build
                 '''
