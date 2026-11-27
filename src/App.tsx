@@ -2,8 +2,9 @@ import { ExpenseBreakdownPage } from './components/reports/ExpenseBreakdownPage'
 import { expenseBreakdownPath, parseExpenseBreakdownRoute, type ExpenseBreakdownRoute } from './utils/expenseBreakdownNavigation';
 import { ProfitLossPage } from './components/reports/ProfitLossPage';
 import { parseProfitLossRoute, profitLossPath, type ProfitLossRoute } from './utils/profitLossNavigation';
+import { CashLedgerPage } from './components/cash-ledger/CashLedgerPage';
 import { FinancePage } from './components/reports/FinancePage';
-import { financePath, parseFinanceRoute, type FinanceRoute } from './utils/financeNavigation';
+import { financePath, ledgerPath, parseFinanceRoute, type FinanceRoute } from './utils/financeNavigation';
 import { CustomerLookupPage } from './components/customers/CustomerLookupPage';
 import { useState, useEffect, useLayoutEffect, useCallback, useRef } from 'react';
 import { LoginPage } from './components/auth/LoginPage';
@@ -285,7 +286,9 @@ function AuthenticatedDashboard({
         propertiesActive={propertiesRoute !== null}
         onNavigateProperties={() => onNavigateProperties('/properties')}
         showRooms={user.role === 'HOST'}
-        financeActive={occupancyRoute !== null && 'kind' in occupancyRoute && (occupancyRoute.kind === 'finance' || occupancyRoute.kind === 'cash-ledger')}
+        financeActive={occupancyRoute !== null && 'kind' in occupancyRoute && occupancyRoute.kind === 'finance'}
+        cashLedgerActive={occupancyRoute !== null && 'kind' in occupancyRoute && occupancyRoute.kind === 'cash-ledger'}
+        onNavigateCashLedger={user.role === 'HOST' ? () => onNavigateRooms(ledgerPath) : undefined}
         expenseBreakdownActive={occupancyRoute !== null && 'kind' in occupancyRoute && occupancyRoute.kind === 'expense-breakdown'}
         onNavigateExpenseBreakdown={user.role === 'HOST' ? () => onNavigateRooms(expenseBreakdownPath) : undefined}
         profitLossActive={occupancyRoute !== null && 'kind' in occupancyRoute && occupancyRoute.kind === 'profit-loss'}
@@ -436,7 +439,15 @@ function AuthenticatedDashboard({
               <ExpenseBreakdownPage route={occupancyRoute} onNavigate={onNavigateRooms} onSessionExpired={onSessionExpired} />
             ) : 'kind' in occupancyRoute && occupancyRoute.kind === 'profit-loss' ? (
               <ProfitLossPage route={occupancyRoute} onNavigate={onNavigateRooms} onSessionExpired={onSessionExpired} />
-            ) : 'kind' in occupancyRoute && (occupancyRoute.kind === 'finance' || occupancyRoute.kind === 'cash-ledger') ? (
+            ) : 'kind' in occupancyRoute && occupancyRoute.kind === 'cash-ledger' ? (
+              <CashLedgerPage
+                key={window.location.search}
+                route={occupancyRoute}
+                onNavigate={onNavigateRooms}
+                onSessionExpired={onSessionExpired}
+                onOpenInvoice={(invoiceId) => onNavigatePath(invoicePath('host') + '?invoiceId=' + encodeURIComponent(invoiceId))}
+              />
+            ) : 'kind' in occupancyRoute && occupancyRoute.kind === 'finance' ? (
               <FinancePage route={occupancyRoute} onNavigate={onNavigateRooms} onSessionExpired={onSessionExpired} />
             ) : 'kind' in occupancyRoute && occupancyRoute.kind === 'occupancy-analysis' ? (
               <OccupancyAnalysisPage query={occupancyRoute} onNavigate={onNavigateRooms} onSessionExpired={onSessionExpired} />
